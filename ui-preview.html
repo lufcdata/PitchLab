@@ -13,19 +13,12 @@ const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
   const doc=frame.contentDocument;
   if(!doc)return;
-  if(!doc.querySelector('link[data-ui-integration]')){
-    const css=doc.createElement('link');
-    css.rel='stylesheet';
-    css.href='ui-integration.css';
-    css.dataset.uiIntegration='1';
-    doc.head.appendChild(css);
-  }
-  if(!doc.querySelector('script[data-ui-integration]')){
-    const js=doc.createElement('script');
-    js.src='ui-header.js';
-    js.dataset.uiIntegration='1';
-    doc.body.appendChild(js);
-  }
+  const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
+  const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
+  addCss('ui-integration.css','uiIntegration');
+  addCss('ui-leaders.css','uiLeaders');
+  addJs('ui-header.js','uiIntegration');
+  addJs('ui-leaders.js','uiLeaders');
 });
 </script>
 </body>
