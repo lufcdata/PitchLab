@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PitchLab UI Integration Preview</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<iframe id="pitchlab" src="index.html" title="PitchLab UI Integration Preview"></iframe>
+<script>
+const frame=document.getElementById('pitchlab');
+frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;
+  if(!doc)return;
+  if(!doc.querySelector('link[data-ui-integration]')){
+    const css=doc.createElement('link');
+    css.rel='stylesheet';
+    css.href='ui-integration.css';
+    css.dataset.uiIntegration='1';
+    doc.head.appendChild(css);
+  }
+  if(!doc.querySelector('script[data-ui-integration]')){
+    const js=doc.createElement('script');
+    js.src='ui-header.js';
+    js.dataset.uiIntegration='1';
+    doc.body.appendChild(js);
+  }
+});
+</script>
+</body>
+</html>
