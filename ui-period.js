@@ -9,6 +9,7 @@
   let timing = { ...FALLBACK };
   let secondHalfPresetActive = false;
   let applyingPreset = false;
+  let draggingProxy = false;
 
   const dn = v => v && typeof v === 'object' ? (v.displayName ?? v.name ?? v.value) : v;
   const eventSecond = e => Number(e?.minute || 0) * 60 + Number(e?.second || 0);
@@ -58,6 +59,11 @@
   halftimeGap.setAttribute('aria-hidden', 'true');
   wrap.appendChild(halftimeGap);
 
+  const secondHalfThumb = document.createElement('div');
+  secondHalfThumb.className = 'period-second-half-thumb';
+  secondHalfThumb.setAttribute('aria-hidden', 'true');
+  wrap.appendChild(secondHalfThumb);
+
   function addTick(label, seconds, className = '') {
     const max = timing.fullTime;
     const tick = document.createElement('span');
@@ -67,16 +73,15 @@
     ticks.appendChild(tick);
   }
 
+  function visualSecondHalfStartPct() {
+    return Math.min(100, Math.max(0, (timing.firstHalfEnd / timing.fullTime) * 100));
+  }
+
   function setSecondHalfThumbVisual(active) {
     secondHalfPresetActive = active;
-    from.classList.toggle('period-range--second-half-start', active);
-    if (!active) {
-      from.style.removeProperty('--period-thumb-shift');
-      return;
-    }
-    const extraPct = Math.max(0, (timing.firstHalfEnd - 45 * 60) / timing.fullTime);
-    const shiftPx = wrap.clientWidth * extraPct;
-    from.style.setProperty('--period-thumb-shift', `${shiftPx}px`);
+    from.classList.toggle('period-range--proxy-hidden', active);
+    secondHalfThumb.classList.toggle('is-visible', active);
+    if (active) secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
   }
 
   function drawScale() {
@@ -105,7 +110,7 @@
     const secondStep = 100 / max;
     from.step = String(secondStep);
     to.step = String(secondStep);
-    if (secondHalfPresetActive) setSecondHalfThumbVisual(true);
+    if (secondHalfPresetActive) secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
   }
 
   function updateLabels() {
@@ -143,6 +148,34 @@
     requestAnimationFrame(updateLabels);
   }
 
+  function updateFromPointer(clientX) {
+    const rect = wrap.getBoundingClientRect();
+    const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    from.value = pct;
+    secondHalfThumb.style.left = `${pct}%`;
+    from.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  secondHalfThumb.addEventListener('pointerdown', e => {
+    if (!secondHalfPresetActive) return;
+    draggingProxy = true;
+    secondHalfThumb.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  });
+  secondHalfThumb.addEventListener('pointermove', e => {
+    if (!draggingProxy) return;
+    updateFromPointer(e.clientX);
+  });
+  const stopProxyDrag = e => {
+    if (!draggingProxy) return;
+    draggingProxy = false;
+    secondHalfThumb.releasePointerCapture?.(e.pointerId);
+    setSecondHalfThumbVisual(false);
+    requestAnimationFrame(updateLabels);
+  };
+  secondHalfThumb.addEventListener('pointerup', stopProxyDrag);
+  secondHalfThumb.addEventListener('pointercancel', stopProxyDrag);
+
   function refresh() {
     drawScale();
     updateLabels();
@@ -161,7 +194,7 @@
   }
 
   from.addEventListener('input', () => {
-    if (!applyingPreset) setSecondHalfThumbVisual(false);
+    if (!applyingPreset && !draggingProxy) setSecondHalfThumbVisual(false);
     requestAnimationFrame(updateLabels);
   });
   to.addEventListener('input', () => requestAnimationFrame(updateLabels));
@@ -169,7 +202,7 @@
   $('fullBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('full')));
   $('firstBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('first')));
   $('secondBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('second')));
-  window.addEventListener('resize', () => { if (secondHalfPresetActive) requestAnimationFrame(() => setSecondHalfThumbVisual(true)); });
+  window.addEventListener('resize', () => { if (secondHalfPresetActive) requestAnimationFrame(() => secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`); });
 
   refresh();
   loadTiming();
