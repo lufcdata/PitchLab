@@ -25,7 +25,7 @@
   const isSavedShot=e=>['savedshot','save'].includes(eventType(e));
 
   const metricDefs=[
-    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['PPDA','ppda_custom','decimal'],['10+ Pass Sequences','ten_pass_sequences_custom'],['Touches','touches'],['Penalty Box Touches','touch_box'],
+    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['PPDA','ppda_custom','decimal'],['10+ Pass Sequences','ten_pass_sequences_custom'],['Pressed Sequences','pressed_sequences_custom'],['Touches','touches'],['Penalty Box Touches','touch_box'],
     ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Outside Box','shots_outside_custom'],['Shots Inside The Box','shots_inside_custom'],
     ['Big Chances','big_chances_custom'],['Big Chances Created','bigchances'],['Big Chances Missed','big_chances_missed_custom'],['Chances Created','chances_created'],
     ['Successful Passes','successful'],['Total Passes','allpasses'],['Open Play Progressive Passes','progressive'],['Successful Final Third Passes','final_third_passes_success'],
@@ -57,8 +57,7 @@
   function adjustedGoals(list,team,home,away){return list.filter(e=>isScoreGoal(e)&&creditedGoalTeam(e,home,away)===team).length}
   function ownGoalsCommitted(list,team){return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length}
 
-  // Validated against Opta's Forest 12.9 / Leeds 8.8 benchmark (WS_1983552).
-  // Opposition pass attempts in their defensive 60% / defending-team actions in the matching press zone.
+  // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 12.9 / Leeds 8.8.
   function ppda(list,team,home,away){
     const opp=opposition(team,home,away);
     const passes=list.filter(e=>teamName(e)===opp&&eventType(e)==='pass'&&Number(e.x)<=60).length;
@@ -71,9 +70,7 @@
     return actions?passes/actions:0;
   }
 
-  // Locked Opta-style 10+ pass sequence model. Sequence boundaries are defensive actions,
-  // stoppages, shots, offsides and period boundaries; challenges/clearances/blocks only end
-  // a sequence when control actually changes, which is represented by the next controlled team action.
+  // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 6 / Leeds 7.
   function tenPassSequences(list,team){
     const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
     const hardEnd=new Set(['foul','offsidegiven','cornerawarded','savedshot','missedshots','shotonpost','goal','tackle','interception','end','start']);
@@ -88,6 +85,53 @@
       if(outcome(e)==='unsuccessful')close();
     }
     close();
+    return count;
+  }
+
+  // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 2 / Leeds 16.
+  // A Pressed Sequence is credited to the pressing team. The opposition sequence must:
+  // - originate in open play with genuine controlled possession in its defensive third (x <= 33.33),
+  // - contain 0-3 passes,
+  // - terminate within 40m of its own goal (x <= 40/105*100),
+  // - and not be created from a simultaneous opposing BallTouch (contested/loose ball).
+  function pressedSequences(list,pressingTeam,home,away){
+    const attackingTeam=opposition(pressingTeam,home,away);
+    const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
+    const startTypes=new Set(['pass','ballrecovery','balltouch','takeon']);
+    const stopTypes=new Set(['foul','offsidegiven','cornerawarded','savedshot','missedshots','shotonpost','goal','tackle','interception','end','start']);
+    const restartQ=e=>hasAny(e,'CornerTaken','FreeKickTaken','ThrowIn','ThrowinSetPiece','GoalKick','SetPiece','DirectFreekick');
+    const controlled=e=>teamName(e)===attackingTeam&&startTypes.has(eventType(e))&&outcome(e)!=='unsuccessful';
+    const contestedTouch=(idx,e)=>{
+      if(eventType(e)!=='balltouch')return false;
+      const s=evtSec(e);
+      for(let j=Math.max(0,idx-3);j<Math.min(ordered.length,idx+4);j++){
+        if(j===idx)continue;
+        const o=ordered[j];
+        if(evtSec(o)===s&&eventType(o)==='balltouch'&&teamName(o)&&teamName(o)!==attackingTeam)return true;
+      }
+      return false;
+    };
+    const END_X=40/105*100;
+    let count=0,i=0;
+    while(i<ordered.length){
+      const e=ordered[i];
+      if(!controlled(e)||Number(e.x)>33.333333||restartQ(e)||contestedTouch(i,e)){i++;continue}
+      let passes=0,lastX=Number(e.x),qualifies=true,j=i;
+      for(;j<ordered.length;j++){
+        const q=ordered[j],qt=eventType(q),qTeam=teamName(q);
+        if(j>i&&restartQ(q)){qualifies=false;break}
+        if(qTeam===attackingTeam&&Number.isFinite(Number(q.x)))lastX=Number(q.x);
+        if(qTeam===attackingTeam&&qt==='pass'){
+          passes++;
+          if(passes>3){qualifies=false;break}
+          if(outcome(q)==='unsuccessful'){if(Number.isFinite(Number(q.endX)))lastX=Number(q.endX);break}
+        }
+        if(j>i&&stopTypes.has(qt))break;
+        if(j>i&&qTeam&&qTeam!==attackingTeam&&startTypes.has(qt)&&outcome(q)!=='unsuccessful')break;
+      }
+      if(qualifies&&passes<=3&&Number.isFinite(lastX)&&lastX<=END_X)count++;
+      i=Math.max(i+1,j+1);
+    }
     return count;
   }
 
@@ -107,6 +151,7 @@
     const [,key]=def;
     if(key==='ppda_custom')return [ppda(list,home,home,away),ppda(list,away,home,away)];
     if(key==='ten_pass_sequences_custom')return [tenPassSequences(list,home),tenPassSequences(list,away)];
+    if(key==='pressed_sequences_custom')return [pressedSequences(list,home,home,away),pressedSequences(list,away,home,away)];
     if(key==='possession'){const hp=countByTeam(list,home,'allpasses',home,away),ap=countByTeam(list,away,'allpasses',home,away),total=hp+ap;return total?[hp/total*100,ap/total*100]:[0,0]}
     if(key==='pass_accuracy'){const ht=countByTeam(list,home,'allpasses',home,away),at=countByTeam(list,away,'allpasses',home,away);const hs=countByTeam(list,home,'successful',home,away),as=countByTeam(list,away,'successful',home,away);return [ht?hs/ht*100:0,at?as/at*100:0]}
     if(key==='fouled_custom')return [countByTeam(list,away,'fouls_custom',home,away),countByTeam(list,home,'fouls_custom',home,away)];
