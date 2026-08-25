@@ -51,7 +51,6 @@
   const highTurnover = e => {
     if (!controlledRegain(e)) return false;
     const i = events.indexOf(e); if (i < 0) return false;
-    // Require evidence that the opponent had the preceding active-play possession.
     for (let j=i-1; j>=0 && j>=i-5; j--) {
       const p=events[j];
       if (minute(e)-minute(p)>1) break;
@@ -72,7 +71,6 @@
   FILTERS.ground_duels_lost = e => isGroundDuel(e) && duelLost(e);
   FILTERS.duels_won = e => (isAerial(e)||isGroundDuel(e)) && duelWon(e);
   FILTERS.duels_lost = e => (isAerial(e)||isGroundDuel(e)) && duelLost(e);
-  // Attacking/defensive aerial split by pitch half in the team's attacking coordinate system.
   FILTERS.def_aerial_duels_won = e => isAerial(e) && Number(e.x)<50 && duelWon(e);
   FILTERS.def_aerial_duels_lost = e => isAerial(e) && Number(e.x)<50 && duelLost(e);
   FILTERS.att_aerial_duels_won = e => isAerial(e) && Number(e.x)>=50 && duelWon(e);
@@ -86,6 +84,40 @@
   const oldLineMetric = lineMetric;
   lineMetric = key => oldLineMetric(key) || key === 'free_kicks';
 
-  // Re-render once the additions are installed so the selector and plot stay in sync.
+  // Pitch Map Actions colour hierarchy.
+  const LOST_COLOUR = '#ED1362';
+  const GOAL_COLOUR = '#BDA060';
+  const lostMetricKeys = new Set([
+    'duels_lost','ground_duels_lost','aerial_duels_lost',
+    'att_aerial_duels_lost','def_aerial_duels_lost',
+    'dribbled_past','tackles_lost','takeons_unsuccess'
+  ]);
+  const isGoalMetric = key => key === 'goals' || key === 'own_goals' || String(key || '').startsWith('goals_');
+
+  const baseDrawPoint = drawPoint;
+  drawPoint = (root,e,colour) => {
+    const key = metricSelect.value;
+    return baseDrawPoint(root,e,lostMetricKeys.has(key) ? LOST_COLOUR : (isGoalMetric(key) ? GOAL_COLOUR : colour));
+  };
+
+  const baseDrawShotArrow = drawShotArrow;
+  drawShotArrow = (root,e,colour,marker) => {
+    const key = metricSelect.value;
+    if (!isGoalMetric(key)) return baseDrawShotArrow(root,e,colour,marker);
+    const defs = root.querySelector('defs');
+    if (defs && !root.querySelector('#goalGoldArrow')) {
+      const m = svg('marker',{id:'goalGoldArrow',markerWidth:'1.08',markerHeight:'0.78',refX:'1.0',refY:'0.39',orient:'auto',markerUnits:'userSpaceOnUse'});
+      m.appendChild(svg('path',{d:'M0,0 L1.04,0.39 L0,0.78 Z',fill:GOAL_COLOUR}));
+      defs.appendChild(m);
+    }
+    return baseDrawShotArrow(root,e,GOAL_COLOUR,'url(#goalGoldArrow)');
+  };
+
+  const baseEventPriority = eventPriority;
+  eventPriority = e => {
+    const goal = type(e) === 'Goal' || hasQ(e,'OwnGoal');
+    return goal ? 1000 : baseEventPriority(e);
+  };
+
   if (typeof render === 'function') render();
 })();
