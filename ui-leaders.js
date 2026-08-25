@@ -1,6 +1,11 @@
 (()=>{
-  const MAX_ROWS=10;
   const crestFor=name=>name==='Leeds'?'assets/club-logos/leeds%20png.png':name==='Bournemouth'?'assets/club-logos/Bournemouth.png':'';
+
+  function ordinal(n){
+    const mod100=n%100;
+    if(mod100>=11&&mod100<=13)return `${n}th`;
+    return `${n}${n%10===1?'st':n%10===2?'nd':n%10===3?'rd':'th'}`;
+  }
 
   function install(){
     const controls=document.querySelector('.controls-panel');
@@ -46,23 +51,31 @@
           item.value+=1;
           counts.set(id,item);
         }
-        const rows=[...counts.values()].sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name)).slice(0,MAX_ROWS);
+        const rows=[...counts.values()].sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
         const max=rows[0]?.value||1;
         const selected=playerEl.value;
+        const valueFrequency=new Map();
+        rows.forEach(r=>valueFrequency.set(r.value,(valueFrequency.get(r.value)||0)+1));
+
         document.getElementById('leadersMetric').textContent=metricEl.options[metricEl.selectedIndex]?.text||'Metric';
         document.getElementById('leadersScope').textContent=`${teamEl.value==='Both'?'Both Teams':teamEl.value} · ${Math.round(lo)}–${hi>=maxMin-.5?'FT':Math.round(hi)} mins`;
         document.getElementById('leadersTotal').textContent=`${counts.size} player${counts.size===1?'':'s'}`;
+
+        let previousValue=null,previousRank=0;
         document.getElementById('leadersList').innerHTML=rows.length?rows.map((r,i)=>{
+          const rank=previousValue===r.value?previousRank:i+1;
+          previousValue=r.value;previousRank=rank;
+          const isJoint=(valueFrequency.get(r.value)||0)>1;
           const crest=crestFor(r.team);
-          const width=Math.max(2,(r.value/max)*100);
-          return `<div class="metric-leader${selected===r.id?' is-selected':''}" data-player-id="${r.id}">
-            ${crest?`<img class="metric-leader__crest" src="${crest}" alt="${r.team} crest">`:'<span></span>'}
-            <div class="metric-leader__body">
-              <div class="metric-leader__top"><span class="metric-leader__name">${escapeHtml(r.name)}</span><span class="metric-leader__team">${escapeHtml(r.team)}</span></div>
-              <div class="metric-leader__track"><div class="metric-leader__bar" style="width:${width}%"></div></div>
-            </div>
+          const width=Math.max(3,(r.value/max)*100);
+          const topClass=rank<=3?` is-top-${rank}`:'';
+          const rankText=`${isJoint?'J-':''}${ordinal(rank)}`;
+          return `<div class="metric-leader${selected===r.id?' is-selected':''}${topClass}" data-player-id="${r.id}">
+            ${crest?`<img class="metric-leader__crest" src="${crest}" alt="${r.team} crest">`:'<span class="metric-leader__crest-placeholder"></span>'}
+            <div class="metric-leader__name">${escapeHtml(r.name)}</div>
             <div class="metric-leader__value">${r.value}</div>
-            <span class="metric-leader__rank">#${i+1}</span>
+            <div class="metric-leader__track"><div class="metric-leader__bar" style="width:${width}%"></div></div>
+            <span class="metric-leader__rank">${rank===1?'<span class="metric-leader__star">★</span>':''}${rankText}</span>
           </div>`;
         }).join(''):'<div class="metric-leaders__empty">No players recorded for this metric and time window.</div>';
       }catch(err){
