@@ -54,15 +54,18 @@
         const rows=[...counts.values()].sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
         const max=rows[0]?.value||1;
         const selected=playerEl.value;
+        const valueFrequency=new Map();
+        rows.forEach(r=>valueFrequency.set(r.value,(valueFrequency.get(r.value)||0)+1));
+
         document.getElementById('leadersMetric').textContent=metricEl.options[metricEl.selectedIndex]?.text||'Metric';
         document.getElementById('leadersScope').textContent=`${teamEl.value==='Both'?'Both Teams':teamEl.value} · ${Math.round(lo)}–${hi>=maxMin-.5?'FT':Math.round(hi)} mins`;
         document.getElementById('leadersTotal').textContent=`${counts.size} player${counts.size===1?'':'s'}`;
 
         let previousValue=null,previousRank=0;
         document.getElementById('leadersList').innerHTML=rows.length?rows.map((r,i)=>{
-          const isJoint=previousValue===r.value;
-          const rank=isJoint?previousRank:i+1;
+          const rank=previousValue===r.value?previousRank:i+1;
           previousValue=r.value;previousRank=rank;
+          const isJoint=(valueFrequency.get(r.value)||0)>1;
           const crest=crestFor(r.team);
           const width=Math.max(3,(r.value/max)*100);
           const topClass=rank<=3?` is-top-${rank}`:'';
@@ -87,7 +90,7 @@
   }
 
   function escapeHtml(value){
-    return String(value).replace(/[&<>'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
+    return String(value).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
