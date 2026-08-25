@@ -4,11 +4,14 @@
 .period-card .active-track{height:3.2px;background:var(--mint);border-radius:999px;z-index:2}
 .period-card .range{top:0;height:27px}
 .period-card .range::-webkit-slider-thumb{width:14px;height:14px;border-radius:50%;border:1px solid #c9ced2;background:#e4e7e9;box-shadow:0 1px 3px rgba(0,0,0,.35);appearance:none;-webkit-appearance:none;pointer-events:auto;cursor:grab}
-.period-card .range.period-range--second-half-start::-webkit-slider-thumb{transform:translateX(var(--period-thumb-shift,0px))}
+.period-card .range.period-range--proxy-hidden::-webkit-slider-thumb{opacity:0;pointer-events:none}
 .period-card .range:active::-webkit-slider-thumb{cursor:grabbing}
 .period-card .range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;border:1px solid #c9ced2;background:#e4e7e9;box-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:auto;cursor:grab}
-.period-card .range.period-range--second-half-start::-moz-range-thumb{transform:translateX(var(--period-thumb-shift,0px))}
+.period-card .range.period-range--proxy-hidden::-moz-range-thumb{opacity:0;pointer-events:none}
 .period-card .range::-moz-range-track{background:transparent;border:0}
+.period-card .period-second-half-thumb{display:none;position:absolute;top:5px;width:14px;height:14px;border-radius:50%;border:1px solid #c9ced2;background:#e4e7e9;box-shadow:0 1px 3px rgba(0,0,0,.35);transform:translateX(-50%);z-index:5;cursor:grab;touch-action:none}
+.period-card .period-second-half-thumb.is-visible{display:block}
+.period-card .period-second-half-thumb:active{cursor:grabbing}
 .period-card .end-label{display:none}
 .period-card .period-added-segment{position:absolute;top:12px;height:3.2px;background:#59616d;pointer-events:none;z-index:1}
 .period-card .period-ticks{position:absolute;left:0;right:0;top:31px;height:28px;pointer-events:none}
