@@ -8,6 +8,7 @@
   const FALLBACK = { firstHalfEnd: 46 * 60 + 57, fullTime: 98 * 60 + 18 };
   let timing = { ...FALLBACK };
   let secondHalfPresetActive = false;
+  let applyingPreset = false;
 
   const dn = v => v && typeof v === 'object' ? (v.displayName ?? v.name ?? v.value) : v;
   const eventSecond = e => Number(e?.minute || 0) * 60 + Number(e?.second || 0);
@@ -123,6 +124,7 @@
 
   function applyPreset(kind) {
     const max = timing.fullTime;
+    applyingPreset = true;
     setSecondHalfThumbVisual(false);
     if (kind === 'full') {
       from.value = 0;
@@ -137,6 +139,7 @@
     }
     from.dispatchEvent(new Event('input', { bubbles: true }));
     to.dispatchEvent(new Event('input', { bubbles: true }));
+    applyingPreset = false;
     requestAnimationFrame(updateLabels);
   }
 
@@ -158,7 +161,7 @@
   }
 
   from.addEventListener('input', () => {
-    if (!from.dataset.periodPresetDispatch) setSecondHalfThumbVisual(false);
+    if (!applyingPreset) setSecondHalfThumbVisual(false);
     requestAnimationFrame(updateLabels);
   });
   to.addEventListener('input', () => requestAnimationFrame(updateLabels));
