@@ -12,9 +12,8 @@
   const hasAny=(e,...qs)=>typeof hasQ==='function'&&hasQ(e,...qs);
   const safeFilter=(key,e)=>typeof FILTERS!=='undefined'&&typeof FILTERS[key]==='function'&&FILTERS[key](e);
   const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
+  const outcome=e=>String(dn(e?.outcomeType)||'').toLowerCase();
   const isOwnGoal=e=>hasAny(e,'OwnGoal')||eventType(e)==='owngoal';
-  // Score events must not depend on the shot helper: WhoScored own goals can be Goal events
-  // carrying OwnGoal but may not satisfy the normal shot predicate.
   const isScoreGoal=e=>eventType(e)==='goal'||eventType(e)==='owngoal'||hasAny(e,'OwnGoal');
   const isGoal=e=>isScoreGoal(e);
   const isBigChance=e=>typeof isShot==='function'&&isShot(e)&&hasAny(e,'BigChance');
@@ -26,7 +25,7 @@
   const isSavedShot=e=>['savedshot','save'].includes(eventType(e));
 
   const metricDefs=[
-    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['Touches','touches'],['Penalty Box Touches','touch_box'],
+    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['PPDA','ppda_custom','decimal'],['10+ Pass Sequences','ten_pass_sequences_custom'],['Touches','touches'],['Penalty Box Touches','touch_box'],
     ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Outside Box','shots_outside_custom'],['Shots Inside The Box','shots_inside_custom'],
     ['Big Chances','big_chances_custom'],['Big Chances Created','bigchances'],['Big Chances Missed','big_chances_missed_custom'],['Chances Created','chances_created'],
     ['Successful Passes','successful'],['Total Passes','allpasses'],['Open Play Progressive Passes','progressive'],['Successful Final Third Passes','final_third_passes_success'],
@@ -43,46 +42,55 @@
   toolbar.innerHTML='<button id="pitchViewToggle" class="pitch-view-toggle__button" type="button" aria-pressed="false">Match Stats</button>';
   const headingLeft=pageHead?.firstElementChild;
   const sub=headingLeft?.querySelector('.sub');
-  if(headingLeft&&sub){
-    const row=document.createElement('div');
-    row.className='pitch-view-heading-row';
-    sub.parentNode.insertBefore(row,sub);
-    row.appendChild(sub);
-    row.appendChild(toolbar);
-  }else{
-    pitchPanel.parentNode.insertBefore(toolbar,pitchPanel);
-  }
+  if(headingLeft&&sub){const row=document.createElement('div');row.className='pitch-view-heading-row';sub.parentNode.insertBefore(row,sub);row.appendChild(sub);row.appendChild(toolbar)}else pitchPanel.parentNode.insertBefore(toolbar,pitchPanel);
 
   const panel=document.createElement('section');
   panel.id='matchStatsPanel';panel.className='match-stats-panel';
   panel.innerHTML=`<div class="match-stats-panel__head"><div class="match-stats-panel__kicker">Match Stats</div><div id="matchStatsScore" class="match-stats-panel__score"></div><div id="matchStatsScope" class="match-stats-panel__scope"></div></div><div id="matchStatsBody" class="match-stats-panel__body"><div class="match-stats-panel__empty">Loading match stats…</div></div>`;
   pitchPanel.appendChild(panel);
+  const toggle=$('pitchViewToggle');let statsView=false;
 
-  const toggle=$('pitchViewToggle');
-  let statsView=false;
-
-  function teams(){
-    if(typeof raw==='undefined'||!raw)return ['Home','Away'];
-    return [raw.home?.name||'Home',raw.away?.name||'Away'];
-  }
-  function windowEvents(){
-    if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return {list:[],lo:0,hi:0,max:90*60};
-    const max=Math.max(90*60,...events.map(evtSec));
-    let a=+from.value,b=+to.value;if(b<=a)b=Math.min(100,a+1);
-    const lo=a/100*max,hi=b/100*max;
-    return {list:events.filter(e=>evtSec(e)>=lo&&evtSec(e)<=hi),lo,hi,max};
-  }
+  function teams(){if(typeof raw==='undefined'||!raw)return ['Home','Away'];return [raw.home?.name||'Home',raw.away?.name||'Away']}
+  function windowEvents(){if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return {list:[],lo:0,hi:0,max:90*60};const max=Math.max(90*60,...events.map(evtSec));let a=+from.value,b=+to.value;if(b<=a)b=Math.min(100,a+1);const lo=a/100*max,hi=b/100*max;return {list:events.filter(e=>evtSec(e)>=lo&&evtSec(e)<=hi),lo,hi,max}}
   function opposition(team,home,away){return team===home?away:team===away?home:''}
-  function creditedGoalTeam(e,home,away){
-    const eventTeam=teamName(e);
-    return isOwnGoal(e)?opposition(eventTeam,home,away):eventTeam;
+  function creditedGoalTeam(e,home,away){const eventTeam=teamName(e);return isOwnGoal(e)?opposition(eventTeam,home,away):eventTeam}
+  function adjustedGoals(list,team,home,away){return list.filter(e=>isScoreGoal(e)&&creditedGoalTeam(e,home,away)===team).length}
+  function ownGoalsCommitted(list,team){return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length}
+
+  // Validated against Opta's Forest 12.9 / Leeds 8.8 benchmark (WS_1983552).
+  // Opposition pass attempts in their defensive 60% / defending-team actions in the matching press zone.
+  function ppda(list,team,home,away){
+    const opp=opposition(team,home,away);
+    const passes=list.filter(e=>teamName(e)===opp&&eventType(e)==='pass'&&Number(e.x)<=60).length;
+    const actions=list.filter(e=>{
+      if(teamName(e)!==team||Number(e.x)<40)return false;
+      const t=eventType(e);
+      if(t==='tackle'||t==='challenge'||t==='interception'||t==='blockedpass')return true;
+      return t==='foul'&&outcome(e)==='unsuccessful';
+    }).length;
+    return actions?passes/actions:0;
   }
-  function adjustedGoals(list,team,home,away){
-    return list.filter(e=>isScoreGoal(e)&&creditedGoalTeam(e,home,away)===team).length;
+
+  // Locked Opta-style 10+ pass sequence model. Sequence boundaries are defensive actions,
+  // stoppages, shots, offsides and period boundaries; challenges/clearances/blocks only end
+  // a sequence when control actually changes, which is represented by the next controlled team action.
+  function tenPassSequences(list,team){
+    const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
+    const hardEnd=new Set(['foul','offsidegiven','cornerawarded','savedshot','missedshots','shotonpost','goal','tackle','interception','end','start']);
+    let activeTeam='',passes=0,count=0;
+    const close=()=>{if(activeTeam===team&&passes>=10)count++;activeTeam='';passes=0};
+    for(const e of ordered){
+      const t=eventType(e),etm=teamName(e);
+      if(hardEnd.has(t)){close();continue}
+      if(t!=='pass')continue;
+      if(etm!==activeTeam){close();activeTeam=etm;passes=0}
+      passes++;
+      if(outcome(e)==='unsuccessful')close();
+    }
+    close();
+    return count;
   }
-  function ownGoalsCommitted(list,team){
-    return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length;
-  }
+
   function countByTeam(list,team,key,home,away){
     if(key==='goals_adjusted')return adjustedGoals(list,team,home,away);
     if(key==='own_goals_custom')return ownGoalsCommitted(list,team);
@@ -97,15 +105,10 @@
   }
   function valuePair(def,list,home,away){
     const [,key]=def;
-    if(key==='possession'){
-      const hp=countByTeam(list,home,'allpasses',home,away),ap=countByTeam(list,away,'allpasses',home,away),total=hp+ap;
-      return total?[hp/total*100,ap/total*100]:[0,0];
-    }
-    if(key==='pass_accuracy'){
-      const ht=countByTeam(list,home,'allpasses',home,away),at=countByTeam(list,away,'allpasses',home,away);
-      const hs=countByTeam(list,home,'successful',home,away),as=countByTeam(list,away,'successful',home,away);
-      return [ht?hs/ht*100:0,at?as/at*100:0];
-    }
+    if(key==='ppda_custom')return [ppda(list,home,home,away),ppda(list,away,home,away)];
+    if(key==='ten_pass_sequences_custom')return [tenPassSequences(list,home),tenPassSequences(list,away)];
+    if(key==='possession'){const hp=countByTeam(list,home,'allpasses',home,away),ap=countByTeam(list,away,'allpasses',home,away),total=hp+ap;return total?[hp/total*100,ap/total*100]:[0,0]}
+    if(key==='pass_accuracy'){const ht=countByTeam(list,home,'allpasses',home,away),at=countByTeam(list,away,'allpasses',home,away);const hs=countByTeam(list,home,'successful',home,away),as=countByTeam(list,away,'successful',home,away);return [ht?hs/ht*100:0,at?as/at*100:0]}
     if(key==='fouled_custom')return [countByTeam(list,away,'fouls_custom',home,away),countByTeam(list,home,'fouls_custom',home,away)];
     if(key==='saves_custom')return [list.filter(e=>teamName(e)===away&&isSavedShot(e)).length,list.filter(e=>teamName(e)===home&&isSavedShot(e)).length];
     return [countByTeam(list,home,key,home,away),countByTeam(list,away,key,home,away)];
@@ -113,15 +116,12 @@
   function render(){
     if(!statsView)return;
     if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length){$('matchStatsBody').innerHTML='<div class="match-stats-panel__empty">Loading match stats…</div>';return}
-    const [home,away]=teams();const {list,lo,hi,max}=windowEvents();
-    const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);
-    const hc=crestFor(home),ac=crestFor(away);
+    const [home,away]=teams();const {list,lo,hi,max}=windowEvents();const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);const hc=crestFor(home),ac=crestFor(away);
     $('matchStatsScore').innerHTML=`<span class="match-stats-panel__team match-stats-panel__team--home">${home}${hc?`<img class="match-stats-panel__crest" src="${hc}" alt="${home} crest">`:''}</span><span class="match-stats-panel__scoreline"><b>${hg}</b><span class="match-stats-panel__dash">–</span><b>${ag}</b></span><span class="match-stats-panel__team match-stats-panel__team--away">${ac?`<img class="match-stats-panel__crest" src="${ac}" alt="${away} crest">`:''}${away}</span>`;
     $('matchStatsScope').innerHTML=`Both <i>|</i> <b>${lo<.5?'0:00':fmtSec(lo)} – ${hi>=max-.5?'FT':fmtSec(hi)}</b>`;
     $('matchStatsBody').innerHTML=metricDefs.map(def=>{
-      const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);
-      const denom=Math.max(h+a,1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):h/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):a/denom*100;
-      const hv=kind==='pct'?Math.round(h):h,av=kind==='pct'?Math.round(a):a;
+      const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);const denom=Math.max(h+a,1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):h/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):a/denom*100;
+      const hv=kind==='pct'?Math.round(h):kind==='decimal'?h.toFixed(1):h,av=kind==='pct'?Math.round(a):kind==='decimal'?a.toFixed(1):a;
       return `<div class="match-stats-row${kind==='pct'?' is-percentage':''}"><div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${hp}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${hv}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${av}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${ap}%"></div></div></div>`;
     }).join('');
   }
