@@ -17,8 +17,10 @@ frame.addEventListener('load',()=>{
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
   addCss('ui-integration.css','uiIntegration');
   addCss('ui-leaders.css','uiLeaders');
+  addCss('ui-timings.css','uiTimings');
   addJs('ui-header.js','uiIntegration');
   addJs('ui-leaders.js','uiLeaders');
+  addJs('ui-timings.js','uiTimings');
 });
 </script>
 </body>
