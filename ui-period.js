@@ -7,6 +7,7 @@
 
   const FALLBACK = { firstHalfEnd: 46 * 60 + 57, fullTime: 98 * 60 + 18 };
   let timing = { ...FALLBACK };
+  let secondHalfPresetActive = false;
 
   const dn = v => v && typeof v === 'object' ? (v.displayName ?? v.name ?? v.value) : v;
   const eventSecond = e => Number(e?.minute || 0) * 60 + Number(e?.second || 0);
@@ -65,6 +66,18 @@
     ticks.appendChild(tick);
   }
 
+  function setSecondHalfThumbVisual(active) {
+    secondHalfPresetActive = active;
+    from.classList.toggle('period-range--second-half-start', active);
+    if (!active) {
+      from.style.removeProperty('--period-thumb-shift');
+      return;
+    }
+    const extraPct = Math.max(0, (timing.firstHalfEnd - 45 * 60) / timing.fullTime);
+    const shiftPx = wrap.clientWidth * extraPct;
+    from.style.setProperty('--period-thumb-shift', `${shiftPx}px`);
+  }
+
   function drawScale() {
     const max = timing.fullTime;
     ticks.innerHTML = '';
@@ -91,13 +104,14 @@
     const secondStep = 100 / max;
     from.step = String(secondStep);
     to.step = String(secondStep);
+    if (secondHalfPresetActive) setSecondHalfThumbVisual(true);
   }
 
   function updateLabels() {
     const max = timing.fullTime;
     const loSeconds = (+from.value / 100) * max;
     const hiSeconds = (+to.value / 100) * max;
-    const fromLabel = loSeconds < 0.5 ? '0:00' : formatTime(loSeconds);
+    const fromLabel = secondHalfPresetActive ? '45:00' : (loSeconds < 0.5 ? '0:00' : formatTime(loSeconds));
     const toLabel = hiSeconds >= max - 0.5 ? 'FT' : formatTime(hiSeconds);
 
     if ($('fromText')) $('fromText').textContent = fromLabel;
@@ -109,6 +123,7 @@
 
   function applyPreset(kind) {
     const max = timing.fullTime;
+    setSecondHalfThumbVisual(false);
     if (kind === 'full') {
       from.value = 0;
       to.value = 100;
@@ -118,6 +133,7 @@
     } else {
       from.value = Math.min(100, (45 * 60 / max) * 100);
       to.value = 100;
+      setSecondHalfThumbVisual(true);
     }
     from.dispatchEvent(new Event('input', { bubbles: true }));
     to.dispatchEvent(new Event('input', { bubbles: true }));
@@ -141,12 +157,16 @@
     }
   }
 
-  from.addEventListener('input', () => requestAnimationFrame(updateLabels));
+  from.addEventListener('input', () => {
+    if (!from.dataset.periodPresetDispatch) setSecondHalfThumbVisual(false);
+    requestAnimationFrame(updateLabels);
+  });
   to.addEventListener('input', () => requestAnimationFrame(updateLabels));
   ['metric', 'team', 'player'].forEach(id => $(id)?.addEventListener('change', () => requestAnimationFrame(updateLabels)));
   $('fullBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('full')));
   $('firstBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('first')));
   $('secondBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('second')));
+  window.addEventListener('resize', () => { if (secondHalfPresetActive) requestAnimationFrame(() => setSecondHalfThumbVisual(true)); });
 
   refresh();
   loadTiming();
