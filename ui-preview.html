@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-2" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-3" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,16 +15,16 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
-  addCss('ui-integration.css?v=metrics-2','uiIntegration');
-  addCss('ui-leaders.css?v=metrics-2','uiLeaders');
-  addCss('ui-timings.css?v=metrics-2','uiTimings');
-  addCss('ui-arrow-style.css?v=metrics-2','uiArrowStyle');
-  addCss('ui-period.css?v=metrics-2','uiPeriod');
-  addJs('ui-header.js?v=metrics-2','uiIntegration');
-  addJs('ui-leaders.js?v=metrics-2','uiLeaders');
-  addJs('ui-timings.js?v=metrics-2','uiTimings');
-  addJs('ui-extra-metrics.js?v=metrics-2','uiExtraMetrics');
-  addJs('ui-period.js?v=metrics-2','uiPeriod');
+  addCss('ui-integration.css?v=metrics-3','uiIntegration');
+  addCss('ui-leaders.css?v=metrics-3','uiLeaders');
+  addCss('ui-timings.css?v=metrics-3','uiTimings');
+  addCss('ui-arrow-style.css?v=metrics-3','uiArrowStyle');
+  addCss('ui-period.css?v=metrics-3','uiPeriod');
+  addJs('ui-header.js?v=metrics-3','uiIntegration');
+  addJs('ui-leaders.js?v=metrics-3','uiLeaders');
+  addJs('ui-timings.js?v=metrics-3','uiTimings');
+  addJs('ui-extra-metrics.js?v=metrics-3','uiExtraMetrics');
+  addJs('ui-period.js?v=metrics-3','uiPeriod');
 });
 </script>
 </body>
