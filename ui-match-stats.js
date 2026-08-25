@@ -1,6 +1,7 @@
 (()=>{
   const $=id=>document.getElementById(id);
   const pitchPanel=document.querySelector('.pitch-panel');
+  const pageHead=document.querySelector('.page-head');
   const from=$('fromRange'),to=$('toRange'),eventCount=$('eventCount');
   if(!pitchPanel||!from||!to||!eventCount||document.getElementById('matchStatsPanel'))return;
 
@@ -10,15 +11,19 @@
   const fmtSec=s=>{const t=Math.max(0,Math.round(s));return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`};
   const hasAny=(e,...qs)=>typeof hasQ==='function'&&hasQ(e,...qs);
   const safeFilter=(key,e)=>typeof FILTERS!=='undefined'&&typeof FILTERS[key]==='function'&&FILTERS[key](e);
-  const isOwnGoal=e=>hasAny(e,'OwnGoal')||String(type(e)||'').toLowerCase()==='owngoal';
-  const isGoal=e=>typeof isShot==='function'&&isShot(e)&&(type(e)==='Goal'||hasAny(e,'Goal','OwnGoal'));
+  const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
+  const isOwnGoal=e=>hasAny(e,'OwnGoal')||eventType(e)==='owngoal';
+  // Score events must not depend on the shot helper: WhoScored own goals can be Goal events
+  // carrying OwnGoal but may not satisfy the normal shot predicate.
+  const isScoreGoal=e=>eventType(e)==='goal'||eventType(e)==='owngoal'||hasAny(e,'OwnGoal');
+  const isGoal=e=>isScoreGoal(e);
   const isBigChance=e=>typeof isShot==='function'&&isShot(e)&&hasAny(e,'BigChance');
   const isSetPieceChance=e=>safeFilter('chances_created',e)&&hasAny(e,'FromCorner','SetPiece','DirectFreekick','ThrowinSetPiece','CornerTaken','FreeKickTaken');
   const isInsideBox=e=>typeof isShot==='function'&&isShot(e)&&Number(e.x)>=((105-16.5)/105*100);
   const isOutsideBox=e=>typeof isShot==='function'&&isShot(e)&&!isInsideBox(e);
-  const isFoul=e=>String(type(e)||'').toLowerCase()==='foul';
-  const isRed=e=>String(type(e)||'').toLowerCase()==='card'&&hasAny(e,'Red','SecondYellow','SecondYellowRed');
-  const isSavedShot=e=>['savedshot','save'].includes(String(type(e)||'').toLowerCase());
+  const isFoul=e=>eventType(e)==='foul';
+  const isRed=e=>eventType(e)==='card'&&hasAny(e,'Red','SecondYellow','SecondYellowRed');
+  const isSavedShot=e=>['savedshot','save'].includes(eventType(e));
 
   const metricDefs=[
     ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['Touches','touches'],['Penalty Box Touches','touch_box'],
@@ -36,7 +41,17 @@
   const toolbar=document.createElement('div');
   toolbar.className='pitch-view-toggle';
   toolbar.innerHTML='<button id="pitchViewToggle" class="pitch-view-toggle__button" type="button" aria-pressed="false">Match Stats</button>';
-  pitchPanel.insertBefore(toolbar,pitchPanel.firstChild);
+  const headingLeft=pageHead?.firstElementChild;
+  const sub=headingLeft?.querySelector('.sub');
+  if(headingLeft&&sub){
+    const row=document.createElement('div');
+    row.className='pitch-view-heading-row';
+    sub.parentNode.insertBefore(row,sub);
+    row.appendChild(sub);
+    row.appendChild(toolbar);
+  }else{
+    pitchPanel.parentNode.insertBefore(toolbar,pitchPanel);
+  }
 
   const panel=document.createElement('section');
   panel.id='matchStatsPanel';panel.className='match-stats-panel';
@@ -57,13 +72,13 @@
     const lo=a/100*max,hi=b/100*max;
     return {list:events.filter(e=>evtSec(e)>=lo&&evtSec(e)<=hi),lo,hi,max};
   }
-  function opposition(team,home,away){return team===home?away:home}
+  function opposition(team,home,away){return team===home?away:team===away?home:''}
   function creditedGoalTeam(e,home,away){
     const eventTeam=teamName(e);
     return isOwnGoal(e)?opposition(eventTeam,home,away):eventTeam;
   }
   function adjustedGoals(list,team,home,away){
-    return list.filter(e=>isGoal(e)&&creditedGoalTeam(e,home,away)===team).length;
+    return list.filter(e=>isScoreGoal(e)&&creditedGoalTeam(e,home,away)===team).length;
   }
   function ownGoalsCommitted(list,team){
     return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length;
