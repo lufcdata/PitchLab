@@ -7,4 +7,5 @@
 .team-colour-control input[type=color]::-webkit-color-swatch-wrapper{padding:0}
 .team-colour-control input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
 .team-colour-control input[type=color]::-moz-color-swatch{border:0;border-radius:50%}
+.metric-leader__bar{background:var(--leader-colour,var(--home-team-colour,#4ef0ce))!important;box-shadow:none!important}
 @media(max-width:620px){.team-colour-controls{gap:8px}.team-colour-controls__swatches{gap:8px}.team-colour-control span{display:none}}
