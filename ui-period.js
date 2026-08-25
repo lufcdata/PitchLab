@@ -77,11 +77,22 @@
     return Math.min(100, Math.max(0, (timing.firstHalfEnd / timing.fullTime) * 100));
   }
 
+  function syncActiveTrackVisual() {
+    const activeTrack = $('activeTrack');
+    if (!activeTrack || !secondHalfPresetActive) return;
+    const startPct = visualSecondHalfStartPct();
+    activeTrack.style.left = `${startPct}%`;
+    activeTrack.style.width = `${Math.max(0, 100 - startPct)}%`;
+  }
+
   function setSecondHalfThumbVisual(active) {
     secondHalfPresetActive = active;
     from.classList.toggle('period-range--proxy-hidden', active);
     secondHalfThumb.classList.toggle('is-visible', active);
-    if (active) secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
+    if (active) {
+      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
+      requestAnimationFrame(syncActiveTrackVisual);
+    }
   }
 
   function drawScale() {
@@ -110,7 +121,10 @@
     const secondStep = 100 / max;
     from.step = String(secondStep);
     to.step = String(secondStep);
-    if (secondHalfPresetActive) secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
+    if (secondHalfPresetActive) {
+      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
+      requestAnimationFrame(syncActiveTrackVisual);
+    }
   }
 
   function updateLabels() {
@@ -125,6 +139,7 @@
     if ($('sumFrom')) $('sumFrom').textContent = fromLabel;
     if ($('sumTo')) $('sumTo').textContent = toLabel;
     if ($('plotWindow')) $('plotWindow').textContent = `${fromLabel} - ${toLabel}`;
+    if (secondHalfPresetActive) requestAnimationFrame(syncActiveTrackVisual);
   }
 
   function applyPreset(kind) {
@@ -145,7 +160,10 @@
     from.dispatchEvent(new Event('input', { bubbles: true }));
     to.dispatchEvent(new Event('input', { bubbles: true }));
     applyingPreset = false;
-    requestAnimationFrame(updateLabels);
+    requestAnimationFrame(() => {
+      updateLabels();
+      if (kind === 'second') syncActiveTrackVisual();
+    });
   }
 
   function updateFromPointer(clientX) {
@@ -202,7 +220,12 @@
   $('fullBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('full')));
   $('firstBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('first')));
   $('secondBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('second')));
-  window.addEventListener('resize', () => { if (secondHalfPresetActive) requestAnimationFrame(() => secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`); });
+  window.addEventListener('resize', () => {
+    if (secondHalfPresetActive) requestAnimationFrame(() => {
+      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
+      syncActiveTrackVisual();
+    });
+  });
 
   refresh();
   loadTiming();
