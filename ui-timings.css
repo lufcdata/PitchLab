@@ -1,0 +1,16 @@
+.match-timings{margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.045)}
+.match-timings__head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px}
+.match-timings__kicker{color:#48f0ca;font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+.match-timings__title{margin-top:4px;color:#f5f6fa;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:-.02em}
+.match-timings__scope{color:#73798a;font-size:8px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;text-align:right}
+.match-timings__list{display:flex;flex-direction:column;gap:6px}
+.match-timing{position:relative;min-height:44px;display:grid;grid-template-columns:minmax(0,1fr) 58px;align-items:center;gap:12px;padding:7px 10px;border:1px solid rgba(255,255,255,.055);border-radius:5px;background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(255,255,255,.008));overflow:hidden}
+.match-timing__body{min-width:0}
+.match-timing__top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.match-timing__name{color:#c8ccd6;font-size:11px;font-weight:700}
+.match-timing__track{height:4px;overflow:hidden;border-radius:4px;background:rgba(255,255,255,.065)}
+.match-timing__bar{height:100%;min-width:2px;border-radius:inherit;background:#48f0ca;box-shadow:0 0 8px rgba(72,240,202,.2)}
+.match-timing__value{font-family:'Space Grotesk',sans-serif;color:#fff;font-size:15px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.match-timings__section{margin:11px 0 6px;color:#646b7b;font-size:7px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.match-timings__foot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#555c6c;font-size:7px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+@media(max-width:620px){.match-timing{grid-template-columns:minmax(0,1fr) 54px;padding-left:8px;padding-right:8px}.match-timings__head{align-items:flex-start}}
