@@ -47,7 +47,10 @@
       <button class="match-timings-summary__toggle" type="button" aria-expanded="false" aria-controls="matchTimingsDetails">
         <span>Expand Details</span><span class="match-timings-summary__chevron" aria-hidden="true">⌄</span>
       </button>
-      <div id="matchTimingsDetails" class="match-timings-summary__details" hidden>${detailRows}</div>`;
+      <div id="matchTimingsDetails" class="match-timings-summary__details" hidden>${detailRows}</div>
+      <div aria-hidden="true" style="display:none">
+        <span id="sumFrom"></span><span id="sumTo"></span><span id="sumTeam"></span><span id="sumMetric"></span>
+      </div>`;
 
     const toggle=summary.querySelector('.match-timings-summary__toggle');
     const detailsEl=summary.querySelector('#matchTimingsDetails');
