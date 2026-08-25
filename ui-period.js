@@ -56,14 +56,12 @@
   halftimeGap.setAttribute('aria-hidden', 'true');
   wrap.appendChild(halftimeGap);
 
-  function addTick(label, seconds, className = '', sublabel = '') {
+  function addTick(label, seconds, className = '') {
     const max = timing.fullTime;
     const tick = document.createElement('span');
     tick.className = `period-tick ${className}`.trim();
     tick.style.left = `${Math.min(100, Math.max(0, (seconds / max) * 100))}%`;
-    tick.innerHTML = sublabel
-      ? `<span class="period-tick__main">${label}</span><span class="period-tick__sub">${sublabel}</span>`
-      : `<span class="period-tick__main">${label}</span>`;
+    tick.innerHTML = `<span class="period-tick__main">${label}</span>`;
     ticks.appendChild(tick);
   }
 
@@ -75,8 +73,8 @@
       if (mins * 60 < max - 1) addTick(String(mins), mins * 60, mins === 0 ? 'period-tick--start' : '');
     });
 
-    addTick('HT', timing.firstHalfEnd, 'period-tick--milestone', formatTime(timing.firstHalfEnd));
-    addTick('FT', max, 'period-tick--milestone period-tick--end', formatTime(max));
+    addTick('HT', timing.firstHalfEnd, 'period-tick--milestone');
+    addTick('FT', max, 'period-tick--milestone period-tick--end');
 
     const pct = seconds => Math.min(100, Math.max(0, (seconds / max) * 100));
     const firstStart = pct(45 * 60);
