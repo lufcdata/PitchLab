@@ -1,23 +1,22 @@
 .period-card .range-block{align-items:flex-start;gap:10px;margin-top:12px}
 .period-card .range-wrap{height:62px}
-.period-card .track{top:12px;height:3px;background:#303741;border-radius:999px;overflow:visible}
-.period-card .active-track{height:3px;background:var(--mint);border-radius:999px;z-index:2}
+.period-card .track{top:12px;height:3.2px;background:#303741;border-radius:999px;overflow:visible}
+.period-card .active-track{height:3.2px;background:var(--mint);border-radius:999px;z-index:2}
 .period-card .range{top:0;height:27px}
 .period-card .range::-webkit-slider-thumb{width:14px;height:14px;border-radius:50%;border:1px solid #c9ced2;background:#e4e7e9;box-shadow:0 1px 3px rgba(0,0,0,.35);appearance:none;-webkit-appearance:none;pointer-events:auto;cursor:grab}
 .period-card .range:active::-webkit-slider-thumb{cursor:grabbing}
 .period-card .range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;border:1px solid #c9ced2;background:#e4e7e9;box-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:auto;cursor:grab}
 .period-card .range::-moz-range-track{background:transparent;border:0}
 .period-card .end-label{display:none}
-.period-card .period-added-segment{position:absolute;top:12px;height:3px;background:#59616d;pointer-events:none;z-index:1}
+.period-card .period-added-segment{position:absolute;top:12px;height:3.2px;background:#59616d;pointer-events:none;z-index:1}
 .period-card .period-ticks{position:absolute;left:0;right:0;top:31px;height:28px;pointer-events:none}
 .period-card .period-tick{position:absolute;top:0;transform:translateX(-50%);color:#626978;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;line-height:1.05}
 .period-card .period-tick--start{transform:none}
 .period-card .period-tick--end{transform:translateX(-100%)}
 .period-card .period-tick__main{display:block}
-.period-card .period-tick__sub{display:block;margin-top:3px;color:#7f8797;font-size:7px;font-weight:600}
 .period-card .period-tick--milestone .period-tick__main{color:#8a91a0;font-weight:800;letter-spacing:.05em}
 .period-card .halftime-gap{position:absolute;top:9px;width:8px;height:9px;transform:translateX(-50%);background:var(--panel);pointer-events:none;z-index:3}
 .period-card .halftime-gap::after{content:'';position:absolute;left:3px;top:2px;width:2px;height:5px;background:rgba(255,255,255,.14)}
 .period-card .range{z-index:4}
 .period-card .slider-summary,.period-card .summary-item b{font-variant-numeric:tabular-nums}
-@media(max-width:620px){.period-card .period-tick{font-size:7px}.period-card .period-tick__sub{font-size:6px}.period-card .range-block{gap:5px}}
+@media(max-width:620px){.period-card .period-tick{font-size:7px}.period-card .range-block{gap:5px}}
