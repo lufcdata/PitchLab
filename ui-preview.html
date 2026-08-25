@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-14" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-15" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,20 +15,22 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
-  addCss('ui-integration.css?v=metrics-14','uiIntegration');
-  addCss('ui-leaders.css?v=metrics-14','uiLeaders');
-  addCss('ui-timings.css?v=metrics-14','uiTimings');
-  addCss('ui-arrow-style.css?v=metrics-14','uiArrowStyle');
-  addCss('ui-period.css?v=metrics-14','uiPeriod');
-  addCss('ui-match-stats.css?v=metrics-14','uiMatchStats');
-  addCss('ui-pass-combinations.css?v=metrics-14','uiPassCombinations');
-  addJs('ui-header.js?v=metrics-14','uiIntegration');
-  addJs('ui-leaders.js?v=metrics-14','uiLeaders');
-  addJs('ui-timings.js?v=metrics-14','uiTimings');
-  addJs('ui-extra-metrics.js?v=metrics-14','uiExtraMetrics');
-  addJs('ui-period.js?v=metrics-14','uiPeriod');
-  addJs('ui-match-stats.js?v=metrics-14','uiMatchStats');
-  addJs('ui-pass-combinations.js?v=metrics-14','uiPassCombinations');
+  addCss('ui-integration.css?v=metrics-15','uiIntegration');
+  addCss('ui-leaders.css?v=metrics-15','uiLeaders');
+  addCss('ui-timings.css?v=metrics-15','uiTimings');
+  addCss('ui-arrow-style.css?v=metrics-15','uiArrowStyle');
+  addCss('ui-period.css?v=metrics-15','uiPeriod');
+  addCss('ui-match-stats.css?v=metrics-15','uiMatchStats');
+  addCss('ui-pass-combinations.css?v=metrics-15','uiPassCombinations');
+  addCss('ui-positions.css?v=metrics-15','uiPositions');
+  addJs('ui-header.js?v=metrics-15','uiIntegration');
+  addJs('ui-leaders.js?v=metrics-15','uiLeaders');
+  addJs('ui-timings.js?v=metrics-15','uiTimings');
+  addJs('ui-extra-metrics.js?v=metrics-15','uiExtraMetrics');
+  addJs('ui-period.js?v=metrics-15','uiPeriod');
+  addJs('ui-match-stats.js?v=metrics-15','uiMatchStats');
+  addJs('ui-pass-combinations.js?v=metrics-15','uiPassCombinations');
+  addJs('ui-positions.js?v=metrics-15','uiPositions');
 });
 </script>
 </body>
