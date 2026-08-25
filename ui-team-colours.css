@@ -1,0 +1,10 @@
+:root{--home-team-colour:#4ef0ce;--away-team-colour:#5d79d8}
+.team-colour-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-2px 0 12px;padding:9px 10px;border:1px solid rgba(255,255,255,.055);border-radius:6px;background:#11151d}
+.team-colour-controls__label{color:#73798a;font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.team-colour-controls__swatches{display:flex;align-items:center;gap:12px}
+.team-colour-control{display:flex;align-items:center;gap:6px;color:#aeb4c0;font-size:8px;font-weight:700}
+.team-colour-control input[type=color]{width:24px;height:24px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;overflow:hidden}
+.team-colour-control input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.team-colour-control input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+.team-colour-control input[type=color]::-moz-color-swatch{border:0;border-radius:50%}
+@media(max-width:620px){.team-colour-controls{gap:8px}.team-colour-controls__swatches{gap:8px}.team-colour-control span{display:none}}
