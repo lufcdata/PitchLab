@@ -10,6 +10,7 @@
   const fmtSec=s=>{const t=Math.max(0,Math.round(s));return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`};
   const hasAny=(e,...qs)=>typeof hasQ==='function'&&hasQ(e,...qs);
   const safeFilter=(key,e)=>typeof FILTERS!=='undefined'&&typeof FILTERS[key]==='function'&&FILTERS[key](e);
+  const isOwnGoal=e=>hasAny(e,'OwnGoal')||String(type(e)||'').toLowerCase()==='owngoal';
   const isGoal=e=>typeof isShot==='function'&&isShot(e)&&(type(e)==='Goal'||hasAny(e,'Goal','OwnGoal'));
   const isBigChance=e=>typeof isShot==='function'&&isShot(e)&&hasAny(e,'BigChance');
   const isSetPieceChance=e=>safeFilter('chances_created',e)&&hasAny(e,'FromCorner','SetPiece','DirectFreekick','ThrowinSetPiece','CornerTaken','FreeKickTaken');
@@ -20,7 +21,7 @@
   const isSavedShot=e=>['savedshot','save'].includes(String(type(e)||'').toLowerCase());
 
   const metricDefs=[
-    ['Goals','goals'],['Possession','possession','pct'],['Touches','touches'],['Penalty Box Touches','touch_box'],
+    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['Touches','touches'],['Penalty Box Touches','touch_box'],
     ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Outside Box','shots_outside_custom'],['Shots Inside The Box','shots_inside_custom'],
     ['Big Chances','big_chances_custom'],['Big Chances Created','bigchances'],['Big Chances Missed','big_chances_missed_custom'],['Chances Created','chances_created'],
     ['Successful Passes','successful'],['Total Passes','allpasses'],['Open Play Progressive Passes','progressive'],['Successful Final Third Passes','final_third_passes_success'],
@@ -56,7 +57,20 @@
     const lo=a/100*max,hi=b/100*max;
     return {list:events.filter(e=>evtSec(e)>=lo&&evtSec(e)<=hi),lo,hi,max};
   }
-  function countByTeam(list,team,key){
+  function opposition(team,home,away){return team===home?away:home}
+  function creditedGoalTeam(e,home,away){
+    const eventTeam=teamName(e);
+    return isOwnGoal(e)?opposition(eventTeam,home,away):eventTeam;
+  }
+  function adjustedGoals(list,team,home,away){
+    return list.filter(e=>isGoal(e)&&creditedGoalTeam(e,home,away)===team).length;
+  }
+  function ownGoalsCommitted(list,team){
+    return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length;
+  }
+  function countByTeam(list,team,key,home,away){
+    if(key==='goals_adjusted')return adjustedGoals(list,team,home,away);
+    if(key==='own_goals_custom')return ownGoalsCommitted(list,team);
     if(key==='shots_outside_custom')return list.filter(e=>teamName(e)===team&&isOutsideBox(e)).length;
     if(key==='shots_inside_custom')return list.filter(e=>teamName(e)===team&&isInsideBox(e)).length;
     if(key==='big_chances_custom')return list.filter(e=>teamName(e)===team&&isBigChance(e)).length;
@@ -67,25 +81,25 @@
     return list.filter(e=>teamName(e)===team&&safeFilter(key,e)).length;
   }
   function valuePair(def,list,home,away){
-    const [,key,kind]=def;
+    const [,key]=def;
     if(key==='possession'){
-      const hp=countByTeam(list,home,'allpasses'),ap=countByTeam(list,away,'allpasses'),total=hp+ap;
+      const hp=countByTeam(list,home,'allpasses',home,away),ap=countByTeam(list,away,'allpasses',home,away),total=hp+ap;
       return total?[hp/total*100,ap/total*100]:[0,0];
     }
     if(key==='pass_accuracy'){
-      const ht=countByTeam(list,home,'allpasses'),at=countByTeam(list,away,'allpasses');
-      const hs=countByTeam(list,home,'successful'),as=countByTeam(list,away,'successful');
+      const ht=countByTeam(list,home,'allpasses',home,away),at=countByTeam(list,away,'allpasses',home,away);
+      const hs=countByTeam(list,home,'successful',home,away),as=countByTeam(list,away,'successful',home,away);
       return [ht?hs/ht*100:0,at?as/at*100:0];
     }
-    if(key==='fouled_custom')return [countByTeam(list,away,'fouls_custom'),countByTeam(list,home,'fouls_custom')];
+    if(key==='fouled_custom')return [countByTeam(list,away,'fouls_custom',home,away),countByTeam(list,home,'fouls_custom',home,away)];
     if(key==='saves_custom')return [list.filter(e=>teamName(e)===away&&isSavedShot(e)).length,list.filter(e=>teamName(e)===home&&isSavedShot(e)).length];
-    return [countByTeam(list,home,key),countByTeam(list,away,key)];
+    return [countByTeam(list,home,key,home,away),countByTeam(list,away,key,home,away)];
   }
   function render(){
     if(!statsView)return;
     if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length){$('matchStatsBody').innerHTML='<div class="match-stats-panel__empty">Loading match stats…</div>';return}
     const [home,away]=teams();const {list,lo,hi,max}=windowEvents();
-    const hg=countByTeam(list,home,'goals'),ag=countByTeam(list,away,'goals');
+    const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);
     const hc=crestFor(home),ac=crestFor(away);
     $('matchStatsScore').innerHTML=`<span class="match-stats-panel__team match-stats-panel__team--home">${home}${hc?`<img class="match-stats-panel__crest" src="${hc}" alt="${home} crest">`:''}</span><span class="match-stats-panel__scoreline"><b>${hg}</b><span class="match-stats-panel__dash">–</span><b>${ag}</b></span><span class="match-stats-panel__team match-stats-panel__team--away">${ac?`<img class="match-stats-panel__crest" src="${ac}" alt="${away} crest">`:''}${away}</span>`;
     $('matchStatsScope').innerHTML=`Both <i>|</i> <b>${lo<.5?'0:00':fmtSec(lo)} – ${hi>=max-.5?'FT':fmtSec(hi)}</b>`;
