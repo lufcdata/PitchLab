@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lufcdata UI Design System</title>
+  <link rel="stylesheet" href="./components.css" />
+</head>
+<body>
+  <main class="ui-shell">
+    <div class="ui-page">
+      <div class="ui-toolbar">
+        <button class="ui-button ui-button--active">Overview</button>
+        <button class="ui-button">Items</button>
+        <button class="ui-button">Leaders</button>
+        <select class="ui-select" aria-label="Category"><option>Category</option><option>Category A</option><option>Category B</option></select>
+        <button class="ui-button ui-button--primary">Primary Action</button>
+      </div>
+
+      <article class="ui-frame">
+        <header class="ui-header">
+          <div class="ui-identity-pair">
+            <div class="ui-identity">LOGO A</div>
+            <div class="ui-identity">LOGO B</div>
+          </div>
+          <div class="ui-kicker">UI Reference</div>
+          <h1 class="ui-title">lufcdata UI Design System</h1>
+          <div class="ui-meta">Category <span>|</span> Context <span>|</span> Presentation Only</div>
+        </header>
+
+        <section class="ui-section">
+          <h2 class="ui-section-title">Cards</h2>
+          <div class="ui-card-grid">
+            <div class="ui-card"><div class="ui-card__label">Metric Name</div><div class="ui-card__value">84</div><div class="ui-card__note">Supporting information</div></div>
+            <div class="ui-card"><div class="ui-card__label">Metric Name</div><div class="ui-card__value">67%</div><div class="ui-card__note">Supporting information</div></div>
+            <div class="ui-card"><div class="ui-card__label">Metric Name</div><div class="ui-card__value">12.4</div><div class="ui-card__note">Supporting information</div></div>
+          </div>
+        </section>
+
+        <section class="ui-section">
+          <h2 class="ui-section-title">Metric rows · progress · ranking</h2>
+          <div class="ui-list">
+            <div class="ui-row"><span class="ui-row__label">Item Name</span><strong class="ui-row__value">24</strong><div class="ui-progress"><span style="width:100%"></span></div><span class="ui-rank ui-rank--1">1st</span></div>
+            <div class="ui-row"><span class="ui-row__label">Item Name</span><strong class="ui-row__value">19</strong><div class="ui-progress"><span style="width:79%"></span></div><span class="ui-rank ui-rank--2">2nd</span></div>
+            <div class="ui-row"><span class="ui-row__label">Item Name</span><strong class="ui-row__value">15</strong><div class="ui-progress"><span style="width:63%"></span></div><span class="ui-rank ui-rank--3">3rd</span></div>
+            <div class="ui-row"><span class="ui-row__label">Item Name</span><strong class="ui-row__value">11</strong><div class="ui-progress"><span style="width:46%"></span></div><span class="ui-rank">4th</span></div>
+          </div>
+        </section>
+
+        <section class="ui-section">
+          <h2 class="ui-section-title">Portrait treatment</h2>
+          <div class="ui-identity ui-identity--portrait">PORTRAIT</div>
+          <div style="text-align:center"><strong>Item Name</strong><div class="ui-meta">Category <span>|</span> Secondary Detail</div></div>
+        </section>
+
+        <section class="ui-section">
+          <div class="ui-panel">
+            <div class="ui-panel__heading">Control Panel</div>
+            <div class="ui-divider"></div>
+            <div class="ui-toolbar" style="margin:0">
+              <button class="ui-button ui-button--active">Option A</button>
+              <button class="ui-button">Option B</button>
+              <button class="ui-button">Option C</button>
+            </div>
+          </div>
+        </section>
+
+        <footer class="ui-footer"><span class="ui-footer__brand">LUFCDATA UI</span><span class="ui-status">REFERENCE READY</span><span>DESIGN SYSTEM</span></footer>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

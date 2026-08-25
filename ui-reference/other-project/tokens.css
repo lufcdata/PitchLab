@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --ui-bg: #0d0e19;
+  --ui-surface: #171928;
+  --ui-surface-soft: rgba(255,255,255,.035);
+  --ui-surface-faint: rgba(255,255,255,.015);
+  --ui-text: #f7f8fc;
+  --ui-text-soft: #b8bbc8;
+  --ui-text-muted: #777c91;
+  --ui-text-dim: #575c72;
+  --ui-accent: #48f0ca;
+  --ui-accent-soft: rgba(72,240,202,.12);
+  --ui-success: #61c995;
+  --ui-border: rgba(255,255,255,.08);
+  --ui-border-strong: rgba(255,255,255,.12);
+  --ui-track: rgba(255,255,255,.055);
+  --ui-rank-1: #c9b037;
+  --ui-rank-2: #d7d7d7;
+  --ui-rank-3: #ad8a56;
+  --ui-rank-other: #363848;
+
+  --ui-font: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ui-radius-xs: 4px;
+  --ui-radius-sm: 6px;
+  --ui-radius-md: 9px;
+  --ui-radius-lg: 14px;
+  --ui-radius-round: 999px;
+
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-space-10: 40px;
+  --ui-space-12: 48px;
+  --ui-space-16: 64px;
+
+  --ui-shadow-frame: 0 30px 100px rgba(0,0,0,.4), 0 0 0 8px rgba(255,255,255,.015);
+  --ui-shadow-panel: 0 20px 70px rgba(0,0,0,.18);
+  --ui-transition: 180ms ease;
+  --ui-content-max: 1080px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--ui-bg); }
+body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--ui-font); color: var(--ui-text); background: var(--ui-bg); }
+button, select, input { font: inherit; }
+
+@media (max-width: 760px) {
+  :root { --ui-space-16: 32px; --ui-space-12: 32px; }
+}
