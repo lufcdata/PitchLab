@@ -2,9 +2,10 @@
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const eventType=e=>String(dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
   const outcome=e=>String(dn(e?.outcomeType)||'').toLowerCase();
-  const sec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
   const finite=v=>Number.isFinite(Number(v));
   const period=e=>String(dn(e?.period)||'');
+  const hasSecond=e=>e?.second!==undefined&&e?.second!==null&&e?.second!=='';
+  const sec=e=>Number(e?.minute||0)*60+(hasSecond(e)?Number(e.second):0);
   const endPoint=e=>finite(e?.endX)&&finite(e?.endY)?[Number(e.endX),Number(e.endY)]:[Number(e?.x),Number(e?.y)];
   const distM=(x1,y1,x2,y2)=>Math.hypot((Number(x2)-Number(x1))*1.05,(Number(y2)-Number(y1))*0.68);
   const forwardM=(x1,x2)=>(Number(x2)-Number(x1))*1.05;
@@ -16,72 +17,175 @@
   const CARRY_COLOUR='#3BEAED';
   const CARRY_DASH='2.4 2.4';
 
-  const ignoredTypes=new Set(['offsidegiven','cornerawarded','card','start','end','formationchange','substitutionoff','substitutionon']);
-  const softOpponentEvents=new Set(['challenge','takeon','aerial']);
-  const controlledOpponentEvents=new Set(['pass','ballrecovery','interception','tackle','takeon','balltouch','aerial','clearance','save','keeperpickup','keepersweeper']);
+  const adminTypes=new Set(['card','start','end','formationchange','substitutionoff','substitutionon']);
+  const hardStops=new Set(['offsidegiven','cornerawarded']);
+  const explicitOrigins=new Set(['ballrecovery','interception','blockedpass']);
+  const possessionWins=new Set(['ballrecovery','interception','save','keeperpickup','keepersweeper']);
+  const controlledActions=new Set(['pass','takeon','tackle','ballrecovery','interception','blockedpass','clearance','save','keeperpickup','keepersweeper','goal','missedshots','savedshot','shotonpost']);
+  const looseTypes=new Set(['aerial','challenge']);
+  const endpointRejected=new Set(['aerial','challenge','cornerawarded','offsidegiven','foul']);
+  const endpointAllowedAlways=new Set(['pass','takeon','tackle','ballrecovery','interception','blockedpass','clearance','goal','missedshots','savedshot','shotonpost']);
 
+  function sortKey(e){
+    const p=Number(e?.period?.value??e?.period??0);
+    const m=Number(e?.minute||0);
+    const s=hasSecond(e)?Number(e.second):Number.POSITIVE_INFINITY;
+    return [p,m,s,Number(e?.eventId)||0];
+  }
   function sorted(source){
-    return [...(Array.isArray(source)?source:[])].sort((a,b)=>sec(a)-sec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
+    return [...(Array.isArray(source)?source:[])].sort((a,b)=>{
+      const A=sortKey(a),B=sortKey(b);
+      for(let i=0;i<A.length;i++){if(A[i]!==B[i])return A[i]-B[i]}
+      return 0;
+    });
   }
-
   function usable(e){
-    return !!e?.playerId&&finite(e.x)&&finite(e.y)&&!ignoredTypes.has(eventType(e));
+    return !!e?.playerId&&finite(e.x)&&finite(e.y)&&!adminTypes.has(eventType(e));
   }
-
-  function breaksControl(e,teamId){
-    if(!usable(e)||e.teamId===teamId)return false;
+  function successful(e){return outcome(e)!=='unsuccessful'}
+  function isSuccessfulPass(e){return eventType(e)==='pass'&&successful(e)&&finite(e?.endX)&&finite(e?.endY)}
+  function isExplicitOrigin(e){
     const t=eventType(e);
-    if(softOpponentEvents.has(t)&&outcome(e)==='unsuccessful')return false;
-    return controlledOpponentEvents.has(t)&&outcome(e)!=='unsuccessful';
+    if(explicitOrigins.has(t))return successful(e);
+    if(t==='tackle')return successful(e);
+    if(t==='takeon')return successful(e);
+    return false;
+  }
+  function isControlledTeamAction(e){
+    if(!usable(e))return false;
+    const t=eventType(e);
+    if(t==='balltouch')return false;
+    if(looseTypes.has(t))return false;
+    if(t==='tackle')return successful(e);
+    if(t==='takeon')return successful(e);
+    if(possessionWins.has(t))return successful(e);
+    return controlledActions.has(t)&&successful(e);
+  }
+  function validEndpoint(e){
+    if(!usable(e))return false;
+    const t=eventType(e);
+    if(endpointRejected.has(t)||hardStops.has(t))return false;
+    if(t==='balltouch')return outcome(e)==='unsuccessful';
+    return endpointAllowedAlways.has(t)||isControlledTeamAction(e);
+  }
+  function samePeriod(a,b){return period(a)===period(b)}
+  function exactGap(a,b){
+    if(!samePeriod(a,b)||!hasSecond(a)||!hasSecond(b))return null;
+    return sec(b)-sec(a);
+  }
+  function eventGapAcceptable(a,b){
+    const g=exactGap(a,b);
+    return g!==null&&g>=0&&g<MAX_GAP_S;
+  }
+  function isHardStopBetween(e,start,end){
+    const t=eventType(e);
+    if(!hardStops.has(t))return false;
+    if(!hasSecond(e)&&Number(e?.minute)===Number(start?.minute)&&Number(e?.minute)===Number(end?.minute))return false;
+    return true;
+  }
+  function opponentEstablishesControl(e,teamId){
+    if(!usable(e)||String(e.teamId)===String(teamId))return false;
+    const t=eventType(e);
+    if(looseTypes.has(t))return false;
+    if(t==='balltouch')return false;
+    if(t==='takeon'||t==='tackle')return successful(e);
+    if(t==='pass'||t==='ballrecovery'||t==='interception'||t==='save'||t==='keeperpickup'||t==='keepersweeper'||t==='clearance')return successful(e);
+    return false;
+  }
+  function teammateSupersedes(e,teamId,playerId){
+    if(!usable(e)||String(e.teamId)!==String(teamId)||String(e.playerId)===String(playerId))return false;
+    return isControlledTeamAction(e);
+  }
+  function continuityOK(ordered,j,i,teamId,playerId){
+    const start=ordered[j],end=ordered[i];
+    for(let k=j+1;k<i;k++){
+      const e=ordered[k];
+      if(isHardStopBetween(e,start,end))return false;
+      if(opponentEstablishesControl(e,teamId))return false;
+      if(teammateSupersedes(e,teamId,playerId))return false;
+    }
+    return true;
   }
 
-  // PROVISIONAL CARRY RECONSTRUCTION UNDER FORENSIC VALIDATION.
-  // The Forest and Bournemouth control sets have reopened this family; do not treat this
-  // reconstruction as Golden until the start/end ownership model matches both fixtures.
+  function receptionOrigin(ordered,i){
+    const end=ordered[i];
+    const teamId=end.teamId,playerId=end.playerId;
+    for(let j=i-1;j>=0;j--){
+      const prev=ordered[j];
+      if(!samePeriod(prev,end))break;
+      if(hasSecond(prev)&&hasSecond(end)&&sec(end)-sec(prev)>=MAX_GAP_S)break;
+      if(isHardStopBetween(prev,prev,end))continue;
+      if(isSuccessfulPass(prev)&&String(prev.teamId)===String(teamId)){
+        if(String(prev.playerId)===String(playerId))continue;
+        for(let k=j+1;k<i;k++){
+          const mid=ordered[k];
+          if(isHardStopBetween(mid,prev,end)||opponentEstablishesControl(mid,teamId))return null;
+          if(usable(mid)&&String(mid.teamId)===String(teamId)&&String(mid.playerId)!==String(prev.playerId)){
+            return String(mid.playerId)===String(playerId)&&k===i?prev:null;
+          }
+        }
+        return prev;
+      }
+      if(opponentEstablishesControl(prev,teamId))break;
+    }
+    return null;
+  }
+
+  function explicitOrigin(ordered,i){
+    const end=ordered[i],teamId=end.teamId,playerId=end.playerId;
+    for(let j=i-1;j>=0;j--){
+      const prev=ordered[j];
+      if(!samePeriod(prev,end))break;
+      const g=exactGap(prev,end);
+      if(g!==null&&g>=MAX_GAP_S)break;
+      if(String(prev.teamId)!==String(teamId)||String(prev.playerId)!==String(playerId))continue;
+      if(!isExplicitOrigin(prev))continue;
+      if(!eventGapAcceptable(prev,end))continue;
+      if(!continuityOK(ordered,j,i,teamId,playerId))continue;
+      return prev;
+    }
+    return null;
+  }
+
+  function makeCarry(start,end,kind){
+    const [sx,sy]=kind==='reception'?endPoint(start):[Number(start.x),Number(start.y)];
+    const ex=Number(end.x),ey=Number(end.y);
+    if(![sx,sy,ex,ey].every(finite))return null;
+    const metres=distM(sx,sy,ex,ey);
+    if(metres<MIN_CARRY_M||metres>MAX_CARRY_M)return null;
+    const fwd=forwardM(sx,ex);
+    return {
+      playerId:end.playerId,teamId:end.teamId,
+      minute:Number(end.minute||0),second:hasSecond(end)?Number(end.second):0,period:end.period,
+      startX:sx,startY:sy,endX:ex,endY:ey,
+      distanceM:metres,forwardM:fwd,progressive:fwd>PROGRESSIVE_FORWARD_M,
+      startEventId:start.eventId??null,endEventId:end.eventId??null,
+      originKind:kind
+    };
+  }
+
   function reconstruct(source){
     const ordered=sorted(source).filter(e=>finite(e.x)&&finite(e.y));
-    const carries=[];
-    const seen=new Set();
-
-    for(let i=1;i<ordered.length;i++){
-      const next=ordered[i];
-      if(!usable(next))continue;
-      const teamId=next.teamId,playerId=next.playerId;
-
-      for(let j=i-1;j>=0;j--){
-        const prev=ordered[j];
-        const gap=sec(next)-sec(prev);
-        if(gap>MAX_GAP_S)break;
-        if(gap<0||period(prev)!==period(next))continue;
-        if(eventType(prev)==='offsidegiven')continue;
-
-        let broken=false;
-        for(let k=j+1;k<i;k++){
-          if(breaksControl(ordered[k],teamId)){broken=true;break}
+    const carries=[],seen=new Set();
+    for(let i=0;i<ordered.length;i++){
+      const end=ordered[i];
+      if(!validEndpoint(end))continue;
+      let start=explicitOrigin(ordered,i),kind='acquisition';
+      if(!start){
+        start=receptionOrigin(ordered,i);
+        kind='reception';
+        if(start&&!eventGapAcceptable(start,end))start=null;
+        if(start){
+          const j=ordered.indexOf(start);
+          if(!continuityOK(ordered,j,i,end.teamId,end.playerId))start=null;
         }
-        if(broken)continue;
-        if(prev.teamId!==teamId)continue;
-
-        const [sx,sy]=endPoint(prev);
-        if(!finite(sx)||!finite(sy))continue;
-        const ex=Number(next.x),ey=Number(next.y);
-        const metres=distM(sx,sy,ex,ey);
-        if(metres<MIN_CARRY_M||metres>MAX_CARRY_M)continue;
-
-        const key=`${playerId}:${prev.eventId??j}:${next.eventId??i}`;
-        if(seen.has(key))break;
-        seen.add(key);
-        carries.push({
-          playerId,teamId,
-          minute:Number(next.minute||0),second:Number(next.second||0),period:next.period,
-          startX:sx,startY:sy,endX:ex,endY:ey,
-          distanceM:metres,
-          forwardM:forwardM(sx,ex),
-          progressive:forwardM(sx,ex)>=PROGRESSIVE_FORWARD_M,
-          startEventId:prev.eventId??null,endEventId:next.eventId??null
-        });
-        break;
       }
+      if(!start)continue;
+      const c=makeCarry(start,end,kind);
+      if(!c)continue;
+      const key=`${c.playerId}:${c.startEventId}:${c.endEventId}`;
+      if(seen.has(key))continue;
+      seen.add(key);carries.push(c);
     }
     return carries;
   }
@@ -106,10 +210,8 @@
     const carries=reconstruct(source);
     return summary(carries,c=>String(c.teamId)===String(teamId));
   }
-
   function playerSummaries(source){
-    const carries=reconstruct(source);
-    const map=new Map();
+    const carries=reconstruct(source),map=new Map();
     for(const c of carries){
       if(!map.has(String(c.playerId)))map.set(String(c.playerId),[]);
       map.get(String(c.playerId)).push(c);
@@ -132,13 +234,13 @@
   const metricDisplay=(value,key)=>metricMap[key]?.decimals?Number(value||0).toFixed(metricMap[key].decimals):String(Math.round(Number(value||0)));
 
   window.PitchLabCarry={
-    version:'provisional-forest-bournemouth-audit-2026-08-26',
+    version:'carry-engine-v4-2026-08-26',
     constants:{MIN_CARRY_M,MAX_CARRY_M,MAX_GAP_S,PROGRESSIVE_FORWARD_M,CARRY_COLOUR,CARRY_DASH},
     reconstruct,summary,teamSummary,playerSummaries,distM,forwardM,
     metricMap,isCarryMetric,metricValue,metricDisplay,
     validationStatus:{
-      state:'REOPENED',
-      note:'Forest and Bournemouth player controls are being used to validate the carry start/end ownership model.'
+      state:'V4_SHIPPED',
+      note:'Carry Engine v4: possession-epoch, reception ownership, explicit acquisition, retained TakeOn, BallTouch and signed progression rules.'
     }
   };
 
@@ -161,7 +263,6 @@
     if(!isCarryMetric(metricEl.value)){baseRender();return}
     baseRender();
     if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
-
     const maxMin=Math.max(90,...events.map(e=>Number(e.minute||0)));
     let a=Number(document.getElementById('fromRange')?.value||0),b=Number(document.getElementById('toRange')?.value||100);
     if(b<=a)b=Math.min(100,a+1);
@@ -187,14 +288,14 @@
         drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},CARRY_COLOUR,'url(#carryArrow)');
         const added=[...root.children].slice(before);
         const line=added.find(el=>el.tagName?.toLowerCase()==='line');
-        if(line){line.setAttribute('stroke',CARRY_COLOUR);line.setAttribute('stroke-dasharray',CARRY_DASH);line.setAttribute('stroke-linecap','round');}
+        if(line){line.setAttribute('stroke',CARRY_COLOUR);line.setAttribute('stroke-dasharray',CARRY_DASH);line.setAttribute('stroke-linecap','round')}
         const circle=added.find(el=>el.tagName?.toLowerCase()==='circle');
         if(circle)circle.setAttribute('fill',CARRY_COLOUR);
       }
     }
     const count=document.getElementById('eventCount');if(count)count.textContent=String(carries.length);
     const legend=document.getElementById('plotLegend');if(legend)legend.innerHTML=`<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:${CARRY_COLOUR};background:repeating-linear-gradient(90deg,${CARRY_COLOUR} 0 4px,transparent 4px 7px)"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:${CARRY_COLOUR}"></i>Carry start</span>`;
-    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} provisional carry trajectories · reconstruction currently under Forest/Bournemouth validation.`;
+    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} Carry Engine v4 trajectories · 5m minimum · 105m × 68m pitch · signed progression.`;
   }
   render=carryRender;
   [metricEl,document.getElementById('team'),document.getElementById('player'),document.getElementById('fromRange'),document.getElementById('toRange')].filter(Boolean).forEach(el=>{
