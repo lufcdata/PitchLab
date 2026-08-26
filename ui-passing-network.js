@@ -17,12 +17,19 @@
   const layer=document.createElement('div');
   layer.id='passingNetworkLayer';
   layer.className='passing-network-layer';
-  layer.innerHTML='<svg class="passing-network__links" aria-hidden="true"></svg><div class="passing-network__nodes"></div><div class="passing-network__legend"><span><i class="passing-network__legend-line passing-network__legend-line--thin"></i>fewer passes</span><span><i class="passing-network__legend-line passing-network__legend-line--thick"></i>more passes</span><span><i class="passing-network__legend-node passing-network__legend-node--small"></i>lower involvement</span><span><i class="passing-network__legend-node passing-network__legend-node--large"></i>higher involvement</span></div>';
+  layer.innerHTML='<svg class="passing-network__links" aria-hidden="true"></svg><div class="passing-network__nodes"></div><div class="passing-network__legend"><button type="button" class="passing-network__legend-toggle" aria-expanded="true">Legend</button><div class="passing-network__legend-content"><span><i class="passing-network__legend-line passing-network__legend-line--thin"></i>fewer passes</span><span><i class="passing-network__legend-line passing-network__legend-line--thick"></i>more passes</span><span><i class="passing-network__legend-node passing-network__legend-node--small"></i>lower involvement</span><span><i class="passing-network__legend-node passing-network__legend-node--large"></i>higher involvement</span></div></div>';
   stage.appendChild(layer);
 
   const svg=layer.querySelector('.passing-network__links');
   const nodes=layer.querySelector('.passing-network__nodes');
+  const legend=layer.querySelector('.passing-network__legend');
+  const legendToggle=layer.querySelector('.passing-network__legend-toggle');
   let active=false;
+
+  legendToggle.addEventListener('click',()=>{
+    const collapsed=legend.classList.toggle('is-collapsed');
+    legendToggle.setAttribute('aria-expanded',String(!collapsed));
+  });
 
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const typeOf=e=>String(typeof type==='function'?type(e):dn(e?.type)||'');
@@ -86,6 +93,10 @@
     const meta=playerMeta();
     const {all,located}=windowData();
     const selectedTeam=teamEl.value;
+    const home=typeof raw!=='undefined'?(raw.home?.name||''):'';
+    const away=typeof raw!=='undefined'?(raw.away?.name||''):'';
+    const selectedColour=selectedTeam!=='Both'&&selectedTeam===away?'var(--away-team-colour,#5d79d8)':'var(--home-team-colour,#4ef0ce)';
+    layer.style.setProperty('--network-team-colour',selectedColour);
     const filteredLocated=selectedTeam==='Both'?located:located.filter(e=>teamNameOf(e)===selectedTeam);
     const pos=new Map();
     for(const e of filteredLocated){
@@ -115,13 +126,13 @@
     const pairRows=[...pairs.entries()].map(([key,total])=>({key,total,ids:key.split('|')})).filter(p=>points.has(p.ids[0])&&points.has(p.ids[1]));
     const maxPair=Math.max(1,...pairRows.map(p=>p.total));
     const maxInv=Math.max(1,...rows.map(r=>involvement.get(r.id)||0));
-    const home=typeof raw!=='undefined'?(raw.home?.name||''):'';
     svg.setAttribute('viewBox','0 0 100 100');
     svg.setAttribute('preserveAspectRatio','none');
     svg.innerHTML=pairRows.map(p=>{
       const A=points.get(p.ids[0]),B=points.get(p.ids[1]);
-      const width=(0.35+3.15*Math.pow(p.total/maxPair,.72)).toFixed(2);
-      const opacity=(0.24+0.68*Math.pow(p.total/maxPair,.62)).toFixed(2);
+      const ratio=p.total/maxPair;
+      const width=(0.45+7.55*Math.pow(ratio,1.18)).toFixed(2);
+      const opacity=(0.20+0.78*Math.pow(ratio,.78)).toFixed(2);
       const team=A.row.team;
       const cls=home&&team!==home?' passing-network__link--away':' passing-network__link--home';
       return `<line class="passing-network__link${cls}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" style="stroke-width:${width};opacity:${opacity}"><title>${esc(A.row.name)} ↔ ${esc(B.row.name)}: ${p.total} passes</title></line>`;
@@ -129,9 +140,9 @@
     nodes.innerHTML=rows.map(r=>{
       const p=points.get(r.id),inv=involvement.get(r.id)||0;
       const size=26+22*Math.sqrt(inv/maxInv);
-      const away=home&&r.team!==home;
+      const awayNode=home&&r.team!==home;
       const selected=playerEl&&playerEl.value!=='all'&&String(playerEl.value)===r.id;
-      return `<div class="passing-network__player${away?' passing-network__player--away':''}${selected?' is-selected':''}" style="left:${p.x}%;top:${p.y}%;--network-node-size:${size.toFixed(1)}px" title="${esc(r.name)} · ${inv} pass involvements"><div class="passing-network__circle">${esc(r.number||'•')}</div><div class="passing-network__name">${esc(surname(r.name))}</div><div class="passing-network__involvement">${inv}</div></div>`;
+      return `<div class="passing-network__player${awayNode?' passing-network__player--away':''}${selected?' is-selected':''}" style="left:${p.x}%;top:${p.y}%;--network-node-size:${size.toFixed(1)}px" title="${esc(r.name)} · ${inv} pass involvements"><div class="passing-network__circle">${esc(r.number||'•')}</div><div class="passing-network__name">${esc(surname(r.name))}</div><div class="passing-network__involvement">${inv}</div></div>`;
     }).join('');
   }
 
