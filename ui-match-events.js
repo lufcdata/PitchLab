@@ -16,7 +16,7 @@
       <div id="matchEventsCount" class="match-events-panel__count"></div>
     </div>
     <div class="match-events-panel__columns" aria-hidden="true">
-      <span>Club</span><span>Event</span><span>Event</span><span>Time</span><span>Player</span>
+      <span>Club</span><span>Event</span><span>Time</span><span>Player</span>
     </div>
     <div id="matchEventsList" class="match-events-panel__list"><div class="match-events-panel__empty">Loading match events…</div></div>`;
 
@@ -29,7 +29,7 @@
   const periodOf=e=>String(dn(e?.period)||'');
   const teamNameOf=e=>typeof teamName==='function'?teamName(e):(typeof teamIds!=='undefined'?teamIds[e?.teamId]||'':'');
   const evtSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
-  const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   const qNames=e=>(e?.qualifiers||[]).map(q=>String(dn(q?.type)||'')).filter(Boolean);
   const qHas=(e,needle)=>qNames(e).some(q=>q.toLowerCase().includes(String(needle).toLowerCase()));
 
@@ -93,10 +93,9 @@
   function buildRows(){
     if(typeof events==='undefined'||!Array.isArray(events))return [];
     const all=events;
-    const rows=[];
-    const subSeen=new Set();
+    const rows=[{kind:'kickoff',team:'',time:0,timeText:'0:00',event:'Kick-Off',player:'—'}];
     all.forEach((e,idx)=>{
-      const t=typeOf(e),sec=evtSec(e),team=teamNameOf(e);
+      const sec=evtSec(e),team=teamNameOf(e);
       if(isGoal(e)){
         const scorer=playerName(e.playerId)||'Unknown player';
         const assist=assistFor(e,idx,all);
@@ -104,21 +103,13 @@
         return;
       }
       if(isRed(e)){
-        rows.push({kind:'red',team,time:sec,timeText:timeLabel(e),event:'Red Card',player:playerName(e.playerId)||'Unknown player'});return;
+        rows.push({kind:'red',team,time:sec,timeText:timeLabel(e),event:'🟥 Red Card',player:playerName(e.playerId)||'Unknown player'});return;
       }
-      if(isSubOff(e)||isSubOn(e)){
-        const relatedId=e?.relatedPlayerId;
-        const pairKey=[String(e.teamId||team),e.minute||0,e.second||0,String(e?.eventId||''),String(e?.relatedEventId||'')].sort().join('|');
-        const stableKey=`${e.teamId||team}|${e.minute||0}|${e.second||0}|${Math.min(Number(e?.eventId)||0,Number(e?.relatedEventId)||0)}|${Math.max(Number(e?.eventId)||0,Number(e?.relatedEventId)||0)}`;
-        if(subSeen.has(stableKey))return;subSeen.add(stableKey);
-        let onId=isSubOn(e)?e.playerId:relatedId,offId=isSubOff(e)?e.playerId:relatedId;
-        if(!onId||!offId){
-          const mate=all.find(x=>x!==e&&x.teamId===e.teamId&&Number(x.minute)===Number(e.minute)&&Number(x.second)===Number(e.second)&&((isSubOn(e)&&isSubOff(x))||(isSubOff(e)&&isSubOn(x)))&&(String(x.relatedEventId)===String(e.eventId)||String(x.eventId)===String(e.relatedEventId)));
-          if(mate){if(isSubOn(mate))onId=mate.playerId;if(isSubOff(mate))offId=mate.playerId;}
-        }
-        const onName=playerName(onId),offName=playerName(offId);
-        const player=[onName?`ON ${onName}`:'',offName?`OFF ${offName}`:''].filter(Boolean).join(' · ')||playerName(e.playerId)||'Substitution';
-        rows.push({kind:'sub',team,time:sec,timeText:timeLabel(e),event:'Substitution',player});return;
+      if(isSubOff(e)){
+        rows.push({kind:'sub-off',team,time:sec,timeText:timeLabel(e),event:'← Substitution (OFF)',player:playerName(e.playerId)||'Unknown player'});return;
+      }
+      if(isSubOn(e)){
+        rows.push({kind:'sub-on',team,time:sec,timeText:timeLabel(e),event:'Substitution (ON) →',player:playerName(e.playerId)||'Unknown player'});return;
       }
       if(isEnd(e)){
         const p=periodOf(e).toLowerCase();
@@ -128,14 +119,8 @@
     });
     const dedupe=new Map();
     for(const r of rows){const k=`${r.kind}|${r.team}|${r.time}|${r.player}`;if(!dedupe.has(k))dedupe.set(k,r);}
-    return [...dedupe.values()].sort((a,b)=>a.time-b.time||({half:0,goal:1,red:2,sub:3,full:4}[a.kind]-({half:0,goal:1,red:2,sub:3,full:4}[b.kind])));
-  }
-
-  const iconFallback={goal:'⚽',sub:'↕',red:'■',half:'HT',full:'FT'};
-  function eventIcon(kind){
-    const map=window.PitchLabEventIcons||{};
-    const src=map[kind];
-    return src?`<img class="match-event__event-img" src="${esc(src)}" alt="">`:`<span class="match-event__event-fallback match-event__event-fallback--${kind}">${iconFallback[kind]||'•'}</span>`;
+    const order={kickoff:0,half:1,goal:2,red:3,'sub-off':4,'sub-on':5,full:6};
+    return [...dedupe.values()].sort((a,b)=>a.time-b.time||(order[a.kind]-order[b.kind]));
   }
 
   function clubIcon(team){
@@ -152,7 +137,6 @@
     count.textContent=`${rows.length} event${rows.length===1?'':'s'}`;
     list.innerHTML=rows.length?rows.map(r=>`<div class="match-event-row match-event-row--${r.kind}">
       <div class="match-event__club-cell">${clubIcon(r.team)}</div>
-      <div class="match-event__icon-cell">${eventIcon(r.kind)}</div>
       <div class="match-event__event">${esc(r.event)}</div>
       <time class="match-event__time">${esc(r.timeText)}</time>
       <div class="match-event__player">${esc(r.player)}</div>
