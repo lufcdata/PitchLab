@@ -1,0 +1,8 @@
+.pitch-view-heading-row{justify-content:flex-end}
+.pitch-view-toggle{gap:6px}
+#pitchMapViewButton,#matchStatsViewButton,#positionsViewButton{display:inline-flex;align-items:center;justify-content:center}
+#pitchMapViewButton.is-active,#matchStatsViewButton.is-active,#positionsViewButton.is-active{background:var(--mint);color:#10151b;border-color:rgba(78,240,206,.58);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 4px 14px rgba(78,240,206,.09)}
+.match-stats-row{min-height:31px}
+.match-stats-row__label{font-size:9px;line-height:1.08}
+.match-stats-row__value{font-size:11px}
+@media(max-width:620px){.match-stats-row__label{font-size:8px}.match-stats-row__value{font-size:10px}}
