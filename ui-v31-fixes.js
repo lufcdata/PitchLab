@@ -37,6 +37,8 @@
   function patchBrandAndSubtitle(){
     const brandSub=document.querySelector('.brand span');
     if(brandSub)brandSub.textContent='lufcdata lab analysis';
+    const pageTitle=document.querySelector('.page-head h1');
+    if(pageTitle)pageTitle.textContent='Match Analysis';
     const sub=document.querySelector('.page-head .sub');
     if(sub&&sub.textContent.includes('Locked Metric Bible definitions'))sub.remove();
   }
