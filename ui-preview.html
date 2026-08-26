@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-32" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-33" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,34 +15,34 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
-  addCss('ui-integration.css?v=metrics-32','uiIntegration');
-  addCss('ui-leaders.css?v=metrics-32','uiLeaders');
-  addCss('ui-timings.css?v=metrics-32','uiTimings');
-  addCss('ui-arrow-style.css?v=metrics-32','uiArrowStyle');
-  addCss('ui-period.css?v=metrics-32','uiPeriod');
-  addCss('ui-match-stats.css?v=metrics-32','uiMatchStats');
-  addCss('ui-pass-combinations.css?v=metrics-32','uiPassCombinations');
-  addCss('ui-positions.css?v=metrics-32','uiPositions');
-  addCss('ui-passing-network.css?v=metrics-32','uiPassingNetwork');
-  addCss('ui-team-colours.css?v=metrics-32','uiTeamColours');
-  addCss('ui-polish.css?v=metrics-32','uiPolish');
-  addCss('ui-v31-fixes.css?v=metrics-32','uiV31Fixes');
-  addJs('ui-header.js?v=metrics-32','uiIntegration');
-  addJs('ui-carry-metrics.js?v=metrics-32','uiCarryMetrics');
-  addJs('ui-leaders.js?v=metrics-32','uiLeaders');
-  addJs('ui-timings.js?v=metrics-32','uiTimings');
-  addJs('ui-extra-metrics.js?v=metrics-32','uiExtraMetrics');
-  addJs('ui-period.js?v=metrics-32','uiPeriod');
-  addJs('ui-touch-metrics-fix.js?v=metrics-32','uiTouchMetricsFix');
-  addJs('ui-forest-touch-map.js?v=metrics-32','uiForestTouchMap');
-  addJs('ui-match-stats.js?v=metrics-32','uiMatchStats');
-  addJs('ui-pass-combinations.js?v=metrics-32','uiPassCombinations');
-  addJs('ui-positions.js?v=metrics-32','uiPositions');
-  addJs('ui-passing-network.js?v=metrics-32','uiPassingNetwork');
-  addJs('ui-team-colours.js?v=metrics-32','uiTeamColours');
-  addJs('ui-polish.js?v=metrics-32','uiPolish');
-  addJs('ui-match-switcher.js?v=metrics-32','uiMatchSwitcher');
-  addJs('ui-v31-fixes.js?v=metrics-32','uiV31Fixes');
+  addCss('ui-integration.css?v=metrics-33','uiIntegration');
+  addCss('ui-leaders.css?v=metrics-33','uiLeaders');
+  addCss('ui-timings.css?v=metrics-33','uiTimings');
+  addCss('ui-arrow-style.css?v=metrics-33','uiArrowStyle');
+  addCss('ui-period.css?v=metrics-33','uiPeriod');
+  addCss('ui-match-stats.css?v=metrics-33','uiMatchStats');
+  addCss('ui-pass-combinations.css?v=metrics-33','uiPassCombinations');
+  addCss('ui-positions.css?v=metrics-33','uiPositions');
+  addCss('ui-passing-network.css?v=metrics-33','uiPassingNetwork');
+  addCss('ui-team-colours.css?v=metrics-33','uiTeamColours');
+  addCss('ui-polish.css?v=metrics-33','uiPolish');
+  addCss('ui-v31-fixes.css?v=metrics-33','uiV31Fixes');
+  addJs('ui-header.js?v=metrics-33','uiIntegration');
+  addJs('ui-carry-metrics.js?v=metrics-33','uiCarryMetrics');
+  addJs('ui-leaders.js?v=metrics-33','uiLeaders');
+  addJs('ui-timings.js?v=metrics-33','uiTimings');
+  addJs('ui-extra-metrics.js?v=metrics-33','uiExtraMetrics');
+  addJs('ui-period.js?v=metrics-33','uiPeriod');
+  addJs('ui-touch-metrics-fix.js?v=metrics-33','uiTouchMetricsFix');
+  addJs('ui-forest-touch-map.js?v=metrics-33','uiForestTouchMap');
+  addJs('ui-match-stats.js?v=metrics-33','uiMatchStats');
+  addJs('ui-pass-combinations.js?v=metrics-33','uiPassCombinations');
+  addJs('ui-positions.js?v=metrics-33','uiPositions');
+  addJs('ui-passing-network.js?v=metrics-33','uiPassingNetwork');
+  addJs('ui-team-colours.js?v=metrics-33','uiTeamColours');
+  addJs('ui-polish.js?v=metrics-33','uiPolish');
+  addJs('ui-match-switcher.js?v=metrics-33','uiMatchSwitcher');
+  addJs('ui-v31-fixes.js?v=metrics-33','uiV31Fixes');
 });
 </script>
 </body>
