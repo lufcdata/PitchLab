@@ -120,13 +120,75 @@
     return result;
   }
 
+  const metricMap={
+    carries_custom:{label:'Carries',field:'carries',decimals:0,progressiveOnly:false},
+    carrying_distance_custom:{label:'Carrying Distance (m)',field:'carryingDistanceM',decimals:1,progressiveOnly:false},
+    avg_carrying_distance_custom:{label:'Avg Carrying Distance (m)',field:'avgCarryingDistanceM',decimals:1,progressiveOnly:false},
+    progressive_carries_custom:{label:'Progressive Carries',field:'progressiveCarries',decimals:0,progressiveOnly:true},
+    progressive_carrying_distance_custom:{label:'Progressive Carrying Distance (m)',field:'progressiveCarryingDistanceM',decimals:1,progressiveOnly:false},
+    avg_progressive_carrying_distance_custom:{label:'Avg Progressive Carrying Distance (m)',field:'avgProgressiveCarryingDistanceM',decimals:1,progressiveOnly:true}
+  };
+  const isCarryMetric=key=>!!metricMap[key];
+  const metricValue=(s,key)=>Number(s?.[metricMap[key]?.field]||0);
+  const metricDisplay=(value,key)=>metricMap[key]?.decimals?Number(value||0).toFixed(metricMap[key].decimals):String(Math.round(Number(value||0)));
+
   window.PitchLabCarry={
     version:'golden-2026-08-26',
     constants:{MIN_CARRY_M,MAX_CARRY_M,MAX_GAP_S,PROGRESSIVE_FORWARD_M},
     reconstruct,summary,teamSummary,playerSummaries,distM,forwardM,
+    metricMap,isCarryMetric,metricValue,metricDisplay,
     goldenFixture:{
       matchId:1983552,
       note:'Nottingham Forest 0-1 Leeds player-level control set used to lock Carry Family definitions.'
     }
   };
+
+  // Pitch Events integration. Keep the core renderer untouched for every existing metric;
+  // only intercept the six Golden Carry Family selections.
+  const metricEl=document.getElementById('metric');
+  if(!metricEl||typeof render!=='function')return;
+  let carryGroup=[...metricEl.querySelectorAll('optgroup')].find(g=>g.label==='Carries');
+  if(!carryGroup){carryGroup=document.createElement('optgroup');carryGroup.label='Carries';metricEl.appendChild(carryGroup)}
+  Object.entries(metricMap).forEach(([value,meta])=>{
+    if(metricEl.querySelector(`option[value="${value}"]`))return;
+    const o=document.createElement('option');o.value=value;o.textContent=meta.label;carryGroup.appendChild(o);
+    if(typeof FILTERS!=='undefined')FILTERS[value]=()=>false;
+  });
+
+  const baseRender=render;
+  function teamNameForId(teamId,source){
+    const e=source.find(x=>String(x.teamId)===String(teamId));
+    return e&&typeof teamName==='function'?teamName(e):'';
+  }
+  function carryRender(){
+    if(!isCarryMetric(metricEl.value)){baseRender();return}
+    baseRender();
+    if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
+
+    const maxMin=Math.max(90,...events.map(e=>Number(e.minute||0)));
+    let a=Number(document.getElementById('fromRange')?.value||0),b=Number(document.getElementById('toRange')?.value||100);
+    if(b<=a)b=Math.min(100,a+1);
+    const lo=a/100*maxMin,hi=b/100*maxMin;
+    const windowEvents=events.filter(e=>Number(e.minute||0)>=lo&&Number(e.minute||0)<=hi);
+    let carries=reconstruct(windowEvents);
+    const teamEl=document.getElementById('team'),playerEl=document.getElementById('player');
+    if(teamEl&&teamEl.value!=='Both')carries=carries.filter(c=>teamNameForId(c.teamId,windowEvents)===teamEl.value);
+    if(playerEl&&playerEl.value!=='all')carries=carries.filter(c=>String(c.playerId)===String(playerEl.value));
+    if(metricMap[metricEl.value].progressiveOnly)carries=carries.filter(c=>c.progressive);
+
+    const root=document.getElementById('eventSvg');
+    if(root&&typeof drawAttackArrow==='function'){
+      for(const c of carries){
+        drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#43ede1','url(#eventArrow)');
+      }
+    }
+    const count=document.getElementById('eventCount');if(count)count.textContent=String(carries.length);
+    const legend=document.getElementById('plotLegend');if(legend)legend.innerHTML='<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:#43ede1"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#43ede1"></i>Carry start</span>';
+    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} Golden Carry Family trajectories · 5m minimum movement · calibrated to a 105m × 68m pitch.`;
+  }
+  render=carryRender;
+  [metricEl,document.getElementById('team'),document.getElementById('player'),document.getElementById('fromRange'),document.getElementById('toRange')].filter(Boolean).forEach(el=>{
+    el.addEventListener('input',()=>{if(isCarryMetric(metricEl.value))carryRender()});
+    el.addEventListener('change',()=>{if(isCarryMetric(metricEl.value))carryRender()});
+  });
 })();
