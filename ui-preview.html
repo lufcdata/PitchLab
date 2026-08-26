@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-35" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-36" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,36 +15,37 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
-  addCss('ui-integration.css?v=metrics-35','uiIntegration');
-  addCss('ui-leaders.css?v=metrics-35','uiLeaders');
-  addCss('ui-timings.css?v=metrics-35','uiTimings');
-  addCss('ui-arrow-style.css?v=metrics-35','uiArrowStyle');
-  addCss('ui-period.css?v=metrics-35','uiPeriod');
-  addCss('ui-match-stats.css?v=metrics-35','uiMatchStats');
-  addCss('ui-pass-combinations.css?v=metrics-35','uiPassCombinations');
-  addCss('ui-positions.css?v=metrics-35','uiPositions');
-  addCss('ui-passing-network.css?v=metrics-35','uiPassingNetwork');
-  addCss('ui-match-events.css?v=metrics-35','uiMatchEvents');
-  addCss('ui-team-colours.css?v=metrics-35','uiTeamColours');
-  addCss('ui-polish.css?v=metrics-35','uiPolish');
-  addCss('ui-v31-fixes.css?v=metrics-35','uiV31Fixes');
-  addJs('ui-header.js?v=metrics-35','uiIntegration');
-  addJs('ui-carry-metrics.js?v=metrics-35','uiCarryMetrics');
-  addJs('ui-leaders.js?v=metrics-35','uiLeaders');
-  addJs('ui-timings.js?v=metrics-35','uiTimings');
-  addJs('ui-extra-metrics.js?v=metrics-35','uiExtraMetrics');
-  addJs('ui-period.js?v=metrics-35','uiPeriod');
-  addJs('ui-touch-metrics-fix.js?v=metrics-35','uiTouchMetricsFix');
-  addJs('ui-forest-touch-map.js?v=metrics-35','uiForestTouchMap');
-  addJs('ui-match-stats.js?v=metrics-35','uiMatchStats');
-  addJs('ui-pass-combinations.js?v=metrics-35','uiPassCombinations');
-  addJs('ui-positions.js?v=metrics-35','uiPositions');
-  addJs('ui-passing-network.js?v=metrics-35','uiPassingNetwork');
-  addJs('ui-match-events.js?v=metrics-35','uiMatchEvents');
-  addJs('ui-team-colours.js?v=metrics-35','uiTeamColours');
-  addJs('ui-polish.js?v=metrics-35','uiPolish');
-  addJs('ui-match-switcher.js?v=metrics-35','uiMatchSwitcher');
-  addJs('ui-v31-fixes.js?v=metrics-35','uiV31Fixes');
+  addCss('ui-integration.css?v=metrics-36','uiIntegration');
+  addCss('ui-leaders.css?v=metrics-36','uiLeaders');
+  addCss('ui-timings.css?v=metrics-36','uiTimings');
+  addCss('ui-arrow-style.css?v=metrics-36','uiArrowStyle');
+  addCss('ui-period.css?v=metrics-36','uiPeriod');
+  addCss('ui-match-stats.css?v=metrics-36','uiMatchStats');
+  addCss('ui-pass-combinations.css?v=metrics-36','uiPassCombinations');
+  addCss('ui-positions.css?v=metrics-36','uiPositions');
+  addCss('ui-passing-network.css?v=metrics-36','uiPassingNetwork');
+  addCss('ui-match-events.css?v=metrics-36','uiMatchEvents');
+  addCss('ui-team-colours.css?v=metrics-36','uiTeamColours');
+  addCss('ui-polish.css?v=metrics-36','uiPolish');
+  addCss('ui-v31-fixes.css?v=metrics-36','uiV31Fixes');
+  addJs('ui-header.js?v=metrics-36','uiIntegration');
+  addJs('ui-carry-metrics.js?v=metrics-36','uiCarryMetrics');
+  addJs('ui-leaders.js?v=metrics-36','uiLeaders');
+  addJs('ui-timings.js?v=metrics-36','uiTimings');
+  addJs('ui-extra-metrics.js?v=metrics-36','uiExtraMetrics');
+  addJs('ui-period.js?v=metrics-36','uiPeriod');
+  addJs('ui-touch-metrics-fix.js?v=metrics-36','uiTouchMetricsFix');
+  addJs('ui-forest-touch-map.js?v=metrics-36','uiForestTouchMap');
+  addJs('ui-match-stats.js?v=metrics-36','uiMatchStats');
+  addJs('ui-pass-combinations.js?v=metrics-36','uiPassCombinations');
+  addJs('ui-positions.js?v=metrics-36','uiPositions');
+  addJs('ui-passing-network.js?v=metrics-36','uiPassingNetwork');
+  addJs('ui-match-events.js?v=metrics-36','uiMatchEvents');
+  addJs('ui-team-colours.js?v=metrics-36','uiTeamColours');
+  addJs('ui-polish.js?v=metrics-36','uiPolish');
+  addJs('ui-match-switcher.js?v=metrics-36','uiMatchSwitcher');
+  addJs('ui-v31-fixes.js?v=metrics-36','uiV31Fixes');
+  addJs('ui-view-tabs-fix.js?v=metrics-36','uiViewTabsFix');
 });
 </script>
 </body>
