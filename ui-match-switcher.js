@@ -4,7 +4,8 @@
   const FOREST_ID='1983552';
   const FOREST_PARTS=[
     './data/ws1983552_00.part','./data/ws1983552_01.part','./data/ws1983552_02.part',
-    './data/ws1983552_03.part','./data/ws1983552_04.part','./data/ws1983552_05.part',
+    './data/ws1983552_03.part','./data/ws1983552_04.part',
+    './data/ws1983552_05a.part','./data/ws1983552_05b.part',
     './data/ws1983552_06a.part','./data/ws1983552_06b.part',
     './data/ws1983552_07a.part','./data/ws1983552_07b.part',
     './data/ws1983552_08a.part','./data/ws1983552_08b.part'
