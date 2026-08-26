@@ -30,6 +30,23 @@
       <div class="metric-leaders__foot"><span>Players ranked high → low</span><span id="leadersTotal"></span></div>`;
     controls.appendChild(panel);
 
+    function carryRows(source,key){
+      if(!window.PitchLabCarry?.isCarryMetric?.(key))return null;
+      const summaries=window.PitchLabCarry.playerSummaries(source);
+      const rows=[];
+      for(const [id,s] of summaries){
+        const teamEvent=source.find(e=>String(e.teamId)===String(s.teamId));
+        const team=teamEvent&&typeof teamName==='function'?teamName(teamEvent):'';
+        if(teamEl.value!=='Both'&&team!==teamEl.value)continue;
+        const value=window.PitchLabCarry.metricValue(s,key);
+        const progressiveMetric=['progressive_carries_custom','avg_progressive_carrying_distance_custom'].includes(key);
+        if(progressiveMetric&&Number(s.progressiveCarries||0)<=0)continue;
+        if(!progressiveMetric&&key!=='progressive_carrying_distance_custom'&&Number(s.carries||0)<=0)continue;
+        rows.push({id,name:(players[id]||{}).name||`Player ${id}`,team,value,display:window.PitchLabCarry.metricDisplay(value,key)});
+      }
+      return rows;
+    }
+
     function update(){
       try{
         if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length||typeof FILTERS==='undefined'){
@@ -40,26 +57,36 @@
         let a=+from.value,b=+to.value;
         if(b<=a)b=Math.min(100,a+1);
         const lo=a/100*maxMin,hi=b/100*maxMin;
-        const fn=FILTERS[metricEl.value]||(()=>false);
-        let list=events.filter(e=>minute(e)>=lo&&minute(e)<=hi&&fn(e)&&e.playerId);
-        if(teamEl.value!=='Both')list=list.filter(e=>teamName(e)===teamEl.value);
+        const windowSource=events.filter(e=>minute(e)>=lo&&minute(e)<=hi);
+        const carry=carryRows(windowSource,metricEl.value);
 
-        const counts=new Map();
-        for(const e of list){
-          const id=String(e.playerId);
-          const item=counts.get(id)||{id,name:(players[e.playerId]||{}).name||`Player ${id}`,team:teamName(e),value:0};
-          item.value+=1;
-          counts.set(id,item);
+        let rows,countsSize;
+        if(carry){
+          rows=carry.sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
+          countsSize=rows.length;
+        }else{
+          const fn=FILTERS[metricEl.value]||(()=>false);
+          let list=windowSource.filter(e=>fn(e)&&e.playerId);
+          if(teamEl.value!=='Both')list=list.filter(e=>teamName(e)===teamEl.value);
+          const counts=new Map();
+          for(const e of list){
+            const id=String(e.playerId);
+            const item=counts.get(id)||{id,name:(players[e.playerId]||{}).name||`Player ${id}`,team:teamName(e),value:0};
+            item.value+=1;
+            counts.set(id,item);
+          }
+          rows=[...counts.values()].sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
+          countsSize=counts.size;
         }
-        const rows=[...counts.values()].sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
-        const max=rows[0]?.value||1;
+
+        const max=Math.max(1,...rows.map(r=>Math.max(0,Number(r.value)||0)));
         const selected=playerEl.value;
         const valueFrequency=new Map();
         rows.forEach(r=>valueFrequency.set(r.value,(valueFrequency.get(r.value)||0)+1));
 
         document.getElementById('leadersMetric').textContent=metricEl.options[metricEl.selectedIndex]?.text||'Metric';
         document.getElementById('leadersScope').textContent=`${teamEl.value==='Both'?'Both Teams':teamEl.value} · ${Math.round(lo)}–${hi>=maxMin-.5?'FT':Math.round(hi)} mins`;
-        document.getElementById('leadersTotal').textContent=`${counts.size} player${counts.size===1?'':'s'}`;
+        document.getElementById('leadersTotal').textContent=`${countsSize} player${countsSize===1?'':'s'}`;
 
         let previousValue=null,previousRank=0;
         document.getElementById('leadersList').innerHTML=rows.length?rows.map((r,i)=>{
@@ -67,13 +94,14 @@
           previousValue=r.value;previousRank=rank;
           const isJoint=(valueFrequency.get(r.value)||0)>1;
           const crest=crestFor(r.team);
-          const width=Math.max(3,(r.value/max)*100);
+          const width=Math.max(3,(Math.max(0,Number(r.value)||0)/max)*100);
           const topClass=rank<=3?` is-top-${rank}`:'';
           const rankText=`${isJoint?'J-':''}${ordinal(rank)}`;
+          const shown=r.display??r.value;
           return `<div class="metric-leader${selected===r.id?' is-selected':''}${topClass}" data-player-id="${r.id}">
             ${crest?`<img class="metric-leader__crest" src="${crest}" alt="${r.team} crest">`:'<span class="metric-leader__crest-placeholder"></span>'}
             <div class="metric-leader__name">${escapeHtml(r.name)}</div>
-            <div class="metric-leader__value">${r.value}</div>
+            <div class="metric-leader__value">${shown}</div>
             <div class="metric-leader__track"><div class="metric-leader__bar" style="width:${width}%"></div></div>
             <span class="metric-leader__rank">${rank===1?'<span class="metric-leader__star">★</span>':''}${rankText}</span>
           </div>`;
