@@ -13,6 +13,8 @@
   const MAX_CARRY_M=60;
   const MAX_GAP_S=10;
   const PROGRESSIVE_FORWARD_M=5;
+  const CARRY_COLOUR='#3BEAED';
+  const CARRY_DASH='2.4 2.4';
 
   const ignoredTypes=new Set(['offsidegiven','cornerawarded','card','start','end','formationchange','substitutionoff','substitutionon']);
   const softOpponentEvents=new Set(['challenge','takeon','aerial']);
@@ -33,11 +35,9 @@
     return controlledOpponentEvents.has(t)&&outcome(e)!=='unsuccessful';
   }
 
-  // GOLDEN CARRY RECONSTRUCTION
-  // A carry is controlled same-team ball movement between two active on-ball states.
-  // WhoScored does not expose a native Carry event in the raw match feed, so we reconstruct
-  // the movement while preserving control through paired unsuccessful challenge/turnover events.
-  // OffsideGiven is explicitly excluded as a start/end binding.
+  // PROVISIONAL CARRY RECONSTRUCTION UNDER FORENSIC VALIDATION.
+  // The Forest and Bournemouth control sets have reopened this family; do not treat this
+  // reconstruction as Golden until the start/end ownership model matches both fixtures.
   function reconstruct(source){
     const ordered=sorted(source).filter(e=>finite(e.x)&&finite(e.y));
     const carries=[];
@@ -91,7 +91,6 @@
     const count=list.length;
     const distance=list.reduce((s,c)=>s+Number(c.distanceM||0),0);
     const progressive=list.filter(c=>c.progressive).length;
-    // Provider-aligned field: net forward distance across ALL qualifying carries.
     const progressiveDistance=list.reduce((s,c)=>s+Number(c.forwardM||0),0);
     return {
       carries:count,
@@ -133,18 +132,16 @@
   const metricDisplay=(value,key)=>metricMap[key]?.decimals?Number(value||0).toFixed(metricMap[key].decimals):String(Math.round(Number(value||0)));
 
   window.PitchLabCarry={
-    version:'golden-2026-08-26',
-    constants:{MIN_CARRY_M,MAX_CARRY_M,MAX_GAP_S,PROGRESSIVE_FORWARD_M},
+    version:'provisional-forest-bournemouth-audit-2026-08-26',
+    constants:{MIN_CARRY_M,MAX_CARRY_M,MAX_GAP_S,PROGRESSIVE_FORWARD_M,CARRY_COLOUR,CARRY_DASH},
     reconstruct,summary,teamSummary,playerSummaries,distM,forwardM,
     metricMap,isCarryMetric,metricValue,metricDisplay,
-    goldenFixture:{
-      matchId:1983552,
-      note:'Nottingham Forest 0-1 Leeds player-level control set used to lock Carry Family definitions.'
+    validationStatus:{
+      state:'REOPENED',
+      note:'Forest and Bournemouth player controls are being used to validate the carry start/end ownership model.'
     }
   };
 
-  // Pitch Events integration. Keep the core renderer untouched for every existing metric;
-  // only intercept the six Golden Carry Family selections.
   const metricEl=document.getElementById('metric');
   if(!metricEl||typeof render!=='function')return;
   let carryGroup=[...metricEl.querySelectorAll('optgroup')].find(g=>g.label==='Carries');
@@ -178,13 +175,26 @@
 
     const root=document.getElementById('eventSvg');
     if(root&&typeof drawAttackArrow==='function'){
+      let marker=root.querySelector('#carryArrow');
+      if(!marker){
+        const defs=root.querySelector('defs')||root.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'),root.firstChild);
+        marker=document.createElementNS('http://www.w3.org/2000/svg','marker');
+        marker.setAttribute('id','carryArrow');marker.setAttribute('markerWidth','1.08');marker.setAttribute('markerHeight','0.78');marker.setAttribute('refX','1.0');marker.setAttribute('refY','0.39');marker.setAttribute('orient','auto');marker.setAttribute('markerUnits','userSpaceOnUse');
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M0,0 L1.04,0.39 L0,0.78 Z');path.setAttribute('fill',CARRY_COLOUR);marker.appendChild(path);defs.appendChild(marker);
+      }
       for(const c of carries){
-        drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#43ede1','url(#eventArrow)');
+        const before=root.children.length;
+        drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},CARRY_COLOUR,'url(#carryArrow)');
+        const added=[...root.children].slice(before);
+        const line=added.find(el=>el.tagName?.toLowerCase()==='line');
+        if(line){line.setAttribute('stroke',CARRY_COLOUR);line.setAttribute('stroke-dasharray',CARRY_DASH);line.setAttribute('stroke-linecap','round');}
+        const circle=added.find(el=>el.tagName?.toLowerCase()==='circle');
+        if(circle)circle.setAttribute('fill',CARRY_COLOUR);
       }
     }
     const count=document.getElementById('eventCount');if(count)count.textContent=String(carries.length);
-    const legend=document.getElementById('plotLegend');if(legend)legend.innerHTML='<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:#43ede1"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#43ede1"></i>Carry start</span>';
-    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} Golden Carry Family trajectories · 5m minimum movement · calibrated to a 105m × 68m pitch.`;
+    const legend=document.getElementById('plotLegend');if(legend)legend.innerHTML=`<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:${CARRY_COLOUR};background:repeating-linear-gradient(90deg,${CARRY_COLOUR} 0 4px,transparent 4px 7px)"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:${CARRY_COLOUR}"></i>Carry start</span>`;
+    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} provisional carry trajectories · reconstruction currently under Forest/Bournemouth validation.`;
   }
   render=carryRender;
   [metricEl,document.getElementById('team'),document.getElementById('player'),document.getElementById('fromRange'),document.getElementById('toRange')].filter(Boolean).forEach(el=>{
