@@ -25,7 +25,9 @@
   const isSavedShot=e=>['savedshot','save'].includes(eventType(e));
 
   const metricDefs=[
-    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['PPDA','ppda_custom','decimal'],['10+ Pass Sequences','ten_pass_sequences_custom'],['Pressed Sequences','pressed_sequences_custom'],['Touches','touches'],['Penalty Box Touches','touch_box'],
+    ['Goals','goals_adjusted'],['Own Goals','own_goals_custom'],['Possession','possession','pct'],['PPDA','ppda_custom','decimal'],['10+ Pass Sequences','ten_pass_sequences_custom'],['Pressed Sequences','pressed_sequences_custom'],
+    ['Carries','carries_custom'],['Carrying Distance (m)','carrying_distance_custom','decimal'],['Avg Carrying Distance (m)','avg_carrying_distance_custom','decimal'],['Progressive Carries','progressive_carries_custom'],['Progressive Carrying Distance (m)','progressive_carrying_distance_custom','decimal'],['Avg Progressive Carrying Distance (m)','avg_progressive_carrying_distance_custom','decimal'],
+    ['Touches','touches'],['Penalty Box Touches','touch_box'],
     ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Outside Box','shots_outside_custom'],['Shots Inside The Box','shots_inside_custom'],
     ['Big Chances','big_chances_custom'],['Big Chances Created','bigchances'],['Big Chances Missed','big_chances_missed_custom'],['Chances Created','chances_created'],
     ['Successful Passes','successful'],['Total Passes','allpasses'],['Open Play Progressive Passes','progressive'],['Successful Final Third Passes','final_third_passes_success'],
@@ -89,11 +91,6 @@
   }
 
   // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 2 / Leeds 16.
-  // A Pressed Sequence is credited to the pressing team. The opposition sequence must:
-  // - originate in open play with genuine controlled possession in its defensive third (x <= 33.33),
-  // - contain 0-3 passes,
-  // - terminate within 40m of its own goal (x <= 40/105*100),
-  // - and not be created from a simultaneous opposing BallTouch (contested/loose ball).
   function pressedSequences(list,pressingTeam,home,away){
     const attackingTeam=opposition(pressingTeam,home,away);
     const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
@@ -135,6 +132,15 @@
     return count;
   }
 
+  // LOCKED GOLDEN CARRY FAMILY: see docs/CARRY_FAMILY_GOLDEN.md.
+  function carrySummary(list,team){
+    const empty={carries:0,carryingDistanceM:0,avgCarryingDistanceM:0,progressiveCarries:0,progressiveCarryingDistanceM:0,avgProgressiveCarryingDistanceM:0};
+    if(!window.PitchLabCarry)return empty;
+    const teamEvent=list.find(e=>teamName(e)===team&&e.teamId!=null);
+    if(!teamEvent)return empty;
+    return window.PitchLabCarry.teamSummary(list,teamEvent.teamId);
+  }
+
   function countByTeam(list,team,key,home,away){
     if(key==='goals_adjusted')return adjustedGoals(list,team,home,away);
     if(key==='own_goals_custom')return ownGoalsCommitted(list,team);
@@ -152,6 +158,14 @@
     if(key==='ppda_custom')return [ppda(list,home,home,away),ppda(list,away,home,away)];
     if(key==='ten_pass_sequences_custom')return [tenPassSequences(list,home),tenPassSequences(list,away)];
     if(key==='pressed_sequences_custom')return [pressedSequences(list,home,home,away),pressedSequences(list,away,home,away)];
+    if(key.startsWith('carries_custom')||key.includes('carrying_distance_custom')||key.includes('progressive_carries_custom')){}
+    const hc=key.includes('carr')?carrySummary(list,home):null,ac=key.includes('carr')?carrySummary(list,away):null;
+    if(key==='carries_custom')return [hc.carries,ac.carries];
+    if(key==='carrying_distance_custom')return [hc.carryingDistanceM,ac.carryingDistanceM];
+    if(key==='avg_carrying_distance_custom')return [hc.avgCarryingDistanceM,ac.avgCarryingDistanceM];
+    if(key==='progressive_carries_custom')return [hc.progressiveCarries,ac.progressiveCarries];
+    if(key==='progressive_carrying_distance_custom')return [hc.progressiveCarryingDistanceM,ac.progressiveCarryingDistanceM];
+    if(key==='avg_progressive_carrying_distance_custom')return [hc.avgProgressiveCarryingDistanceM,ac.avgProgressiveCarryingDistanceM];
     if(key==='possession'){const hp=countByTeam(list,home,'allpasses',home,away),ap=countByTeam(list,away,'allpasses',home,away),total=hp+ap;return total?[hp/total*100,ap/total*100]:[0,0]}
     if(key==='pass_accuracy'){const ht=countByTeam(list,home,'allpasses',home,away),at=countByTeam(list,away,'allpasses',home,away);const hs=countByTeam(list,home,'successful',home,away),as=countByTeam(list,away,'successful',home,away);return [ht?hs/ht*100:0,at?as/at*100:0]}
     if(key==='fouled_custom')return [countByTeam(list,away,'fouls_custom',home,away),countByTeam(list,home,'fouls_custom',home,away)];
@@ -165,7 +179,7 @@
     $('matchStatsScore').innerHTML=`<span class="match-stats-panel__team match-stats-panel__team--home">${home}${hc?`<img class="match-stats-panel__crest" src="${hc}" alt="${home} crest">`:''}</span><span class="match-stats-panel__scoreline"><b>${hg}</b><span class="match-stats-panel__dash">–</span><b>${ag}</b></span><span class="match-stats-panel__team match-stats-panel__team--away">${ac?`<img class="match-stats-panel__crest" src="${ac}" alt="${away} crest">`:''}${away}</span>`;
     $('matchStatsScope').innerHTML=`Both <i>|</i> <b>${lo<.5?'0:00':fmtSec(lo)} – ${hi>=max-.5?'FT':fmtSec(hi)}</b>`;
     $('matchStatsBody').innerHTML=metricDefs.map(def=>{
-      const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);const denom=Math.max(h+a,1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):h/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):a/denom*100;
+      const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);const denom=Math.max(Math.abs(h)+Math.abs(a),1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):Math.abs(h)/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):Math.abs(a)/denom*100;
       const hv=kind==='pct'?Math.round(h):kind==='decimal'?h.toFixed(1):h,av=kind==='pct'?Math.round(a):kind==='decimal'?a.toFixed(1):a;
       return `<div class="match-stats-row${kind==='pct'?' is-percentage':''}"><div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${hp}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${hv}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${av}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${ap}%"></div></div></div>`;
     }).join('');
