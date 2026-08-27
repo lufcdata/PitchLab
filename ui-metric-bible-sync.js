@@ -7,6 +7,9 @@
   const ts=e=>Number(e?.minute||0)*60+Number(e?.second||0);
   const teamOf=e=>typeof teamName==='function'?teamName(e):String(e?.teamId??'');
   const coords=e=>Number.isFinite(Number(e?.x))&&Number.isFinite(Number(e?.y));
+  const ALL_EVENT_SURFACES=Object.freeze(['pitch','leaders','matchStats']);
+  const eventDef=(label,golden,test)=>Object.freeze({label,kind:'event',surfaces:ALL_EVENT_SURFACES,golden:Object.freeze(golden),test});
+
   const shotFamily=e=>['goal','missedshots','savedshot','shotonpost'].includes(et(e))&&!hq(e,'OwnGoal');
   const shotOn=e=>shotFamily(e)&&(et(e)==='goal'||(et(e)==='savedshot'&&!hq(e,'Blocked')));
   const shotOff=e=>shotFamily(e)&&['missedshots','shotonpost'].includes(et(e));
@@ -24,27 +27,29 @@
   const defs={
     interceptions:{label:'Interceptions',test:e=>et(e)==='interception'},
     goal_kicks:{label:'Goal Kicks',test:e=>et(e)==='pass'&&hq(e,'GoalKick')},
-    touches:{label:'Touches',test:e=>e?.isTouch===true},
-    touch_box:{label:'Penalty Box Touches',test:e=>e?.isTouch===true&&Number(e?.x)>=((105-16.5)/105*100)&&Number(e?.y)>=21.1&&Number(e?.y)<=78.9},
 
-    shots:{label:'Shots',test:shotFamily},
-    shots_on:{label:'Shots On-Target',test:shotOn},
-    shots_off:{label:'Shots Off-Target',test:shotOff},
-    shots_blocked:{label:'Blocked Shots',test:shotBlocked},
-    woodwork:{label:'Woodwork Shots',test:e=>shotFamily(e)&&et(e)==='shotonpost'},
-    shots_open:{label:'Shots - Open Play',test:e=>shotFamily(e)&&hq(e,'RegularPlay')},
-    shots_fastbreak:{label:'Shots - Fast Break',test:e=>shotFamily(e)&&hq(e,'FastBreak')},
-    shots_setpiece:{label:'Shots from Set-Pieces',test:shotSetPiece},
-    shots_dfk:{label:'Shots - From Free-Kicks',test:e=>shotFamily(e)&&hq(e,'DirectFreekick')},
-    shots_6yd:{label:'Shots - 6 Yard Box',test:e=>shotFamily(e)&&shotLoc(e,'6yd')},
-    shots_box:{label:'Shots - Penalty Box',test:e=>shotFamily(e)&&shotLoc(e,'box')},
-    shots_penalty_area:{label:'Shots - Penalty Area',test:e=>shotFamily(e)&&(shotLoc(e,'6yd')||shotLoc(e,'box'))},
-    shots_outside:{label:'Shots - Outside Box',test:e=>shotFamily(e)&&shotLoc(e,'outside')},
-    shots_right:{label:'Shots - Right Foot',test:e=>shotFamily(e)&&hq(e,'RightFoot')},
-    shots_left:{label:'Shots - Left Foot',test:e=>shotFamily(e)&&hq(e,'LeftFoot')},
-    shots_head:{label:'Shots - Head',test:e=>shotFamily(e)&&hq(e,'Head')},
-    shots_other:{label:'Shots - Other',test:e=>shotFamily(e)&&hq(e,'OtherBodyPart')},
-    shots_head_setpiece:{label:'Shots - Head from set-pieces',test:e=>shotSetPiece(e)&&hq(e,'Head')},
+    // FIRST CANONICAL MIGRATION FAMILY: Touches + complete signed-off Shot Family.
+    // These definitions own Pitch Events, Metric Leaders and Match Stats.
+    touches:eventDef('Touches',[617,500],e=>e?.isTouch===true),
+    touch_box:eventDef('Penalty Box Touches',[22,15],e=>e?.isTouch===true&&Number(e?.x)>=((105-16.5)/105*100)&&Number(e?.y)>=21.1&&Number(e?.y)<=78.9),
+    shots:eventDef('Shots',[12,11],shotFamily),
+    shots_on:eventDef('Shots On-Target',[2,3],shotOn),
+    shots_off:eventDef('Shots Off-Target',[8,2],shotOff),
+    shots_blocked:eventDef('Blocked Shots',[2,6],shotBlocked),
+    woodwork:eventDef('Woodwork Shots',[1,0],e=>shotFamily(e)&&et(e)==='shotonpost'),
+    shots_open:eventDef('Shots - Open Play',[4,4],e=>shotFamily(e)&&hq(e,'RegularPlay')),
+    shots_fastbreak:eventDef('Shots - Fast Break',[0,0],e=>shotFamily(e)&&hq(e,'FastBreak')),
+    shots_setpiece:eventDef('Shots from Set-Pieces',[8,7],shotSetPiece),
+    shots_dfk:eventDef('Shots - From Free-Kicks',[1,2],e=>shotFamily(e)&&hq(e,'DirectFreekick')),
+    shots_6yd:eventDef('Shots - 6 Yard Box',[1,1],e=>shotFamily(e)&&shotLoc(e,'6yd')),
+    shots_box:eventDef('Shots - Penalty Box',[5,5],e=>shotFamily(e)&&shotLoc(e,'box')),
+    shots_penalty_area:eventDef('Shots - Penalty Area',[6,6],e=>shotFamily(e)&&(shotLoc(e,'6yd')||shotLoc(e,'box'))),
+    shots_outside:eventDef('Shots - Outside Box',[6,5],e=>shotFamily(e)&&shotLoc(e,'outside')),
+    shots_right:eventDef('Shots - Right Foot',[6,5],e=>shotFamily(e)&&hq(e,'RightFoot')),
+    shots_left:eventDef('Shots - Left Foot',[1,3],e=>shotFamily(e)&&hq(e,'LeftFoot')),
+    shots_head:eventDef('Shots - Head',[5,3],e=>shotFamily(e)&&hq(e,'Head')),
+    shots_other:eventDef('Shots - Other',[0,0],e=>shotFamily(e)&&hq(e,'OtherBodyPart')),
+    shots_head_setpiece:eventDef('Shots - Head from set-pieces',[5,3],e=>shotSetPiece(e)&&hq(e,'Head')),
 
     fouls_committed:{label:'Fouls',test:e=>et(e)==='foul'&&oc(e)==='unsuccessful'},
     fouled:{label:'Fouled',test:e=>et(e)==='foul'&&oc(e)==='successful'},
@@ -55,8 +60,18 @@
     inaccurate_crosses:{label:'Inaccurate Crosses',test:e=>et(e)==='pass'&&hq(e,'Cross')&&!ok(e)}
   };
 
+  const canonicalKeys=new Set(Object.entries(defs).filter(([,d])=>d?.kind==='event'&&d?.surfaces===ALL_EVENT_SURFACES).map(([k])=>k));
+
+  // Compatibility bridge for the legacy pitch renderer. Canonical keys are accessor-backed:
+  // older/later scripts may read FILTERS[key], but attempts to overwrite a migrated definition are ignored.
   if(typeof FILTERS!=='undefined'){
-    for(const [key,def] of Object.entries(defs))FILTERS[key]=def.test;
+    for(const [key,def] of Object.entries(defs)){
+      if(canonicalKeys.has(key)){
+        try{
+          Object.defineProperty(FILTERS,key,{enumerable:true,configurable:false,get:()=>def.test,set:()=>console.warn(`[Metric Bible] Ignored legacy override of canonical metric: ${key}`)});
+        }catch(_){FILTERS[key]=def.test}
+      }else FILTERS[key]=def.test;
+    }
   }
 
   function ensureGroup(sel,label){
@@ -95,7 +110,8 @@
     return list.filter(e=>ts(e)>=lo&&ts(e)<=hi);
   }
   function metricEvents(key,source=window.events,team='Both'){
-    const fn=(typeof FILTERS!=='undefined'&&FILTERS[key])||defs[key]?.test||(()=>false);
+    // Canonical registry always wins for migrated metrics; FILTERS is legacy fallback only.
+    const fn=canonicalKeys.has(key)?defs[key].test:((typeof FILTERS!=='undefined'&&FILTERS[key])||defs[key]?.test||(()=>false));
     let list=windowEvents(source).filter(fn);
     if(team&&team!=='Both')list=list.filter(e=>teamOf(e)===team);
     return list;
@@ -141,20 +157,13 @@
     return [...rows.values()].map(r=>({...r,avgX:r.sx/r.n,avgY:r.sy/r.n}));
   }
 
+  const canonicalRegistry=Object.freeze(Object.fromEntries([...canonicalKeys].map(key=>[key,defs[key]])));
   window.PitchLabMetricBible={
-    version:'METRIC_BIBLE_SYNC_V3_SHOTS_2026-08-27',defs,ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
-    forestLeedsControls:{
-      interceptions:[2,15],goalKicks:[6,10],touches:[617,500],penaltyBoxTouches:[22,15],
-      shots:[12,11],shotsOnTarget:[2,3],shotsOffTarget:[8,2],blockedShots:[2,6],woodworkShots:[1,0],
-      shotsPenaltyArea:[6,6],shots6Yard:[1,1],shotsPenaltyBox:[5,5],shotsOutsideBox:[6,5],
-      shotsOpenPlay:[4,4],shotsSetPieces:[8,7],shotsFastBreak:[0,0],shotsFreeKicks:[1,2],
-      shotsRightFoot:[6,5],shotsLeftFoot:[1,3],headedShots:[5,3],shotsOther:[0,0],shotsHeadSetPieces:[5,3],
-      fouls:[15,14],fouled:[14,15],corners:[3,2],
-      successfulSetPlayCrosses:[1,1],unsuccessfulSetPlayCrosses:[5,2],accurateCrosses:[4,3],inaccurateCrosses:[15,5],totalCrosses:[19,8]
-    }
+    version:'METRIC_BIBLE_CANONICAL_V1_2026-08-27',defs,canonicalRegistry,canonicalKeys:Object.freeze([...canonicalKeys]),ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
+    forestLeedsControls:Object.freeze(Object.fromEntries([...canonicalKeys].map(key=>[key,defs[key].golden])))
   };
 
   ensureMetricOptions();
-  document.dispatchEvent(new CustomEvent('pitchlab:metric-bible-ready',{detail:{version:window.PitchLabMetricBible.version}}));
+  document.dispatchEvent(new CustomEvent('pitchlab:metric-bible-ready',{detail:{version:window.PitchLabMetricBible.version,canonicalKeys:window.PitchLabMetricBible.canonicalKeys}}));
   ['metric','team','player','fromRange','toRange'].forEach(id=>{const el=document.getElementById(id);if(el)el.dispatchEvent(new Event('change',{bubbles:true}))});
 })();
