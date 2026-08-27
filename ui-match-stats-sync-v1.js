@@ -12,7 +12,12 @@
   function patch(){
     const bible=window.PitchLabMetricBible,body=$('#matchStatsBody');if(!bible||!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
-    const metrics=[['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box']];
+    const metrics=[
+      ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
+      ['Headed Shots','shots_head'],['Woodwork Shots','woodwork'],['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
+      ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
+      ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
+    ];
     for(const [label,key] of metrics){
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
       let row=[...body.querySelectorAll('.match-stats-row')].find(r=>r.querySelector('.match-stats-row__label')?.textContent?.trim()===label);
