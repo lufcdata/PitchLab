@@ -139,7 +139,25 @@ Do not promote them to `GOLD_LOCKED` until trusted team/player controls have bee
 
 The base runtime formerly required a progressive pass to be successful, non-restart, start at x >= 100/3, and reduce physical distance to goal by at least 9.144m.
 
+Historical commit `584d61a74a37fbdf67cc9cd7fcf99b3de77d5e97` (`Plot real Bournemouth Leeds progressive passes`) confirms an earlier real-event prototype used the same absolute-distance family: successful Pass, restart exclusions, start x >= 35, and approximately 9.11m reduction to goal. This is historical implementation evidence only, not a Gold control.
+
 That implementation is now superseded by the authoritative 25% relative-distance definition above and must not be restored.
+
+## Surface-routing verification — 2026-08-28
+
+The Progressive Pass canonical path has now been inspected end-to-end at code level:
+
+- Pitch Events receives the canonical predicate through the protected `FILTERS.progressive` compatibility bridge installed by `ui-progressive-pass-definition.js`.
+- Metric Leaders prefers `PitchLabMetricBible.playerRows()` whenever the Bible is available.
+- `playerRows()` delegates event metrics to `metricEvents()`.
+- `metricEvents()` explicitly resolves `PitchLabMetricBible.canonicalRegistry[key].test` before legacy `FILTERS`.
+- Match Stats synchronization requests key `progressive` through `bible.metricEvents()`.
+
+Therefore all three user-facing surfaces resolve the same current Progressive Pass event predicate after the progressive definition module loads. This is an architectural equivalence check; numerical fixture regression is still required before Gold promotion.
+
+## Fixture-access note
+
+Both stored validation fixtures remain present in the repository. The Bournemouth raw JSON is available as `WS_1903384_raw.json`, while Forest–Leeds is stored as `WS_1983552_compact.b64`. During this audit the GitHub connector exposed the Bournemouth JSON and confirmed the Forest compact fixture exists, but large/compressed payload retrieval was truncated before a trustworthy local numerical regression could be executed. No counts are to be inferred or fabricated from partial payloads.
 
 ## Retired metrics — remain retired
 
@@ -155,10 +173,9 @@ The following must not return during passing-family work:
 1. Regression-check the five Gold passing metrics on Forest–Leeds.
 2. Confirm Bournemouth Successful Final Third Passes remains 123–55.
 3. Reconcile the new 25% Progressive Pass definition against trusted team and player controls, then promote it to `GOLD_LOCKED` only if those controls agree.
-4. Verify Pitch Events, Metric Leaders and Match Stats consume the same Progressive Pass event set.
-5. Verify no protected selector metric disappeared and the two retired final-third metrics remain absent at runtime.
-6. Obtain/recover trusted controls for Forward Passes, Successful Forward Passes, Backward Passes and Successful Backward Passes.
-7. Keep Side Passes and the remaining pass subfamilies unmigrated until separately reviewed.
+4. Verify no protected selector metric disappeared and the two retired final-third metrics remain absent at runtime.
+5. Obtain/recover trusted controls for Forward Passes, Successful Forward Passes, Backward Passes and Successful Backward Passes.
+6. Keep Side Passes and the remaining pass subfamilies unmigrated until separately reviewed.
 
 ## Safety conclusion
 
