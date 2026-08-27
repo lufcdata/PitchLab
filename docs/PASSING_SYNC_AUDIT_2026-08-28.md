@@ -4,19 +4,17 @@
 
 This audit records the passing-family state after the first canonical synchronization batch on `metric-sync-audit-2026-08-27`.
 
-It is deliberately non-destructive. It does not redefine any passing metric.
-
 ## Governing rule
 
 Validated passing definitions may be moved into canonical Gold Metric Bible ownership without changing their event predicates.
 
-Passing metrics that have not yet been independently reconciled to trusted controls must remain in their current legacy/family implementation and must not be labelled `GOLD_LOCKED` merely because their formula appears plausible.
+Passing metrics that have not yet been independently reconciled to trusted controls must not be labelled `GOLD_LOCKED` merely because their formula appears plausible.
 
 No fixture-specific corrections are permitted.
 
-## Canonicalized passing metrics
+## Canonicalized Gold passing metrics
 
-The following event metrics are now attached to the live `PitchLabMetricBible.canonicalRegistry` by `ui-gold-passing-family.js` and are consumed by Pitch Events, Metric Leaders and the Match Stats synchronization layer:
+The following event metrics are attached to the live `PitchLabMetricBible.canonicalRegistry` by `ui-gold-passing-family.js` and are consumed by Pitch Events, Metric Leaders and the Match Stats synchronization layer:
 
 | Metric | Stable key | Forest–Leeds control | Status |
 |---|---|---:|---|
@@ -47,6 +45,34 @@ AND NOT KeeperThrow
 
 The synchronization work must preserve this predicate. Do not replace it with generic `Pass` merely to simplify the registry.
 
+## Progressive Pass — authoritative definition updated 2026-08-28
+
+The previous legacy absolute-distance definition is superseded.
+
+A **Progressive Pass** is now defined as:
+
+```text
+Completed statistical pass
+AND start x >= 33.333333
+AND end distance to the centre of the opposition goal <= 75% of start distance
+```
+
+In words: a completed pass in the attacking two-thirds of the pitch that moves the ball at least 25% closer to the centre of the opposition goal.
+
+Distance is calculated on PitchLab's physical 105m × 68m pitch, using the WhoScored coordinate conversion:
+
+```text
+startDistance = hypot((100 - x) * 1.05, (50 - y) * 0.68)
+endDistance   = hypot((100 - endX) * 1.05, (50 - endY) * 0.68)
+progressive   = endDistance <= startDistance * 0.75
+```
+
+This definition does **not** add an Open Play / restart exclusion. The old 9.144m absolute-gain rule and its restart exclusions are retired.
+
+Implementation ownership is `ui-progressive-pass-definition.js`. The metric is attached to the canonical registry for consistent consumption across Pitch Events, Metric Leaders and Match Stats, but it is **not yet `GOLD_LOCKED`** because a trusted numerical control has not yet been reconciled. Runtime status is `AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL`.
+
+The visible label is **Progressive Passes**, replacing the misleading legacy label **Open Play Progressive Passes**.
+
 ## Current canonical path
 
 ```text
@@ -56,6 +82,12 @@ ui-passing-metrics-golden.js
         v
 ui-gold-passing-family.js
         |
+        +--> validated Gold passing family
+        |
+        v
+ui-progressive-pass-definition.js
+        |
+        +--> authoritative 25% Progressive Pass definition
         v
 PitchLabMetricBible.canonicalRegistry
         |
@@ -68,9 +100,9 @@ PitchLabMetricBible.canonicalRegistry
 
 ## Passing metrics NOT yet approved for canonical Gold migration
 
-The following visible passing metrics remain outside this first Gold batch:
+The following visible passing metrics remain outside the Gold batch:
 
-- `progressive` — Open-Play Progressive Passes
+- `progressive` — Progressive Passes — authoritative definition synchronized, Gold control pending
 - `forward` — Forward Passes
 - `forward_success` — Successful Forward Passes
 - `side` — Side Passes
@@ -103,18 +135,11 @@ These definitions are currently legacy implementation details, not newly approve
 
 Do not promote them to `GOLD_LOCKED` until trusted team/player controls have been reconciled.
 
-## Legacy progressive-pass definition observed
+## Retired Progressive Pass implementation
 
-The base runtime currently requires a progressive pass to be:
+The base runtime formerly required a progressive pass to be successful, non-restart, start at x >= 100/3, and reduce physical distance to goal by at least 9.144m.
 
-- a successful Pass,
-- not a FreeKickTaken / CornerTaken / ThrowIn / GoalKickTaken / PenaltyTaken restart,
-- starting at x >= 100/3,
-- reducing Euclidean distance to the opposition-goal centre by at least 9.144 metres after PitchLab coordinate scaling.
-
-This is an existing implementation, not a newly approved Gold definition.
-
-Do not rewrite or canonicalize it solely from its name. Validate it against trusted controls first.
+That implementation is now superseded by the authoritative 25% relative-distance definition above and must not be restored.
 
 ## Retired metrics — remain retired
 
@@ -127,16 +152,16 @@ The following must not return during passing-family work:
 
 ## Recommended next passing work
 
-1. Regression-check the five newly canonicalized passing metrics on Forest–Leeds.
+1. Regression-check the five Gold passing metrics on Forest–Leeds.
 2. Confirm Bournemouth Successful Final Third Passes remains 123–55.
-3. Verify Pitch Events, Metric Leaders and Match Stats consume the same event sets for those canonical keys.
-4. Verify no protected selector metric disappeared and the two retired final-third metrics remain absent at runtime.
-5. Obtain/recover trusted controls for Forward Passes, Successful Forward Passes, Backward Passes, Successful Backward Passes and Progressive Passes.
-6. Reconcile those controls against the existing predicates before any canonical migration.
+3. Reconcile the new 25% Progressive Pass definition against trusted team and player controls, then promote it to `GOLD_LOCKED` only if those controls agree.
+4. Verify Pitch Events, Metric Leaders and Match Stats consume the same Progressive Pass event set.
+5. Verify no protected selector metric disappeared and the two retired final-third metrics remain absent at runtime.
+6. Obtain/recover trusted controls for Forward Passes, Successful Forward Passes, Backward Passes and Successful Backward Passes.
 7. Keep Side Passes and the remaining pass subfamilies unmigrated until separately reviewed.
 
 ## Safety conclusion
 
-The current passing synchronization batch should be treated as **five validated event metrics plus one derived Pass Accuracy metric**, not as approval of the entire passing catalogue.
+The current passing synchronization state is **five validated Gold event metrics, one derived Gold Pass Accuracy metric, and one authoritative Progressive Pass definition pending numerical Gold control**.
 
-Architecture may be cleaned up around those validated definitions. The unvalidated directional/progressive formulas must not be changed or promoted merely for architectural uniformity.
+Architecture may consume the Progressive Pass definition consistently now, but its Gold status must remain pending until trusted controls are reconciled.
