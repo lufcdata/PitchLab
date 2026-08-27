@@ -1,5 +1,11 @@
 (()=>{
   const $=s=>document.querySelector(s);
+  const aliases={
+    'Shots - Outside Box':['Shots Outside Box'],
+    'Shots - Penalty Area':['Shots Inside The Box','Shots Inside Box'],
+    'Shots - Head':['Headed Shots'],
+    'Woodwork Shots':['Shots - Woodwork','Woodwork']
+  };
   function makeRow(label,h,a){
     const d=Math.max(h+a,1),r=document.createElement('div');r.className='match-stats-row';r.dataset.metricBibleSync=label;
     r.innerHTML=`<div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${h/d*100}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${h}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${a}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${a/d*100}%"></div></div>`;return r;
@@ -8,6 +14,10 @@
     const d=Math.max(h+a,1);row.querySelector('.match-stats-row__label').textContent=label;
     row.querySelector('.match-stats-row__value--home').textContent=h;row.querySelector('.match-stats-row__value--away').textContent=a;
     const b=row.querySelectorAll('.match-stats-row__bar');if(b[0])b[0].style.width=`${h/d*100}%`;if(b[1])b[1].style.width=`${a/d*100}%`;
+  }
+  function findRow(body,label){
+    const accepted=new Set([label,...(aliases[label]||[])]);
+    return [...body.querySelectorAll('.match-stats-row')].find(r=>accepted.has(r.querySelector('.match-stats-row__label')?.textContent?.trim()));
   }
   function patch(){
     const bible=window.PitchLabMetricBible,body=$('#matchStatsBody');if(!bible||!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;
@@ -24,11 +34,11 @@
     ];
     for(const [label,key] of metrics){
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
-      let row=[...body.querySelectorAll('.match-stats-row')].find(r=>r.querySelector('.match-stats-row__label')?.textContent?.trim()===label);
+      let row=findRow(body,label);
       if(row){setRow(row,h,a,label);continue}
       row=makeRow(label,h,a);
       if(label==='Goal Kicks'){
-        const marker=[...body.querySelectorAll('.match-stats-row')].find(r=>r.querySelector('.match-stats-row__label')?.textContent?.trim()==='Interceptions');
+        const marker=findRow(body,'Interceptions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
       }else body.appendChild(row);
     }
