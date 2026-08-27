@@ -38,21 +38,24 @@
   function applySelection(metrics,state){
     const body=$('#matchStatsBody');if(!body)return;
     const labelByKey=new Map(metrics.map(m=>[m.key,m.label]));
+    const keyByLabel=new Map(metrics.map(m=>[m.label,m.key]));
     const selectedSet=new Set(state.selected);
     const rows=[...body.querySelectorAll('.match-stats-row')];
     const byLabel=new Map(rows.map(r=>[rowLabel(r),r]));
 
     // Match Stats display is Gold Metric Bible-only. Legacy rows remain in code until migrated, but cannot surface here.
     for(const row of rows){
-      const label=rowLabel(row);
-      const key=metrics.find(m=>m.label===label)?.key;
+      const key=keyByLabel.get(rowLabel(row));
       row.style.display=key&&selectedSet.has(key)?'':'none';
     }
-    for(const key of state.order){
-      if(!selectedSet.has(key))continue;
-      const row=byLabel.get(labelByKey.get(key));
-      if(row)body.appendChild(row);
-    }
+
+    // Only mutate row order when it is genuinely out of sync. This is critical because
+    // Match Stats is observed for external row/value updates; unconditional appendChild()
+    // calls here would wake the observer again and create a self-triggering DOM loop.
+    const desired=state.order.filter(key=>selectedSet.has(key)).map(key=>byLabel.get(labelByKey.get(key))).filter(Boolean);
+    const current=rows.filter(row=>desired.includes(row));
+    const orderMatches=current.length===desired.length&&current.every((row,i)=>row===desired[i]);
+    if(!orderMatches)for(const row of desired)body.appendChild(row);
   }
 
   function install(){
