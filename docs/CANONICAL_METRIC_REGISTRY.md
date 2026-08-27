@@ -81,6 +81,30 @@ Forest-Leeds full match:
 - Right Foot + Left Foot + Head + Other = Total Shots: Forest 6 + 1 + 5 + 0 = 12; Leeds 5 + 3 + 3 + 0 = 11.
 - Open Play + Set-Pieces = Total Shots: Forest 4 + 8 = 12; Leeds 4 + 7 = 11.
 
+## Bournemouth-Leeds attacking/defensive validation fixture — APPROVED CONTROLS
+
+Fixture: Bournemouth 2-2 Leeds, WhoScored match `1903384`.
+
+These controls have been reconciled against the raw event payload. They are recorded here before runtime migration so that legacy naming can be untangled without changing the approved statistical meaning.
+
+- **Big Chances** — Bournemouth 4 / Leeds 1 — shot-family events carrying `BigChance`.
+- **Big Chances Created** — Bournemouth 4 / Leeds 0 — events carrying `BigChanceCreated`.
+  - Bournemouth creators: Eli Junior Kroupi 1, Marcus Tavernier 1, Marcos Senesi 1, Tyler Adams 1.
+- **Chances Created** — Bournemouth 14 / Leeds 7 — events carrying `KeyPass`.
+- **Assists** — Bournemouth 2 / Leeds 0 — `IntentionalGoalAssist` control.
+  - Bournemouth: Marcos Senesi 1, Tyler Adams 1.
+- **Headed Clearances** — Bournemouth 10 / Leeds 38 — `Clearance` + `Head` (with the existing blocked-cross exclusion retained in the UI definition).
+
+### Naming protection
+
+`Big Chances` and `Big Chances Created` are separate Gold metrics and must never share one key or definition.
+
+The legacy Pitch Events key `bigchances` currently tests `BigChanceCreated`; therefore it semantically represents **Big Chances Created**, not Big Chances. Do not silently reinterpret that key as Big Chances during migration. Introduce/retain distinct stable keys and migrate surfaces only after their labels and consumers are verified.
+
+### Final-third protection
+
+`Final Third Entries`, `Passes Into Final Third`, `Final Third Passes`, and `Successful Final Third Passes` remain distinct metrics. The Bournemouth-Leeds trusted controls currently include Final Third Entries 71-53 and Passes Into Final Third 67-53. Final Third Entries is a derived metric still under investigation and must not be equated to the simple pass boundary-crossing filter.
+
 ## Migration procedure for every later family
 
 1. Preserve every existing Match Controls option.
