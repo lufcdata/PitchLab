@@ -1,159 +1,30 @@
 (()=>{
-  const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
-  const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').replace(/[\s_-]/g,'').toLowerCase();
-  const outcome=e=>String(dn(e?.outcomeType)||'').toLowerCase();
-  const success=e=>outcome(e)!=='unsuccessful';
-  const has=(e,...qs)=>typeof hasQ==='function'&&hasQ(e,...qs);
-  const sec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
-  const HIGH_X=(65/105)*100;
-  const SHOTS=new Set(['goal','missedshots','savedshot','shotonpost']);
-
-  const restart=e=>has(e,'CornerTaken','ThrowIn','GoalKick','GoalKickTaken','FreekickTaken','FreeKickTaken','PenaltyTaken','KickOff')||['start','end','cornerawarded'].includes(eventType(e));
-  const isAerialFoul=e=>eventType(e)==='foul'&&has(e,'AerialFoul');
-  const isGroundDuelWon=e=>eventType(e)==='tackle'||(eventType(e)==='takeon'&&success(e))||(eventType(e)==='foul'&&success(e)&&!has(e,'AerialFoul'));
-  const isAerialDuelWon=e=>(eventType(e)==='aerial'&&success(e))||(eventType(e)==='foul'&&success(e)&&has(e,'AerialFoul'));
-  const isRecovery=e=>['ballrecovery','keeperpickup','claim'].includes(eventType(e));
-  const isFoulCommitted=e=>eventType(e)==='foul'&&outcome(e)==='unsuccessful';
-  const isFinalThirdEntry=e=>eventType(e)==='pass'&&Number(e?.x)<(200/3)&&Number(e?.endX)>=(200/3);
-
-  if(typeof FILTERS!=='undefined'){
-    FILTERS.recoveries=isRecovery;
-    FILTERS.tackles_won=e=>eventType(e)==='tackle';
-    FILTERS.ground_duels_won=isGroundDuelWon;
-    FILTERS.aerial_duels_won=isAerialDuelWon;
-    FILTERS.duels_won=e=>isGroundDuelWon(e)||isAerialDuelWon(e);
-    FILTERS.into_final_third=isFinalThirdEntry;
-    FILTERS.high_turnovers=()=>false;
-  }
-
-  function ordered(source){return [...(Array.isArray(source)?source:[])].sort((a,b)=>sec(a)-sec(b)||(Number(a?.eventId)||0)-(Number(b?.eventId)||0));}
-  function sameSecondPairedDispossessed(arr,i,e){
-    const tm=String(e?.teamId);
-    for(let j=Math.max(0,i-2);j<Math.min(arr.length,i+3);j++){
-      const q=arr[j];
-      if(sec(q)===sec(e)&&String(q?.teamId)!==tm&&eventType(q)==='dispossessed')return true;
-    }
-    return false;
-  }
-  function followControl(arr,i,e,maxS=4){
-    const tm=String(e?.teamId),t0=sec(e);
-    for(let k=i+1;k<arr.length;k++){
-      const q=arr[k],dt=sec(q)-t0;if(dt>maxS)break;
-      if(restart(q))return false;
-      if(String(q?.teamId)===tm&&['pass','ballrecovery','takeon'].includes(eventType(q)))return true;
-      if(String(q?.teamId)!==tm&&success(q)&&['pass','ballrecovery','takeon'].includes(eventType(q)))return false;
-    }
-    return false;
-  }
-  function establishes(arr,i,e){
-    if(restart(e))return false;
-    const t=eventType(e);
-    if(['pass','ballrecovery','keeperpickup','claim','takeon'].includes(t))return success(e);
-    if(t==='tackle')return success(e)&&(sameSecondPairedDispossessed(arr,i,e)||followControl(arr,i,e));
-    if(t==='interception')return success(e)&&followControl(arr,i,e);
-    return false;
-  }
-  function highTurnoverStarts(source){
-    const arr=ordered(source);let current=null,afterRestart=false;const starts=[];
-    for(let i=0;i<arr.length;i++){
-      const e=arr[i],tm=String(e?.teamId??'');
-      if(restart(e)){
-        current=(eventType(e)==='pass'&&success(e))?tm:null;afterRestart=true;continue;
-      }
-      if(eventType(e)==='tackle'&&success(e)&&sameSecondPairedDispossessed(arr,i,e)){
-        if(followControl(arr,i,e)&&Number(e?.x)>=HIGH_X&&!afterRestart)starts.push({index:i,event:e});
-        current=tm;afterRestart=false;continue;
-      }
-      if(establishes(arr,i,e)){
-        if(current&&tm!==current&&!afterRestart&&Number(e?.x)>=HIGH_X)starts.push({index:i,event:e});
-        current=tm;
-      }
-      if(current&&tm===current)afterRestart=false;
-    }
-    return {arr,starts};
-  }
-  function shotEnds(arr,start){
-    const tm=String(start.event?.teamId);
-    for(let k=start.index+1;k<arr.length;k++){
-      const q=arr[k],qt=eventType(q);
-      if(restart(q)||qt==='foul')return false;
-      if(String(q?.teamId)===tm&&SHOTS.has(qt))return true;
-      if(String(q?.teamId)!==tm&&success(q)&&['blockedpass','tackle','interception'].includes(qt))return false;
-      if(String(q?.teamId)!==tm&&establishes(arr,k,q))return false;
-    }
-    return false;
-  }
-  function turnoverSummary(source,teamId){
-    const {arr,starts}=highTurnoverStarts(source);
-    const mine=starts.filter(s=>String(s.event?.teamId)===String(teamId));
-    return {highTurnovers:mine.length,shotEndingHighTurnovers:mine.filter(s=>shotEnds(arr,s)).length,starts:mine.map(s=>s.event)};
-  }
-
-  window.PitchLabGoldenV2={
-    version:'FOREST_LEEDS_GOLDEN_V2_2026-08-27',
-    definitions:{
-      ballRecoveries:'BallRecovery + KeeperPickup + Claim',
-      tacklesWon:'All Tackle events',
-      groundDuelsWon:'Tackle + successful TakeOn + successful Foul excluding AerialFoul',
-      aerialDuelsWon:'successful Aerial + successful Foul with AerialFoul',
-      foulsCommitted:'Unsuccessful Foul events',
-      finalThirdEntries:'Pass events crossing x < 66.67 to endX >= 66.67',
-      highTurnovers:'Open-play controlled possession switches beginning x >= 61.9048; possession-state based, not raw recovery count',
-      shotEndingHighTurnovers:'High-turnover sequence reaches a shot before restart, foul, opponent controlled possession or successful defensive sequence-break action'
-    },
-    isRecovery,isGroundDuelWon,isAerialDuelWon,isFoulCommitted,isFinalThirdEntry,highTurnoverStarts,turnoverSummary,
-    forestLeedsControls:{full:{recoveries:[47,43],groundDuelsWon:[31,41],aerialDuelsWon:[30,25],tacklesWon:[8,19],fouls:[15,14],finalThirdEntries:[60,63],highTurnovers:[4,8],shotEndingHighTurnovers:[1,1]},firstHalf:{recoveries:[23,24],finalThirdEntries:[24,37]}}
-  };
-
-  function teamNames(){if(typeof raw==='undefined'||!raw)return [];return [raw.home?.name,raw.away?.name];}
-  function windowEvents(){
-    if(typeof events==='undefined'||!Array.isArray(events))return [];
-    const f=document.getElementById('fromRange'),t=document.getElementById('toRange');if(!f||!t)return events;
-    const max=Math.max(90*60,...events.map(sec));let a=+f.value,b=+t.value;if(b<=a)b=Math.min(100,a+1);
-    const lo=a/100*max,hi=b/100*max;return events.filter(e=>sec(e)>=lo&&sec(e)<=hi);
-  }
-  function metricCounts(list,team){
-    const mine=e=>typeof teamName==='function'&&teamName(e)===team;
-    return {
-      'Ball Recoveries':list.filter(e=>mine(e)&&isRecovery(e)).length,
-      'Tackles Won':list.filter(e=>mine(e)&&eventType(e)==='tackle').length,
-      'Ground Duels Won':list.filter(e=>mine(e)&&isGroundDuelWon(e)).length,
-      'Aerial Duels Won':list.filter(e=>mine(e)&&isAerialDuelWon(e)).length,
-      'Duels Won':list.filter(e=>mine(e)&&(isGroundDuelWon(e)||isAerialDuelWon(e))).length,
-      'Fouls':list.filter(e=>mine(e)&&isFoulCommitted(e)).length,
-      'Final Third Entries':list.filter(e=>mine(e)&&isFinalThirdEntry(e)).length
-    };
-  }
-  function rowHTML(label,h,a){
-    const d=Math.max(Math.abs(h)+Math.abs(a),1),hp=Math.abs(h)/d*100,ap=Math.abs(a)/d*100;
-    return `<div class="match-stats-row" data-golden-v2="${label}"><div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${hp}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${h}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${a}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${ap}%"></div></div></div>`;
-  }
-  let patching=false;
-  function patchMatchStats(){
-    if(patching)return;const body=document.getElementById('matchStatsBody');if(!body||!body.querySelector('.match-stats-row'))return;
-    const [home,away]=teamNames();if(!home||!away)return;const list=windowEvents(),hc=metricCounts(list,home),ac=metricCounts(list,away);
-    patching=true;
-    try{
-      [...body.querySelectorAll('.match-stats-row')].forEach(row=>{
-        const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();
-        let target=label;if(label==='Passes Into Final Third'){target='Final Third Entries';row.querySelector('.match-stats-row__label').textContent=target;}
-        if(hc[target]===undefined)return;
-        const h=hc[target],a=ac[target],d=Math.max(h+a,1);
-        const hv=row.querySelector('.match-stats-row__value--home'),av=row.querySelector('.match-stats-row__value--away');if(hv)hv.textContent=h;if(av)av.textContent=a;
-        const bars=row.querySelectorAll('.match-stats-row__bar');if(bars[0])bars[0].style.width=`${h/d*100}%`;if(bars[1])bars[1].style.width=`${a/d*100}%`;
-      });
-      body.querySelectorAll('[data-golden-v2]').forEach(x=>x.remove());
-      const homeEvent=list.find(e=>typeof teamName==='function'&&teamName(e)===home&&e.teamId!=null),awayEvent=list.find(e=>typeof teamName==='function'&&teamName(e)===away&&e.teamId!=null);
-      if(homeEvent&&awayEvent){
-        const h=turnoverSummary(list,homeEvent.teamId),a=turnoverSummary(list,awayEvent.teamId);
-        const marker=[...body.querySelectorAll('.match-stats-row')].find(r=>r.querySelector('.match-stats-row__label')?.textContent?.trim()==='10+ Pass Sequences');
-        const holder=document.createElement('div');holder.innerHTML=rowHTML('High Turnovers',h.highTurnovers,a.highTurnovers)+rowHTML('Shot-Ending High Turnovers',h.shotEndingHighTurnovers,a.shotEndingHighTurnovers);
-        const nodes=[...holder.children];if(marker){let ref=marker;for(const n of nodes){ref.insertAdjacentElement('afterend',n);ref=n;}}else nodes.forEach(n=>body.appendChild(n));
-      }
-    }finally{patching=false;}
-  }
-  const obs=new MutationObserver(()=>queueMicrotask(patchMatchStats));
-  obs.observe(document.documentElement,{childList:true,subtree:true});
-  ['fromRange','toRange','periodPreset','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>queueMicrotask(patchMatchStats)));
-  queueMicrotask(patchMatchStats);
+const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
+const et=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').replace(/[\s_-]/g,'').toLowerCase();
+const oc=e=>String(dn(e?.outcomeType)||'').toLowerCase(),ok=e=>oc(e)!=='unsuccessful';
+const hq=(e,...q)=>typeof hasQ==='function'&&hasQ(e,...q),ts=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+const HIGH=(65/105)*100,SHOTS=new Set(['goal','missedshots','savedshot','shotonpost']);
+const restart=e=>hq(e,'CornerTaken','ThrowIn','GoalKick','GoalKickTaken','FreekickTaken','FreeKickTaken','PenaltyTaken','KickOff')||['start','end','cornerawarded'].includes(et(e));
+const recovery=e=>['ballrecovery','keeperpickup','claim'].includes(et(e));
+const groundWon=e=>et(e)==='tackle'||(et(e)==='takeon'&&ok(e))||(et(e)==='foul'&&ok(e)&&!hq(e,'AerialFoul'));
+const aerialWon=e=>(et(e)==='aerial'&&ok(e))||(et(e)==='foul'&&ok(e)&&hq(e,'AerialFoul'));
+const foulCommitted=e=>et(e)==='foul'&&oc(e)==='unsuccessful';
+const finalThirdEntry=e=>et(e)==='pass'&&Number(e?.x)<200/3&&Number(e?.endX)>=200/3;
+if(typeof FILTERS!=='undefined'){
+ FILTERS.recoveries=recovery;FILTERS.tackles_won=e=>et(e)==='tackle';FILTERS.ground_duels_won=groundWon;FILTERS.aerial_duels_won=aerialWon;FILTERS.duels_won=e=>groundWon(e)||aerialWon(e);FILTERS.into_final_third=finalThirdEntry;
+}
+const ordered=s=>[...(Array.isArray(s)?s:[])].sort((a,b)=>ts(a)-ts(b)||(Number(a?.eventId)||0)-(Number(b?.eventId)||0));
+function pairedDisp(a,i,e){for(let j=Math.max(0,i-2);j<Math.min(a.length,i+3);j++){const q=a[j];if(ts(q)===ts(e)&&String(q?.teamId)!==String(e?.teamId)&&et(q)==='dispossessed')return true}return false}
+function follow(a,i,e,n=4){for(let k=i+1;k<a.length;k++){const q=a[k],d=ts(q)-ts(e);if(d>n)break;if(restart(q))return false;if(String(q?.teamId)===String(e?.teamId)&&['pass','ballrecovery','takeon'].includes(et(q)))return true;if(String(q?.teamId)!==String(e?.teamId)&&ok(q)&&['pass','ballrecovery','takeon'].includes(et(q)))return false}return false}
+function establishes(a,i,e){if(restart(e))return false;const t=et(e);if(['pass','ballrecovery','keeperpickup','claim','takeon'].includes(t))return ok(e);if(t==='tackle')return ok(e)&&(pairedDisp(a,i,e)||follow(a,i,e));if(t==='interception')return ok(e)&&follow(a,i,e);return false}
+function highStarts(src){const a=ordered(src),starts=[];let cur=null,after=false;for(let i=0;i<a.length;i++){const e=a[i],tm=String(e?.teamId??'');if(restart(e)){cur=et(e)==='pass'&&ok(e)?tm:null;after=true;continue}if(et(e)==='tackle'&&ok(e)&&pairedDisp(a,i,e)){if(follow(a,i,e)&&Number(e?.x)>=HIGH&&!after)starts.push({index:i,event:e});cur=tm;after=false;continue}if(establishes(a,i,e)){if(cur&&tm!==cur&&!after&&Number(e?.x)>=HIGH)starts.push({index:i,event:e});cur=tm}if(cur&&tm===cur)after=false}return{arr:a,starts}}
+function shotEnds(a,s){const tm=String(s.event?.teamId);for(let k=s.index+1;k<a.length;k++){const q=a[k],t=et(q);if(restart(q)||t==='foul')return false;if(String(q?.teamId)===tm&&SHOTS.has(t))return true;if(String(q?.teamId)!==tm&&ok(q)&&['blockedpass','tackle','interception'].includes(t))return false;if(String(q?.teamId)!==tm&&establishes(a,k,q))return false}return false}
+function turnoverSummary(src,id){const{arr,starts}=highStarts(src),m=starts.filter(s=>String(s.event?.teamId)===String(id));return{highTurnovers:m.length,shotEndingHighTurnovers:m.filter(s=>shotEnds(arr,s)).length,starts:m.map(s=>s.event)}}
+window.PitchLabGoldenV2={version:'FOREST_LEEDS_GOLDEN_V2_2026-08-27',definitions:{ballRecoveries:'BallRecovery + KeeperPickup + Claim',tacklesWon:'All Tackle events',groundDuelsWon:'Tackle + successful TakeOn + successful Foul excluding AerialFoul',aerialDuelsWon:'successful Aerial + successful Foul with AerialFoul',foulsCommitted:'Unsuccessful Foul events',finalThirdEntries:'Pass events crossing x < 66.67 to endX >= 66.67',highTurnovers:'Open-play controlled possession switch beginning x >= 61.9048',shotEndingHighTurnovers:'High-turnover sequence reaching a shot before sequence termination'},recovery,groundWon,aerialWon,foulCommitted,finalThirdEntry,highStarts,turnoverSummary,forestLeedsControls:{full:{recoveries:[47,43],groundDuelsWon:[31,41],aerialDuelsWon:[30,25],tacklesWon:[8,19],fouls:[15,14],finalThirdEntries:[60,63],highTurnovers:[4,8],shotEndingHighTurnovers:[1,1]},firstHalf:{recoveries:[23,24],finalThirdEntries:[24,37]}}};
+function winEvents(){if(typeof events==='undefined'||!Array.isArray(events))return[];const f=document.getElementById('fromRange'),t=document.getElementById('toRange');if(!f||!t)return events;const max=Math.max(5400,...events.map(ts));let x=+f.value,y=+t.value;if(y<=x)y=Math.min(100,x+1);const lo=x/100*max,hi=y/100*max;return events.filter(e=>ts(e)>=lo&&ts(e)<=hi)}
+function counts(list,name){const mine=e=>typeof teamName==='function'&&teamName(e)===name;return{'Ball Recoveries':list.filter(e=>mine(e)&&recovery(e)).length,'Tackles Won':list.filter(e=>mine(e)&&et(e)==='tackle').length,'Ground Duels Won':list.filter(e=>mine(e)&&groundWon(e)).length,'Aerial Duels Won':list.filter(e=>mine(e)&&aerialWon(e)).length,'Duels Won':list.filter(e=>mine(e)&&(groundWon(e)||aerialWon(e))).length,'Fouls':list.filter(e=>mine(e)&&foulCommitted(e)).length,'Final Third Entries':list.filter(e=>mine(e)&&finalThirdEntry(e)).length}}
+function setRow(row,h,a,label){const d=Math.max(h+a,1);row.querySelector('.match-stats-row__label').textContent=label;row.querySelector('.match-stats-row__value--home').textContent=h;row.querySelector('.match-stats-row__value--away').textContent=a;const b=row.querySelectorAll('.match-stats-row__bar');if(b[0])b[0].style.width=`${h/d*100}%`;if(b[1])b[1].style.width=`${a/d*100}%`}
+function makeRow(label,h,a){const d=Math.max(h+a,1),r=document.createElement('div');r.className='match-stats-row';r.dataset.goldenV2=label;r.innerHTML=`<div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${h/d*100}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${h}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${a}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${a/d*100}%"></div></div>`;return r}
+function patch(){const body=document.getElementById('matchStatsBody');if(!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const list=winEvents(),hc=counts(list,home),ac=counts(list,away);for(const row of body.querySelectorAll('.match-stats-row')){let l=row.querySelector('.match-stats-row__label')?.textContent?.trim();if(l==='Passes Into Final Third')l='Final Third Entries';if(hc[l]!==undefined)setRow(row,hc[l],ac[l],l)}const he=list.find(e=>typeof teamName==='function'&&teamName(e)===home&&e.teamId!=null),ae=list.find(e=>typeof teamName==='function'&&teamName(e)===away&&e.teamId!=null);if(!he||!ae)return;const hs=turnoverSummary(list,he.teamId),as=turnoverSummary(list,ae.teamId);const vals=[['High Turnovers',hs.highTurnovers,as.highTurnovers],['Shot-Ending High Turnovers',hs.shotEndingHighTurnovers,as.shotEndingHighTurnovers]];let marker=[...body.querySelectorAll('.match-stats-row')].find(r=>r.querySelector('.match-stats-row__label')?.textContent?.trim()==='10+ Pass Sequences');for(const [l,h,a] of vals){let r=body.querySelector(`[data-golden-v2="${l}"]`);if(r)setRow(r,h,a,l);else{r=makeRow(l,h,a);if(marker){marker.insertAdjacentElement('afterend',r);marker=r}else body.appendChild(r)}}}
+setInterval(patch,400);['fromRange','toRange'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));document.addEventListener('click',()=>setTimeout(patch,0));setTimeout(patch,0);
 })();
