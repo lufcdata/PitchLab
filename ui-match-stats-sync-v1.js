@@ -14,7 +14,11 @@
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const metrics=[
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
-      ['Headed Shots','shots_head'],['Woodwork Shots','woodwork'],['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
+      ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Off-Target','shots_off'],['Blocked Shots','shots_blocked'],['Woodwork Shots','woodwork'],
+      ['Shots - Open Play','shots_open'],['Shots - Fast Break','shots_fastbreak'],['Shots from Set-Pieces','shots_setpiece'],['Shots - From Free-Kicks','shots_dfk'],
+      ['Shots - 6 Yard Box','shots_6yd'],['Shots - Penalty Box','shots_box'],['Shots - Penalty Area','shots_penalty_area'],['Shots - Outside Box','shots_outside'],
+      ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
+      ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
       ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
