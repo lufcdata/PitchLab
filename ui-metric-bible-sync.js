@@ -7,27 +7,45 @@
   const ts=e=>Number(e?.minute||0)*60+Number(e?.second||0);
   const teamOf=e=>typeof teamName==='function'?teamName(e):String(e?.teamId??'');
   const coords=e=>Number.isFinite(Number(e?.x))&&Number.isFinite(Number(e?.y));
+  const shotFamily=e=>['goal','missedshots','savedshot','shotonpost'].includes(et(e));
+  const setPlayCross=e=>et(e)==='pass'&&hq(e,'Cross')&&!hq(e,'ThrowIn','ThrowinSetPiece','GoalKick','GoalKickTaken')&&hq(e,'CornerTaken','FreeKickTaken','FreekickTaken','SetPiece','DirectFreekick');
 
   const defs={
     interceptions:{label:'Interceptions',test:e=>et(e)==='interception'},
     goal_kicks:{label:'Goal Kicks',test:e=>et(e)==='pass'&&hq(e,'GoalKick')},
     touches:{label:'Touches',test:e=>e?.isTouch===true},
-    touch_box:{label:'Penalty Box Touches',test:e=>e?.isTouch===true&&Number(e?.x)>=((105-16.5)/105*100)&&Number(e?.y)>=21.1&&Number(e?.y)<=78.9}
+    touch_box:{label:'Penalty Box Touches',test:e=>e?.isTouch===true&&Number(e?.x)>=((105-16.5)/105*100)&&Number(e?.y)>=21.1&&Number(e?.y)<=78.9},
+    shots_head:{label:'Headed Shots',test:e=>shotFamily(e)&&hq(e,'Head')},
+    woodwork:{label:'Woodwork Shots',test:e=>et(e)==='shotonpost'},
+    fouls_committed:{label:'Fouls',test:e=>et(e)==='foul'&&oc(e)==='unsuccessful'},
+    fouled:{label:'Fouled',test:e=>et(e)==='foul'&&oc(e)==='successful'},
+    corners:{label:'Corners',test:e=>et(e)==='pass'&&hq(e,'CornerTaken')},
+    set_play_crosses_success:{label:'Successful Set Play Crosses',test:e=>setPlayCross(e)&&ok(e)},
+    set_play_crosses_unsuccess:{label:'Unsuccessful Set Play Crosses',test:e=>setPlayCross(e)&&!ok(e)},
+    accurate_crosses:{label:'Accurate Crosses',test:e=>et(e)==='pass'&&hq(e,'Cross')&&ok(e)},
+    inaccurate_crosses:{label:'Inaccurate Crosses',test:e=>et(e)==='pass'&&hq(e,'Cross')&&!ok(e)}
   };
 
   if(typeof FILTERS!=='undefined'){
-    FILTERS.interceptions=defs.interceptions.test;
-    FILTERS.goal_kicks=defs.goal_kicks.test;
-    FILTERS.touches=defs.touches.test;
-    FILTERS.touch_box=defs.touch_box.test;
+    for(const [key,def] of Object.entries(defs))FILTERS[key]=def.test;
   }
 
-  function ensureMetricOption(){
+  function ensureGroup(sel,label){
+    let group=[...sel.querySelectorAll('optgroup')].find(g=>g.label===label);
+    if(!group){group=document.createElement('optgroup');group.label=label;sel.appendChild(group)}
+    return group;
+  }
+  function ensureOption(sel,groupLabel,value,text){
+    if(sel.querySelector(`option[value="${value}"]`))return;
+    const o=document.createElement('option');o.value=value;o.textContent=text;ensureGroup(sel,groupLabel).appendChild(o);
+  }
+  function ensureMetricOptions(){
     const sel=document.getElementById('metric');if(!sel)return;
-    if(sel.querySelector('option[value="goal_kicks"]'))return;
-    let group=[...sel.querySelectorAll('optgroup')].find(g=>g.label==='Set-Pieces');
-    if(!group){group=document.createElement('optgroup');group.label='Set-Pieces';sel.appendChild(group)}
-    const o=document.createElement('option');o.value='goal_kicks';o.textContent='Goal Kicks';group.appendChild(o);
+    ensureOption(sel,'Set-Pieces','goal_kicks','Goal Kicks');
+    ensureOption(sel,'Set-Pieces','set_play_crosses_success','Successful Set Play Crosses');
+    ensureOption(sel,'Set-Pieces','set_play_crosses_unsuccess','Unsuccessful Set Play Crosses');
+    ensureOption(sel,'Defensive','fouls_committed','Fouls');
+    ensureOption(sel,'Defensive','fouled','Fouled');
   }
 
   function windowBounds(source=window.events){
@@ -90,11 +108,15 @@
   }
 
   window.PitchLabMetricBible={
-    version:'METRIC_BIBLE_SYNC_V1_2026-08-27',defs,ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
-    forestLeedsControls:{interceptions:[2,15],goalKicks:[6,10],touches:[617,500],penaltyBoxTouches:[22,15]}
+    version:'METRIC_BIBLE_SYNC_V2_2026-08-27',defs,ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
+    forestLeedsControls:{
+      interceptions:[2,15],goalKicks:[6,10],touches:[617,500],penaltyBoxTouches:[22,15],
+      headedShots:[5,3],woodworkShots:[1,0],fouls:[15,14],fouled:[14,15],corners:[3,2],
+      successfulSetPlayCrosses:[1,1],unsuccessfulSetPlayCrosses:[5,2],accurateCrosses:[4,3],inaccurateCrosses:[15,5],totalCrosses:[19,8]
+    }
   };
 
-  ensureMetricOption();
+  ensureMetricOptions();
   document.dispatchEvent(new CustomEvent('pitchlab:metric-bible-ready',{detail:{version:window.PitchLabMetricBible.version}}));
   ['metric','team','player','fromRange','toRange'].forEach(id=>{const el=document.getElementById(id);if(el)el.dispatchEvent(new Event('change',{bubbles:true}))});
 })();
