@@ -14,7 +14,7 @@ frame.addEventListener('load',()=>{
   const doc=frame.contentDocument;
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
-  const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
+  const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.async=false;el.dataset[key]='1';doc.body.appendChild(el)};
   const V='metrics-41';
   addCss(`ui-integration.css?v=${V}`,'uiIntegration');
   addCss(`ui-leaders.css?v=${V}`,'uiLeaders');
