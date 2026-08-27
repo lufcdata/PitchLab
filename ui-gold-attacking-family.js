@@ -23,6 +23,13 @@
     FILTERS.headed_clearances=defs.headed_clearances.test;
   }
 
+  // Extend the public canonical registry without disturbing the original Forest-Leeds control map.
+  const bible=window.PitchLabMetricBible;
+  if(bible){
+    bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
+    bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
+  }
+
   const sel=document.getElementById('metric');
   if(sel){
     const ensureGroup=label=>{let g=[...sel.querySelectorAll('optgroup')].find(x=>x.label===label);if(!g){g=document.createElement('optgroup');g.label=label;sel.appendChild(g)}return g};
