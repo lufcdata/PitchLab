@@ -1,37 +1,49 @@
-# PitchLab Canonical Metric Registry
+# Gold Metric Bible
 
 Created: 2026-08-27
 
 ## Governing rule
 
-Match Controls / Pitch Events is the master catalogue for event/player metrics.
+The **Gold Metric Bible** is PitchLab's single authoritative metric-governance system.
 
-Every migrated event metric has exactly one canonical definition in `ui-metric-bible-sync.js`. The same qualifying event set is consumed by:
+For event/player metrics, Match Controls / Pitch Events is the master catalogue. Every migrated event metric has exactly one canonical definition. The same qualifying event set is consumed by:
 
 1. Pitch Events / Match Controls — plot the canonical events.
 2. Metric Leaders — group those canonical events by player.
 3. Match Stats — group those canonical events by team.
 
-No migrated event metric may have a second independent statistical definition in a downstream surface.
+No Gold event metric may have a second independent statistical definition in a downstream surface.
 
-Team-derived metrics such as Possession, PPDA, 10+ Pass Sequences and Pressed Sequences are intentionally separate and may be Match Stats only.
+Team Metrics are explicitly different: they describe team/match performance and are available in Match Stats only. They must not appear in Pitch Events / Match Controls or Metric Leaders.
 
-## Canonical definition contract
+## Gold definition contract
 
-Each canonical event metric stores together:
+Every Gold metric must store or declare:
 
 - stable metric key
 - display label
-- metric kind (`event`)
-- allowed surfaces (`pitch`, `leaders`, `matchStats`)
-- Forest-Leeds Golden control
-- one event filter
+- metric type (`event` or `team`)
+- allowed surfaces
+- Golden control where approved
+- one authoritative event filter or team calculator reference
+- Gold status
 
-The canonical registry takes precedence over legacy `FILTERS`. Migrated `FILTERS` keys are compatibility accessors backed by the canonical function; later attempts to overwrite those keys are ignored.
+The canonical registry takes precedence over legacy `FILTERS` for migrated Event Metrics. Migrated `FILTERS` keys are compatibility accessors backed by the canonical function; later attempts to overwrite those keys are ignored.
 
-## First migrated family
+## Gold Team Metrics — LOCKED
 
-The first canonical migration is the signed-off Touch + Shot family.
+These four metrics are now explicitly classified as **TEAM METRIC** and **Match Stats only** in `ui-team-metric-bible.js`:
+
+- `possession` — Possession — TEAM METRIC — Match Stats only
+- `ppda` — PPDA — TEAM METRIC — Match Stats only — Golden Forest 12.9 / Leeds 8.8
+- `ten_pass_sequences` — 10+ Pass Sequences — TEAM METRIC — Match Stats only — Golden Forest 6 / Leeds 7
+- `pressed_sequences` — Pressed Sequences — TEAM METRIC — Match Stats only — Golden Forest 2 / Leeds 16
+
+Possession retains its existing approved Match Stats calculation; its Team Metric classification/scope is locked here without replacing that calculator.
+
+## First Gold Event migration family
+
+The first canonical Event Metric migration is the signed-off Touch + Shot family.
 
 ### Touches
 
@@ -63,36 +75,28 @@ The first canonical migration is the signed-off Touch + Shot family.
 
 Forest-Leeds full match:
 
-- On-Target + Off-Target + Blocked = Total Shots
-  - Forest: 2 + 8 + 2 = 12
-  - Leeds: 3 + 2 + 6 = 11
-- Penalty Area + Outside Box = Total Shots
-  - Forest: 6 + 6 = 12
-  - Leeds: 6 + 5 = 11
-- Six-yard Box + Penalty Box = Penalty Area
-  - Forest: 1 + 5 = 6
-  - Leeds: 1 + 5 = 6
-- Right Foot + Left Foot + Head + Other = Total Shots
-  - Forest: 6 + 1 + 5 + 0 = 12
-  - Leeds: 5 + 3 + 3 + 0 = 11
-- Open Play + Set-Pieces = Total Shots
-  - Forest: 4 + 8 = 12
-  - Leeds: 4 + 7 = 11
+- On-Target + Off-Target + Blocked = Total Shots: Forest 2 + 8 + 2 = 12; Leeds 3 + 2 + 6 = 11.
+- Penalty Area + Outside Box = Total Shots: Forest 6 + 6 = 12; Leeds 6 + 5 = 11.
+- Six-yard Box + Penalty Box = Penalty Area: Forest 1 + 5 = 6; Leeds 1 + 5 = 6.
+- Right Foot + Left Foot + Head + Other = Total Shots: Forest 6 + 1 + 5 + 0 = 12; Leeds 5 + 3 + 3 + 0 = 11.
+- Open Play + Set-Pieces = Total Shots: Forest 4 + 8 = 12; Leeds 4 + 7 = 11.
 
 ## Migration procedure for every later family
 
 1. Preserve every existing Match Controls option.
 2. Review and approve the definition/control metric-by-metric.
-3. Add the approved metrics to the canonical registry with scope and Golden control.
-4. Back legacy `FILTERS` keys with the canonical definition.
-5. Make Match Stats consume the canonical metric rather than calculate its own version.
-6. Metric Leaders must use canonical `playerRows` for event metrics.
-7. Verify Pitch Events plots the same canonical event set.
-8. Only then retire or ignore the old duplicate implementation.
-9. Do not migrate a metric marked FLAGGED / REVIEW LATER.
+3. Explicitly classify the metric as EVENT METRIC or TEAM METRIC.
+4. Add the approved metric to the Gold Metric Bible with scope and Golden control.
+5. For Event Metrics, back legacy `FILTERS` keys with the Gold definition.
+6. Make Match Stats consume the Gold metric rather than calculate an independent version.
+7. Metric Leaders must use the Gold event set for Event Metrics.
+8. Verify Pitch Events plots that same Gold event set.
+9. TEAM METRICS must remain Match Stats only.
+10. Only then retire or ignore the old duplicate implementation.
+11. Do not migrate a metric marked FLAGGED / REVIEW LATER.
 
 ## Deliberately not migrated yet
 
 All other metric families remain in their existing implementation until individually reviewed. This includes passing, goals, carries, crosses, duels, defensive metrics, corners, take-ons, and set-piece families.
 
-Penalty Area Entries and Turnovers / Loss of Possession remain unresolved and must not be forced into the canonical registry until their definitions are approved.
+Penalty Area Entries and Turnovers / Loss of Possession remain unresolved and must not be forced into the Gold Metric Bible until their definitions are approved.
