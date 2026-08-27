@@ -12,6 +12,11 @@ These definitions are regression controls. Do not replace them with fixture-spec
   - 2H implied: Forest 24, Leeds 19.
 - Tackles Won = every Tackle event in this WhoScored feed; do not filter on outcomeType.
   - FT: Forest 8, Leeds 19.
+- Interceptions = every WhoScored Interception event.
+  - FT: Forest 2, Leeds 15.
+- Goal Kicks = Pass events carrying the GoalKick qualifier.
+  - FT: Forest 6, Leeds 10.
+  - Count the delivered restart event, not a separate award event.
 - Ground Duels Won = Tackle + successful TakeOn + successful Foul, excluding Foul events carrying AerialFoul.
   - FT: Forest 31, Leeds 41.
   - Leeds share: 56.9% of 72 ground-duel wins.
@@ -31,6 +36,11 @@ These definitions are regression controls. Do not replace them with fixture-spec
   - FT: Forest 4, Leeds 8.
 - Shot-Ending High Turnover = a High Turnover whose resulting attacking sequence reaches a shot before a restart, foul, opposition-controlled possession, or successful opposition sequence-break action such as BlockedPass/Tackle/Interception.
   - FT: Forest 1, Leeds 1.
+- Possession = share of WhoScored Pass events excluding ThrowIn events.
+  - FT: Forest 56.3%, Leeds 43.7%.
+  - 1H: Forest 51.9%, Leeds 48.1%.
+  - 2H: Forest 60.7%, Leeds 39.3%.
+  - Display to one decimal place.
 
 ## Previously locked controls retained
 
@@ -54,6 +64,16 @@ These definitions are regression controls. Do not replace them with fixture-spec
 - Clearances: Forest 32, Leeds 31.
 - Successful Take-Ons: Forest 10, Leeds 7.
 - Dispossessed: Forest 9, Leeds 3.
+
+## Cross-surface synchronization contract
+
+All PitchLab surfaces must consume the same raw event stream, time-window bounds and Metric Bible definitions. `ui-metric-bible-sync.js` is the shared browser contract for Match Stats and Metric Leaders and exposes common helpers for Pass Combinations, Average Positions and Passing Network.
+
+- Match Stats: Golden totals and percentage calculations.
+- Metric Leaders: same FILTERS / definitions and current time/team window.
+- Pass Combinations and Passing Network: successful-pass relationships are inferred from the same raw event stream and current controls; the shared recipient helper is exposed as `PitchLabMetricBible.inferRecipients` for convergence of future revisions.
+- Average Positions: same raw events and current seconds-based time/team scope; the shared helper is exposed as `PitchLabMetricBible.averagePositions`.
+- All new metric definitions must be added to the shared registry before being exposed on another surface.
 
 ## Still unresolved / do not force
 
