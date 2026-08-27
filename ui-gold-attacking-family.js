@@ -15,6 +15,7 @@
   // Compatibility bridge: preserve legacy key semantics while introducing explicit stable keys.
   if(typeof FILTERS!=='undefined'){
     FILTERS.big_chances=defs.big_chances.test;
+    FILTERS.big_chances_custom=defs.big_chances.test;
     FILTERS.big_chances_created=defs.big_chances_created.test;
     FILTERS.bigchances=defs.big_chances_created.test;
     FILTERS.chances_created=defs.chances_created.test;
