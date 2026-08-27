@@ -11,7 +11,11 @@
     status:'GOLD_LOCKED'
   });
 
-  if(typeof FILTERS!=='undefined')FILTERS.final_third_entries=finalThirdEntry;
+  if(typeof FILTERS!=='undefined'){
+    FILTERS.final_third_entries=finalThirdEntry;
+    delete FILTERS.into_final_third;
+    delete FILTERS.into_final_third_success;
+  }
 
   const bible=window.PitchLabMetricBible;
   if(bible){
@@ -21,15 +25,15 @@
 
   const sel=document.getElementById('metric');
   if(sel){
+    sel.querySelector('option[value="into_final_third"]')?.remove();
+    sel.querySelector('option[value="into_final_third_success"]')?.remove();
     let group=[...sel.querySelectorAll('optgroup')].find(g=>g.label==='Passing');
     if(!group){group=document.createElement('optgroup');group.label='Passing';sel.appendChild(group)}
     let o=sel.querySelector('option[value="final_third_entries"]');
     if(!o){o=document.createElement('option');o.value='final_third_entries';group.appendChild(o)}
     o.textContent='Final Third Entries';
-    const into=sel.querySelector('option[value="into_final_third"]');
-    if(into)group.insertBefore(o,into);
   }
 
-  window.PitchLabFinalThirdEntriesGold=Object.freeze({version:'FINAL_THIRD_ENTRIES_GOLD_V1_2026-08-27',def,finalThirdEntry});
+  window.PitchLabFinalThirdEntriesGold=Object.freeze({version:'FINAL_THIRD_ENTRIES_GOLD_V2_2026-08-27',def,finalThirdEntry,retired:Object.freeze(['into_final_third','into_final_third_success'])});
   document.dispatchEvent(new CustomEvent('pitchlab:final-third-entries-gold-ready',{detail:{version:window.PitchLabFinalThirdEntriesGold.version}}));
 })();
