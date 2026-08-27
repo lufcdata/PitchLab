@@ -110,8 +110,10 @@
     return list.filter(e=>ts(e)>=lo&&ts(e)<=hi);
   }
   function metricEvents(key,source=window.events,team='Both'){
-    // Canonical registry always wins for migrated metrics; FILTERS is legacy fallback only.
-    const fn=canonicalKeys.has(key)?defs[key].test:((typeof FILTERS!=='undefined'&&FILTERS[key])||defs[key]?.test||(()=>false));
+    // Resolve the live public canonical registry first so Gold families attached after Bible startup
+    // are genuinely authoritative. FILTERS is legacy fallback only for unmigrated metrics.
+    const canonicalDef=window.PitchLabMetricBible?.canonicalRegistry?.[key];
+    const fn=canonicalDef?.test||((typeof FILTERS!=='undefined'&&FILTERS[key])||defs[key]?.test||(()=>false));
     let list=windowEvents(source).filter(fn);
     if(team&&team!=='Both')list=list.filter(e=>teamOf(e)===team);
     return list;
@@ -159,7 +161,7 @@
 
   const canonicalRegistry=Object.freeze(Object.fromEntries([...canonicalKeys].map(key=>[key,defs[key]])));
   window.PitchLabMetricBible={
-    version:'METRIC_BIBLE_CANONICAL_V1_2026-08-27',defs,canonicalRegistry,canonicalKeys:Object.freeze([...canonicalKeys]),ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
+    version:'METRIC_BIBLE_CANONICAL_V2_2026-08-27',defs,canonicalRegistry,canonicalKeys:Object.freeze([...canonicalKeys]),ts,teamOf,windowBounds,windowEvents,metricEvents,playerRows,inferRecipients,averagePositions,
     forestLeedsControls:Object.freeze(Object.fromEntries([...canonicalKeys].map(key=>[key,defs[key].golden])))
   };
 
