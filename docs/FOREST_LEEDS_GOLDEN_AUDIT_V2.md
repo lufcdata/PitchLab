@@ -26,12 +26,33 @@ These definitions are regression controls. Do not replace them with fixture-spec
   - The Forest +1 is the explicitly paired AerialFoul at 38:24 (Forest successful Foul / Leeds unsuccessful Foul).
 - Fouls committed = Foul events with outcomeType Unsuccessful.
   - FT: Forest 15, Leeds 14.
+- Fouled = Foul events with outcomeType Successful, attributed to the player/team that was fouled.
+  - FT: Forest 14, Leeds 15.
+  - Team totals mirror the opponent's committed-foul total, but player attribution must come from the successful Foul row rather than by inversion.
 - Final Third Entries = any WhoScored Pass event crossing from x < 66.6667 to endX >= 66.6667.
   - Includes qualifying pass-family set-piece deliveries represented as Pass events.
   - Does not add reconstructed carries in this WhoScored/Opta product.
   - FT: Forest 60, Leeds 63.
   - 1H: Forest 24, Leeds 37.
   - 2H implied: Forest 36, Leeds 26.
+- Headed Shots = shot-family events carrying the Head qualifier.
+  - FT: Forest 5, Leeds 3.
+- Woodwork Shots = ShotOnPost events.
+  - FT: Forest 1, Leeds 0.
+- Corners = delivered corner restart Pass events carrying CornerTaken.
+  - FT: Forest 3, Leeds 2.
+- Successful Set Play Crosses = Pass events carrying Cross plus a set-play restart qualifier (corner/free-kick family), outcome Successful.
+  - FT: Forest 1, Leeds 1.
+- Unsuccessful Set Play Crosses = the same set-play-cross family, outcome Unsuccessful.
+  - FT: Forest 5, Leeds 2.
+- Accurate Crosses = successful open-play crosses + successful set-play crosses.
+  - Current one-match provider split: Forest open-play 3 successful plus 1 set-play = 4; Leeds open-play 2 successful plus 1 set-play = 3.
+  - FT: Forest 4, Leeds 3.
+- Inaccurate Crosses = unsuccessful open-play crosses + unsuccessful set-play crosses.
+  - Current one-match provider split: Forest 10 open-play unsuccessful plus 5 set-play = 15; Leeds 3 open-play unsuccessful plus 2 set-play = 5.
+  - FT: Forest 15, Leeds 5.
+- Total Crosses = open-play crosses + set-play crosses.
+  - FT: Forest 19, Leeds 8.
 - High Turnover = open-play controlled possession switch whose new possession begins within 40 metres of the opponent goal line (WhoScored team-relative x >= 61.9048). This is possession-state based, not a raw count of recovery events.
   - FT: Forest 4, Leeds 8.
 - Shot-Ending High Turnover = a High Turnover whose resulting attacking sequence reaches a shot before a restart, foul, opposition-controlled possession, or successful opposition sequence-break action such as BlockedPass/Tackle/Interception.
@@ -59,7 +80,6 @@ These definitions are regression controls. Do not replace them with fixture-spec
 - Shots Outside Box: Forest 6, Leeds 5.
 - Shots From Set-Pieces: Forest 8, Leeds 7.
 - Set-Piece Goals: Forest 0, Leeds 1.
-- Shots — Head: Forest 5, Leeds 3.
 - Throw Ins: Forest 25, Leeds 12.
 - Clearances: Forest 32, Leeds 31.
 - Successful Take-Ons: Forest 10, Leeds 7.
@@ -75,8 +95,7 @@ All PitchLab surfaces must consume the same raw event stream, time-window bounds
 - Average Positions: same raw events and current seconds-based time/team scope; the shared helper is exposed as `PitchLabMetricBible.averagePositions`.
 - All new metric definitions must be added to the shared registry before being exposed on another surface.
 
-## Still unresolved / do not force
+## Under audit / do not force
 
-- Accurate Crosses: conflicting controls exist (2-5 versus earlier 4-3 raw-event interpretation). Keep under audit.
-- Woodwork Shots: official control supplied as 2-0, while direct ShotOnPost reconstruction gives 1-0. Keep under audit.
-- Turnovers / loss of possession: control 16-13; definition still to be reconstructed separately.
+- Penalty Area Entries: supplied FT control Forest 36, Leeds 21. Provider usage consistently treats this as entries into the opposition box by pass/cross and carry, but the precise WhoScored reconstruction still needs raw-event boundary validation before Golden implementation. In particular, distinguish all attempted pass/cross entries from successful entries and then add reconstructed carry entries only if the provider control supports it.
+- Turnovers / loss of possession: control 16-13; definition still to be reconstructed separately. Turnover work is paused pending clarification.
