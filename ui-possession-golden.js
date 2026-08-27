@@ -32,9 +32,11 @@
     if(!row)return;
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;
     const [h,a]=pair(windowEvents(),home,away);
+    // Match Stats pct rows add the % presentation themselves. Keep the Golden values numeric
+    // here so the UI renders 56.3% rather than 56.3%%.
     const hv=row.querySelector('.match-stats-row__value--home'),av=row.querySelector('.match-stats-row__value--away');
-    if(hv)hv.textContent=`${h.toFixed(1)}%`;
-    if(av)av.textContent=`${a.toFixed(1)}%`;
+    if(hv)hv.textContent=h.toFixed(1);
+    if(av)av.textContent=a.toFixed(1);
     const bars=row.querySelectorAll('.match-stats-row__bar');
     if(bars[0])bars[0].style.width=`${h}%`;
     if(bars[1])bars[1].style.width=`${a}%`;
