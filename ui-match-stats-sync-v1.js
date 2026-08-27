@@ -29,6 +29,7 @@
       ['Shots - 6 Yard Box','shots_6yd'],['Shots - Penalty Box','shots_box'],['Shots - Penalty Area','shots_penalty_area'],['Shots - Outside Box','shots_outside'],
       ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
       ['Big Chances','big_chances'],['Big Chances Created','big_chances_created'],['Chances Created','chances_created'],['Assists','assists'],['Headed Clearances','headed_clearances'],
+      ['Final Third Entries','final_third_entries'],
       ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
       ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
@@ -44,7 +45,7 @@
       }else body.appendChild(row);
     }
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
