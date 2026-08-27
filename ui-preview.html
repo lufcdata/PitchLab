@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-40" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-41" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,41 +15,47 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.dataset[key]='1';doc.body.appendChild(el)};
-  addCss('ui-integration.css?v=metrics-40','uiIntegration');
-  addCss('ui-leaders.css?v=metrics-40','uiLeaders');
-  addCss('ui-timings.css?v=metrics-40','uiTimings');
-  addCss('ui-arrow-style.css?v=metrics-40','uiArrowStyle');
-  addCss('ui-period.css?v=metrics-40','uiPeriod');
-  addCss('ui-match-stats.css?v=metrics-40','uiMatchStats');
-  addCss('ui-pass-combinations.css?v=metrics-40','uiPassCombinations');
-  addCss('ui-positions.css?v=metrics-40','uiPositions');
-  addCss('ui-passing-network.css?v=metrics-40','uiPassingNetwork');
-  addCss('ui-match-events.css?v=metrics-40','uiMatchEvents');
-  addCss('ui-team-colours.css?v=metrics-40','uiTeamColours');
-  addCss('ui-polish.css?v=metrics-40','uiPolish');
-  addCss('ui-v31-fixes.css?v=metrics-40','uiV31Fixes');
-  addJs('ui-header.js?v=metrics-40','uiIntegration');
-  addJs('ui-carry-metrics.js?v=metrics-40','uiCarryMetrics');
-  addJs('ui-leaders.js?v=metrics-40','uiLeaders');
-  addJs('ui-timings.js?v=metrics-40','uiTimings');
-  addJs('ui-extra-metrics.js?v=metrics-40','uiExtraMetrics');
-  addJs('ui-golden-metrics-v2.js?v=metrics-40','uiGoldenMetricsV2');
-  addJs('ui-possession-golden.js?v=metrics-40','uiPossessionGolden');
-  addJs('ui-period.js?v=metrics-40','uiPeriod');
-  addJs('ui-touch-metrics-fix.js?v=metrics-40','uiTouchMetricsFix');
-  addJs('ui-forest-touch-map.js?v=metrics-40','uiForestTouchMap');
-  addJs('ui-passing-metrics-golden.js?v=metrics-40','uiPassingMetricsGolden');
-  addJs('ui-match-stats.js?v=metrics-40','uiMatchStats');
-  addJs('ui-sequence-metrics.js?v=metrics-40','uiSequenceMetrics');
-  addJs('ui-pass-combinations.js?v=metrics-40','uiPassCombinations');
-  addJs('ui-positions.js?v=metrics-40','uiPositions');
-  addJs('ui-passing-network.js?v=metrics-40','uiPassingNetwork');
-  addJs('ui-match-events.js?v=metrics-40','uiMatchEvents');
-  addJs('ui-team-colours.js?v=metrics-40','uiTeamColours');
-  addJs('ui-polish.js?v=metrics-40','uiPolish');
-  addJs('ui-match-switcher.js?v=metrics-40','uiMatchSwitcher');
-  addJs('ui-v31-fixes.js?v=metrics-40','uiV31Fixes');
-  addJs('ui-view-tabs-fix.js?v=metrics-40','uiViewTabsFix');
+  const V='metrics-41';
+  addCss(`ui-integration.css?v=${V}`,'uiIntegration');
+  addCss(`ui-leaders.css?v=${V}`,'uiLeaders');
+  addCss(`ui-timings.css?v=${V}`,'uiTimings');
+  addCss(`ui-arrow-style.css?v=${V}`,'uiArrowStyle');
+  addCss(`ui-period.css?v=${V}`,'uiPeriod');
+  addCss(`ui-match-stats.css?v=${V}`,'uiMatchStats');
+  addCss(`ui-pass-combinations.css?v=${V}`,'uiPassCombinations');
+  addCss(`ui-positions.css?v=${V}`,'uiPositions');
+  addCss(`ui-passing-network.css?v=${V}`,'uiPassingNetwork');
+  addCss(`ui-match-events.css?v=${V}`,'uiMatchEvents');
+  addCss(`ui-team-colours.css?v=${V}`,'uiTeamColours');
+  addCss(`ui-polish.css?v=${V}`,'uiPolish');
+  addCss(`ui-v31-fixes.css?v=${V}`,'uiV31Fixes');
+
+  // Base metric engines first, then the shared Metric Bible contract, then every consumer surface.
+  addJs(`ui-header.js?v=${V}`,'uiIntegration');
+  addJs(`ui-carry-metrics.js?v=${V}`,'uiCarryMetrics');
+  addJs(`ui-timings.js?v=${V}`,'uiTimings');
+  addJs(`ui-extra-metrics.js?v=${V}`,'uiExtraMetrics');
+  addJs(`ui-golden-metrics-v2.js?v=${V}`,'uiGoldenMetricsV2');
+  addJs(`ui-possession-golden.js?v=${V}`,'uiPossessionGolden');
+  addJs(`ui-period.js?v=${V}`,'uiPeriod');
+  addJs(`ui-touch-metrics-fix.js?v=${V}`,'uiTouchMetricsFix');
+  addJs(`ui-forest-touch-map.js?v=${V}`,'uiForestTouchMap');
+  addJs(`ui-passing-metrics-golden.js?v=${V}`,'uiPassingMetricsGolden');
+  addJs(`ui-metric-bible-sync.js?v=${V}`,'uiMetricBibleSync');
+
+  addJs(`ui-leaders.js?v=${V}`,'uiLeaders');
+  addJs(`ui-match-stats.js?v=${V}`,'uiMatchStats');
+  addJs(`ui-match-stats-sync-v1.js?v=${V}`,'uiMatchStatsSyncV1');
+  addJs(`ui-sequence-metrics.js?v=${V}`,'uiSequenceMetrics');
+  addJs(`ui-pass-combinations.js?v=${V}`,'uiPassCombinations');
+  addJs(`ui-positions.js?v=${V}`,'uiPositions');
+  addJs(`ui-passing-network.js?v=${V}`,'uiPassingNetwork');
+  addJs(`ui-match-events.js?v=${V}`,'uiMatchEvents');
+  addJs(`ui-team-colours.js?v=${V}`,'uiTeamColours');
+  addJs(`ui-polish.js?v=${V}`,'uiPolish');
+  addJs(`ui-match-switcher.js?v=${V}`,'uiMatchSwitcher');
+  addJs(`ui-v31-fixes.js?v=${V}`,'uiV31Fixes');
+  addJs(`ui-view-tabs-fix.js?v=${V}`,'uiViewTabsFix');
 });
 </script>
 </body>
