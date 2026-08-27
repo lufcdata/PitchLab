@@ -7,75 +7,15 @@
       "away_team": "Leeds",
       "status": "APPROVED_VALIDATION_FIXTURE",
       "metrics": {
-        "big_chances": {
-          "label": "Big Chances",
-          "kind": "event",
-          "surfaces": ["pitch", "leaders", "matchStats"],
-          "definition": "shotFamily(event) && hasQ(event, 'BigChance')",
-          "expected": [4, 1],
-          "status": "GOLD_LOCKED"
-        },
-        "big_chances_created": {
-          "label": "Big Chances Created",
-          "kind": "event",
-          "surfaces": ["pitch", "leaders", "matchStats"],
-          "definition": "hasQ(event, 'BigChanceCreated')",
-          "expected": [4, 0],
-          "player_controls": {
-            "Eli Junior Kroupi": 1,
-            "Marcus Tavernier": 1,
-            "Marcos Senesi": 1,
-            "Tyler Adams": 1
-          },
-          "status": "GOLD_LOCKED"
-        },
-        "chances_created": {
-          "label": "Chances Created",
-          "kind": "event",
-          "surfaces": ["pitch", "leaders", "matchStats"],
-          "definition": "hasQ(event, 'KeyPass')",
-          "expected": [14, 7],
-          "status": "GOLD_LOCKED"
-        },
-        "assists": {
-          "label": "Assists",
-          "kind": "event",
-          "surfaces": ["pitch", "leaders", "matchStats"],
-          "definition": "hasQ(event, 'IntentionalGoalAssist')",
-          "expected": [2, 0],
-          "player_controls": {
-            "Marcos Senesi": 1,
-            "Tyler Adams": 1
-          },
-          "status": "GOLD_LOCKED"
-        },
-        "headed_clearances": {
-          "label": "Headed Clearances",
-          "kind": "event",
-          "surfaces": ["pitch", "leaders", "matchStats"],
-          "definition": "type(event) === 'Clearance' && !hasQ(event, 'BlockedCross') && hasQ(event, 'Head')",
-          "expected": [10, 38],
-          "status": "GOLD_LOCKED"
-        }
-      },
-      "raw_reconciled_pending_runtime_separation": {
-        "final_third_entries": {
-          "label": "Final Third Entries",
-          "kind": "event",
-          "definition": "type(event) === 'Pass' && x < 66.6666667 && endX >= 66.6666667",
-          "expected": [71, 53],
-          "status": "RAW_RECONCILED_PENDING_RUNTIME_SEPARATION",
-          "evidence": "Direct count over all 1,538 raw WhoScored events in WS_1903384_raw.json reproduces Bournemouth 71 / Leeds 53 exactly.",
-          "protection": "Must have its own stable key and must remain distinct from Passes Into Final Third, whose trusted displayed control is Bournemouth 67 / Leeds 53. Do not overwrite or relabel that metric."
-        }
+        "big_chances": {"label":"Big Chances","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"shotFamily(event) && hasQ(event, 'BigChance')","expected":[4,1],"status":"GOLD_LOCKED"},
+        "big_chances_created": {"label":"Big Chances Created","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"hasQ(event, 'BigChanceCreated')","expected":[4,0],"player_controls":{"Eli Junior Kroupi":1,"Marcus Tavernier":1,"Marcos Senesi":1,"Tyler Adams":1},"status":"GOLD_LOCKED"},
+        "chances_created": {"label":"Chances Created","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"hasQ(event, 'KeyPass')","expected":[14,7],"status":"GOLD_LOCKED"},
+        "assists": {"label":"Assists","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"hasQ(event, 'IntentionalGoalAssist')","expected":[2,0],"player_controls":{"Marcos Senesi":1,"Tyler Adams":1},"status":"GOLD_LOCKED"},
+        "headed_clearances": {"label":"Headed Clearances","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"type(event) === 'Clearance' && !hasQ(event, 'BlockedCross') && hasQ(event, 'Head')","expected":[10,38],"status":"GOLD_LOCKED"},
+        "final_third_entries": {"label":"Final Third Entries","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"type(event) === 'Pass' && x < 66.6667 && endX >= 66.6667","expected":[71,53],"status":"GOLD_LOCKED","secondary_validation":{"fixture":"whoscored:1983552","expected":[60,63],"first_half":[24,37]}}
       },
       "unresolved": {
-        "passes_into_final_third": {
-          "label": "Passes Into Final Third",
-          "expected": [67, 53],
-          "status": "DEFINITION_UNDER_INVESTIGATION",
-          "protection": "Do not equate with Final Third Entries. Existing Golden V2 row relabelling is legacy wiring and must not be used as the canonical definition."
-        }
+        "passes_into_final_third": {"label":"Passes Into Final Third","expected":[67,53],"status":"UNDER_INVESTIGATION","protection":"Must remain distinct from Final Third Entries, Final Third Passes and Successful Final Third Passes. Do not reuse the Final Third Entries boundary-crossing rule."}
       }
     }
   }
