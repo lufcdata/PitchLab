@@ -58,12 +58,23 @@
           "status": "GOLD_LOCKED"
         }
       },
-      "unresolved": {
+      "raw_reconciled_pending_runtime_separation": {
         "final_third_entries": {
           "label": "Final Third Entries",
+          "kind": "event",
+          "definition": "type(event) === 'Pass' && x < 66.6666667 && endX >= 66.6666667",
           "expected": [71, 53],
-          "status": "UNDER_INVESTIGATION",
-          "protection": "Must remain distinct from Passes Into Final Third, Final Third Passes and Successful Final Third Passes."
+          "status": "RAW_RECONCILED_PENDING_RUNTIME_SEPARATION",
+          "evidence": "Direct count over all 1,538 raw WhoScored events in WS_1903384_raw.json reproduces Bournemouth 71 / Leeds 53 exactly.",
+          "protection": "Must have its own stable key and must remain distinct from Passes Into Final Third, whose trusted displayed control is Bournemouth 67 / Leeds 53. Do not overwrite or relabel that metric."
+        }
+      },
+      "unresolved": {
+        "passes_into_final_third": {
+          "label": "Passes Into Final Third",
+          "expected": [67, 53],
+          "status": "DEFINITION_UNDER_INVESTIGATION",
+          "protection": "Do not equate with Final Third Entries. Existing Golden V2 row relabelling is legacy wiring and must not be used as the canonical definition."
         }
       }
     }
