@@ -13,10 +13,11 @@
         "assists": {"label":"Assists","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"hasQ(event, 'IntentionalGoalAssist')","expected":[2,0],"player_controls":{"Marcos Senesi":1,"Tyler Adams":1},"status":"GOLD_LOCKED"},
         "headed_clearances": {"label":"Headed Clearances","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"type(event) === 'Clearance' && !hasQ(event, 'BlockedCross') && hasQ(event, 'Head')","expected":[10,38],"status":"GOLD_LOCKED"},
         "final_third_entries": {"label":"Final Third Entries","kind":"event","surfaces":["pitch","leaders","matchStats"],"definition":"type(event) === 'Pass' && x < 66.6667 && endX >= 66.6667","expected":[71,53],"status":"GOLD_LOCKED","secondary_validation":{"fixture":"whoscored:1983552","expected":[60,63],"first_half":[24,37]}}
-      },
-      "unresolved": {
-        "passes_into_final_third": {"label":"Passes Into Final Third","expected":[67,53],"status":"UNDER_INVESTIGATION","protection":"Must remain distinct from Final Third Entries, Final Third Passes and Successful Final Third Passes. Do not reuse the Final Third Entries boundary-crossing rule."}
       }
     }
+  },
+  "retired_metrics": {
+    "passes_into_final_third": {"status":"RETIRED_2026-08-27","reason":"No longer required; do not conflate with Final Third Entries."},
+    "successful_passes_into_final_third": {"status":"RETIRED_2026-08-27","reason":"Subtype retired with Passes Into Final Third."}
   }
 }
