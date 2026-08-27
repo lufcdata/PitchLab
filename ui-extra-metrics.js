@@ -124,7 +124,7 @@
   FILTERS.high_turnovers = highTurnover;
 
   const oldShotArrowMetric = shotArrowMetric;
-  shotArrowMetric = key => oldShotArrowMetric(key) || key === 'shots_head_setpiece';
+  shotArrowMetric = key => oldShotArrowMetric(key) || ['shots_head_setpiece','shots_penalty_area'].includes(key);
   const oldAttackArrowMetric = attackArrowMetric;
   attackArrowMetric = key => oldAttackArrowMetric(key) || ['assists_corners','assists_setpieces'].includes(key);
   const oldLineMetric = lineMetric;
@@ -148,7 +148,7 @@
     'goals','goals_open','goals_fastbreak','goals_setpiece','goals_corner','goals_freekick','goals_penalty','own_goals',
     'goals_6yd','goals_box','goals_outside','goals_right','goals_left','goals_head','goals_other',
     'shots','shots_on','shots_off','shots_blocked','woodwork','shots_open','shots_fastbreak','shots_setpiece','shots_dfk',
-    'shots_6yd','shots_box','shots_outside','shots_right','shots_left','shots_head','shots_other','shots_head_setpiece',
+    'shots_6yd','shots_box','shots_penalty_area','shots_outside','shots_right','shots_left','shots_head','shots_other','shots_head_setpiece',
     'takeons_success','takeons_unsuccess','takeons','chances_created','assists','bigchances','assists_setpieces','high_turnovers'
   ]);
   orderGroup('Corners', [
