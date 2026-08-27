@@ -53,16 +53,31 @@
           document.getElementById('leadersList').innerHTML='<div class="metric-leaders__empty">Loading match leaders…</div>';
           return;
         }
-        const maxMin=Math.max(90,...events.map(minute));
-        let a=+from.value,b=+to.value;
-        if(b<=a)b=Math.min(100,a+1);
-        const lo=a/100*maxMin,hi=b/100*maxMin;
-        const windowSource=events.filter(e=>minute(e)>=lo&&minute(e)<=hi);
-        const carry=carryRows(windowSource,metricEl.value);
 
+        const bible=window.PitchLabMetricBible;
+        let windowSource,lo,hi,maxMin;
+        if(bible?.windowBounds&&bible?.windowEvents){
+          const bounds=bible.windowBounds(events);
+          windowSource=bible.windowEvents(events);
+          lo=bounds.lo/60;hi=bounds.hi/60;maxMin=bounds.max/60;
+        }else{
+          maxMin=Math.max(90,...events.map(minute));
+          let a=+from.value,b=+to.value;
+          if(b<=a)b=Math.min(100,a+1);
+          lo=a/100*maxMin;hi=b/100*maxMin;
+          windowSource=events.filter(e=>minute(e)>=lo&&minute(e)<=hi);
+        }
+
+        const carry=carryRows(windowSource,metricEl.value);
         let rows,countsSize;
         if(carry){
           rows=carry.sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
+          countsSize=rows.length;
+        }else if(bible?.playerRows){
+          rows=bible.playerRows(metricEl.value,events,teamEl.value).map(r=>({
+            ...r,
+            name:(players[r.id]||{}).name||`Player ${r.id}`
+          })).sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
           countsSize=rows.length;
         }else{
           const fn=FILTERS[metricEl.value]||(()=>false);
@@ -114,6 +129,7 @@
     const observer=new MutationObserver(update);
     observer.observe(eventCount,{childList:true,characterData:true,subtree:true});
     [metricEl,teamEl,playerEl,from,to].forEach(el=>{if(el){el.addEventListener('input',update);el.addEventListener('change',update)}});
+    document.addEventListener('pitchlab:metric-bible-ready',update);
     update();
   }
 
