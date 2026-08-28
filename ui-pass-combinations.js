@@ -30,7 +30,8 @@
   const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'');
   const periodOf=e=>String(dn(e?.period)||'');
   const teamOf=e=>typeof teamName==='function'?teamName(e):String(e?.teamId||'');
-  const eventSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+  const localEventSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+  const eventSec=e=>window.PitchLabCanonicalTime?.timelineSecond?.(e)??localEventSec(e);
   const playerName=id=>(typeof players!=='undefined'&&players?.[id]?.name)||`Player ${id}`;
   const isPass=e=>typeof pass==='function'?pass(e):eventType(e)==='Pass';
   const isSuccess=e=>typeof success==='function'?success(e):String(dn(e?.outcomeType)||'').toLowerCase()==='successful';
@@ -166,17 +167,20 @@
   }
 
   function timeWindow(){
-    if(typeof events==='undefined'||!events.length)return {lo:0,hi:90,max:90};
-    const max=Math.max(90,...events.map(e=>Number(e.minute)||0));
+    const canonical=window.PitchLabCanonicalTime;
+    if(canonical?.bounds)return canonical.bounds();
+    if(typeof events==='undefined'||!events.length)return {lo:0,hi:90*60,max:90*60};
+    const max=Math.max(90*60,...events.map(localEventSec));
     let a=+from.value,b=+to.value;if(b<=a)b=Math.min(100,a+1);
     return {lo:a/100*max,hi:b/100*max,max};
   }
 
   function eligiblePasses(){
     if(typeof events==='undefined'||!Array.isArray(events))return [];
+    const canonical=window.PitchLabCanonicalTime;
     const {lo,hi}=timeWindow();
     const key=metricEl.value;
-    let list=events.filter(e=>(Number(e.minute)||0)>=lo&&(Number(e.minute)||0)<=hi&&passQualifies(e,key));
+    let list=events.filter(e=>(canonical?.inWindow?canonical.inWindow(e,lo,hi):(localEventSec(e)>=lo&&localEventSec(e)<=hi))&&passQualifies(e,key));
     if(teamEl.value!=='Both')list=list.filter(e=>teamOf(e)===teamEl.value);
     return list;
   }
@@ -202,8 +206,11 @@
     if(!recipientMap.size)rebuildRecipientMap();
     const rows=buildRows();
     const {lo,hi,max}=timeWindow();
+    const canonical=window.PitchLabCanonicalTime;
+    const loLabel=canonical?.formatClock?canonical.formatClock(lo):`${Math.floor(lo/60)}:${String(Math.floor(lo%60)).padStart(2,'0')}`;
+    const hiLabel=hi>=max-.5?'FT':(canonical?.formatClock?canonical.formatClock(hi):`${Math.floor(hi/60)}:${String(Math.floor(hi%60)).padStart(2,'0')}`);
     comboMetricLabel.textContent=metricEl.options[metricEl.selectedIndex]?.text||'Pass Combinations';
-    comboScope.textContent=`${teamEl.value==='Both'?'Both Teams':teamEl.value} · ${Math.round(lo)}–${hi>=max-.5?'FT':Math.round(hi)} mins`;
+    comboScope.textContent=`${teamEl.value==='Both'?'Both Teams':teamEl.value} · ${loLabel}–${hiLabel}`;
     comboTotal.textContent=`${rows.length} partnership${rows.length===1?'':'s'}`;
     comboSelection.classList.toggle('is-hidden',!selectedPair);
     if(selectedPair){comboPairLabel.textContent=`${playerName(selectedPair.a)} ↔ ${playerName(selectedPair.b)}`;}
@@ -221,7 +228,7 @@
     }).join(''):'<div class="pass-combinations__empty">No inferred pass partnerships for this metric and time window.</div>';
   }
 
-  function escapeHtml(v){return String(v).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));}
+  function escapeHtml(v){return String(v).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));}
 
   switcher.addEventListener('click',e=>{const b=e.target.closest('button[data-mode]');if(b)setMode(b.dataset.mode==='combinations');});
   comboList.addEventListener('click',e=>{
@@ -239,5 +246,7 @@
   metricEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;selectedDirection='both';if(typeof render==='function')render();updatePanel();}});
   teamEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;rebuildRecipientMap();updatePanel();}});
   [from,to].forEach(el=>{el.addEventListener('input',()=>{if(comboMode)updatePanel()});el.addEventListener('change',()=>{if(comboMode)updatePanel()});});
+  document.addEventListener('pitchlab:canonical-time-ready',()=>{if(comboMode)updatePanel()});
+  document.addEventListener('pitchlab:match-loaded',()=>{rebuildRecipientMap();if(comboMode)updatePanel()});
   const observer=new MutationObserver(()=>{if(comboMode){rebuildRecipientMap();updatePanel();}});observer.observe(eventCount,{childList:true,characterData:true,subtree:true});
 })();
