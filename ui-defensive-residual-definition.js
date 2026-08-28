@@ -13,6 +13,10 @@
   const tackleWon=e=>et(e)==='tackle';
   const tackleLost=e=>et(e)==='challenge';
   const clearance=e=>et(e)==='clearance'&&!hq(e,'BlockedCross');
+  const nonAerialFoul=e=>et(e)==='foul'&&!hq(e,'AerialFoul');
+  const groundWon=e=>tackleWon(e)||(et(e)==='takeon'&&ok(e))||(nonAerialFoul(e)&&ok(e));
+  const groundLost=e=>tackleLost(e)||(et(e)==='takeon'&&!ok(e))||(nonAerialFoul(e)&&!ok(e));
+  const groundEvent=e=>groundWon(e)||groundLost(e);
   const aerialEvent=e=>et(e)==='aerial'||(et(e)==='foul'&&hq(e,'AerialFoul'));
   const aerialWon=e=>(et(e)==='aerial'&&ok(e))||(et(e)==='foul'&&ok(e)&&hq(e,'AerialFoul'));
   const offensiveAerial=e=>aerialEvent(e)&&hq(e,'Offensive');
@@ -31,6 +35,10 @@
     att_aerial_duels_lost:derived('Attacking Aerial Duels Lost',{forest:14,leeds:17},e=>offensiveAerial(e)&&!aerialWon(e),'Exact remainder of Gold Attacking Aerial Duels after its won component.'),
     def_aerial_duels_won:derived('Defensive Aerial Duels Won',{forest:17,leeds:14},e=>defensiveAerial(e)&&aerialWon(e),'Outcome split of Gold Defensive Aerial Duels using the Gold aerial-win predicate.'),
     def_aerial_duels_lost:derived('Defensive Aerial Duels Lost',{forest:11,leeds:13},e=>defensiveAerial(e)&&!aerialWon(e),'Exact remainder of Gold Defensive Aerial Duels after its won component.'),
+    ground_duels_lost:raw('Ground Duels Lost',{forest:34,leeds:28},groundLost,'Symmetric counterpart to the signed-off Ground Duels Won engine: Challenge + unsuccessful TakeOn + unsuccessful non-aerial Foul.'),
+    ground_duels:raw('Total Ground Duels',{forest:65,leeds:69},groundEvent,'Union of the signed-off Ground Duels Won population and its outcome-symmetric lost population; pending an independent headline total control.'),
+    duels_lost:raw('Duels Lost',{forest:59,leeds:58},e=>groundLost(e)||(aerialEvent(e)&&!aerialWon(e)),'Ground Duels Lost plus canonical Aerial Duels Lost; raw reconstruction is explicit but awaits an independent headline control.'),
+    total_duels:raw('Total Duels',{forest:120,leeds:124},e=>groundEvent(e)||aerialEvent(e),'Canonical ground-duel population plus canonical aerial-duel population; pending independent headline total control.'),
     blocks:raw('Blocks',{forest:6,leeds:1},e=>et(e)==='save'&&hq(e,'OutfielderBlock'),'Raw outfield block events; pending independent headline control.'),
     blocked_passes:raw('Blocked Passes',{forest:7,leeds:5},e=>et(e)==='blockedpass','Raw BlockedPass population; no independent embedded headline control.'),
     blocked_crosses:raw('Blocked Crosses',{forest:0,leeds:2},e=>et(e)==='clearance'&&hq(e,'BlockedCross'),'BlockedCross is carried by defensive Clearance events in this feed, not BlockedPass events; pending headline control.')
@@ -38,6 +46,6 @@
   if(typeof FILTERS!=='undefined')for(const [k,d] of Object.entries(defs))FILTERS[k]=d.test;
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
-  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V3_2026-08-28',defs,fixture:'whoscored:1983552'});
+  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V4_2026-08-28',defs,fixture:'whoscored:1983552'});
   document.dispatchEvent(new CustomEvent('pitchlab:defensive-residual-definition-ready',{detail:{version:window.PitchLabDefensiveResidualDefinition.version}}));
 })();
