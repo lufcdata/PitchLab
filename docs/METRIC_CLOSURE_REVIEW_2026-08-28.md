@@ -44,9 +44,13 @@ The established PitchLab spatial delivery classes **Short / Near / Central / Far
 
 ### Defensive / duel family
 
-Gold: Ball Recoveries 47–43; Tackles 15–29; Tackles Won 8–19; Tackles Lost 7–10; Interceptions 2–15; Clearances 32–31; Dispossessed 9–3; Errors 1–0; Aerial Duels 55–55; Aerial Duels Won 30–25; Aerial Duels Lost 25–30; Attacking Aerial Duels 27–28; Defensive Aerial Duels 28–27; Blocked Shots 6–1; Blocked Crosses 7–7; Blocks 13–8.
+Gold: Ball Recoveries 47–43; Tackles 15–29; Tackles Won 8–19; Tackles Lost 7–10; Interceptions 2–15; Clearances 32–31; Dispossessed 9–3; Errors 1–0; Aerial Duels 55–55; Aerial Duels Won 30–25; Aerial Duels Lost 25–30; Attacking Aerial Duels 27–28; Defensive Aerial Duels 28–27; Total Ground Duels 72–72; Blocked Shots 6–1; Blocked Crosses 7–7; Blocks 13–8.
 
-Attacking/defensive aerial won/lost splits are derived from Gold components. Ground Duels Lost 34–28, Total Ground Duels 65–69, Duels Lost 59–58, Total Duels 120–124 and Blocked Passes 7–5 have explicit raw definitions but await independent headline controls.
+Ground Duels Won remains Gold at 31–41. Independent Forest–Leeds control displays Ground Duels Won as 31/72 vs 41/72, closing Total Ground Duels at 72–72. Ground Duels Lost is therefore 41–31 and is `DERIVED_FROM_GOLD_COMPONENTS`. Event attribution is `Challenge + unsuccessful TakeOn + unsuccessful non-aerial Foul + Dispossessed only when paired at the same provider clock/period with an opposition Tackle`; standalone Dispossessed remains its own metric.
+
+Duels Won is 61–66. Duels Lost is derived as 66–61 and Total Duels as 127–127 from Gold Total Ground Duels 72–72 plus Gold Total Aerial Duels 55–55. The superseded residual values 34–28, 65–69, 59–58 and 120–124 are retired and must not reappear.
+
+Blocked Passes remains **7–5** and provisional. Its raw `BlockedPass` event semantics agree with Opta's published definition of a blocked pass, but no independent Forest–Leeds numerical headline control has been located, so it is not promoted to Gold.
 
 Clearances are `Clearance && !BlockedCross`. Blocks are the exact union of Gold Blocked Shots (`Save + OutfielderBlock`) and Gold Blocked Crosses (`BlockedPass OR Clearance+BlockedCross`).
 
@@ -81,7 +85,7 @@ The semantic audit is now largely closed. Remaining work is deliberately narrow:
 1. Turnovers: obtain an independent trusted headline control if possible before `GOLD_LOCKED`; retain the documented first-half provenance distinction.
 2. Fix the shared period-window contamination separately, using provider-period / expanded-time semantics and regression-testing all affected metrics.
 3. Remove stale runtime fallback ownership only where a later canonical module is proven to cover every user-facing surface; especially inspect `ui-extra-metrics.js` High Turnovers and defensive/duel fallbacks without changing semantics.
-4. Resolve independent headline-control debt for Progressive Passes, Penalty-Box Passes, throw-in spatial variants, free-kick variants, corner residuals, ground/total duel residuals and Blocked Passes.
+4. Resolve independent headline-control debt for Progressive Passes, Penalty-Box Passes, throw-in spatial variants, free-kick variants, corner residuals and Blocked Passes.
 5. Run a final surface/load-order regression before any merge to `main`.
 
 ## Closure condition
