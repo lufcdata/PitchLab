@@ -15,7 +15,9 @@ Purpose: final closure ledger for the metric synchronization audit. Current `mai
 Gold: Total Passes 411–326; Successful 321–232; Unsuccessful 90–94; Pass Accuracy 78.1–71.2; Final Third Passes 110–92; Successful Final Third Passes 72–38; Forward Passes 244–211; Backward Passes 69–49; Long Balls 71–58; Accurate Long Balls 28–24; Inaccurate Long Balls 43–34; Through Balls 2–0. Progressive Passes 27–8 and Penalty-Box Passes 22–15 remain evidence-debt metrics.
 
 ### Cross / throw-in / restart
-Gold: Crosses 19–8; Accurate 4–3; Inaccurate 15–5; Successful Set-Play Crosses 1–1; Unsuccessful Set-Play Crosses 5–2; Successful Throw-Ins 21–6; Unsuccessful Throw-Ins 4–6; Goal Kicks 6–10. Free-kick and throw-in spatial variants remain pending controls.
+Gold: Crosses 19–8; Accurate 4–3; Inaccurate 15–5; Successful Set-Play Crosses 1–1; Unsuccessful Set-Play Crosses 5–2; Successful Throw-Ins 21–6; Unsuccessful Throw-Ins 4–6; Goal Kicks 6–10.
+
+Throw-in spatial family is closed as derivatives of the Gold throw-in population. `Successful Final Third Throw-Ins` is defined by throw origin in the attacking final third (`x >= 66.6667`), not destination: Forest–Leeds 6–2; Bournemouth–Leeds 4–3. `Throw-Ins Into Penalty Box`: Forest–Leeds 5–4; Bournemouth–Leeds 6–7. Successful subset: Forest–Leeds 1–2; Bournemouth–Leeds 0–3. These are `DERIVED_FROM_GOLD_COMPONENTS`; they are not labelled as Opta `Long Throw-Ins`, which require a separate minimum-length condition. Free-kick variants remain separately documented.
 
 ### Touch / attacking / goal
 Gold: Touches 617–500; Penalty Box Touches 22–15; Take-Ons 22–12 / successful 10–7 / unsuccessful 12–5; shot family; Big Chances; Big Chances Created; Chances Created; Assists; goal family.
@@ -48,7 +50,7 @@ Possession Lost remains protected and independent. Dispossessed is Gold 9–3. T
 1. Turnovers independent headline control / first-half provenance.
 2. Shared period-window contamination fix and regression.
 3. Stale runtime fallback ownership cleanup without semantic changes.
-4. Independent controls for Progressive Passes, Penalty-Box Passes, throw-in spatial variants, free-kick variants and corner residuals.
+4. Independent controls for Progressive Passes, Penalty-Box Passes, free-kick variants and corner residuals.
 5. Final Pitch Events / Metric Leaders / Match Stats synchronization regression before merge.
 
 ## Closure condition
