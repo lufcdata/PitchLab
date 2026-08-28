@@ -1,6 +1,6 @@
 # Defensive + duel closure — 2026-08-28
 
-This note closes the **definition audit** for the defensive and duel families on `metric-sync-audit-2026-08-27`. It does not promote metrics to `GOLD_LOCKED` without an independent trusted control.
+This note closes the **definition audit** for the defensive and duel families on `metric-sync-audit-2026-08-27`. It preserves previously signed-off Gold definitions and records the independent control that corrected the former provisional ground/total-duel residuals.
 
 ## Forest 0–1 Leeds (`whoscored:1983552`)
 
@@ -19,9 +19,9 @@ This note closes the **definition audit** for the defensive and duel families on
 | Dispossessed | `Dispossessed` | 9 | 3 | `GOLD_LOCKED` |
 | Errors | `Error` | 1 | 0 | `GOLD_LOCKED` |
 
-The corrected trusted Opta Clearances control is **32–31**, not 32–21. Raw Clearance is 32–33; Leeds has two `Clearance + BlockedCross` events, producing 32–31 after the semantic exclusion. The supplied Bournemouth–Leeds Clearances control is **24–62** and remains a second-fixture validation target because the repository raw file is currently too large for the GitHub connector to return as usable event JSON.
+The corrected trusted Opta Clearances control is **32–31**, not 32–21. Raw Clearance is 32–33; Leeds has two `Clearance + BlockedCross` events, producing 32–31 after the semantic exclusion. The supplied Bournemouth–Leeds Clearances control is **24–62** and remains a second-fixture validation target.
 
-`BlockedPass` is retained as a distinct raw event population, but it must not be presented as independently Gold merely because those events participate in the Gold Blocked Crosses reconstruction.
+`BlockedPass` remains a distinct raw event population. It must not be promoted merely because those events participate in the Gold Blocked Crosses reconstruction.
 
 ### Aerial duel family
 
@@ -37,39 +37,65 @@ Canonical aerial population is `Aerial` plus `Foul + AerialFoul`. Provider `Offe
 | Attacking Aerial Won / Lost | 13 / 14 | 11 / 17 | `DERIVED_FROM_GOLD_COMPONENTS` |
 | Defensive Aerial Won / Lost | 17 / 11 | 14 / 13 | `DERIVED_FROM_GOLD_COMPONENTS` |
 
-### Ground and total duel family
+### Ground and total duel family — corrected control
 
-The signed-off Ground Duels Won population is:
+The signed-off Ground Duels Won population remains unchanged:
 
 `Tackle OR successful TakeOn OR successful non-aerial Foul`
 
-Its exact outcome-symmetric lost population is:
+It remains **31 Forest – 41 Leeds**.
 
-`Challenge OR unsuccessful TakeOn OR unsuccessful non-aerial Foul`
+An independent 365Scores match control displays Ground Duels Won as **31/72 Forest** and **41/72 Leeds**. This disproves the earlier provisional 65–69 Ground Duel total and closes the authoritative team total at **72–72**.
 
-This produces:
+The losing-side event attribution is the exact partner population of those wins:
+
+`Challenge OR unsuccessful TakeOn OR unsuccessful non-aerial Foul OR tackle-paired Dispossessed`
+
+A `Dispossessed` event is included only when it shares the provider clock and period with an opposition `Tackle`. Standalone `Dispossessed` remains the independent Dispossessed metric and is not silently added to duel losses.
+
+This relationship explains the former residual precisely:
+
+- Forest: provisional 34 losses + **7 tackle-paired Dispossessed** = **41**.
+- Leeds: provisional 28 losses + **3 tackle-paired Dispossessed** = **31**.
+- The two other Forest `Dispossessed` events are standalone and are not Ground Duel losses.
 
 | Metric | Forest | Leeds | Status |
 |---|---:|---:|---|
 | Ground Duels Won | 31 | 41 | `GOLD_LOCKED` |
-| Ground Duels Lost | 34 | 28 | `RAW_RECONCILED_PENDING_HEADLINE_CONTROL` |
-| Total Ground Duels | 65 | 69 | `RAW_RECONCILED_PENDING_HEADLINE_CONTROL` |
+| Ground Duels Lost | 41 | 31 | `DERIVED_FROM_GOLD_COMPONENTS` |
+| Total Ground Duels | 72 | 72 | `GOLD_LOCKED` |
 | Duels Won | 61 | 66 | `DERIVED_FROM_GOLD_COMPONENTS` |
-| Duels Lost | 59 | 58 | `RAW_RECONCILED_PENDING_HEADLINE_CONTROL` |
-| Total Duels | 120 | 124 | `RAW_RECONCILED_PENDING_HEADLINE_CONTROL` |
+| Duels Lost | 66 | 61 | `DERIVED_FROM_GOLD_COMPONENTS` |
+| Total Duels | 127 | 127 | `DERIVED_FROM_GOLD_COMPONENTS` |
 
-The four provisional residuals above are **definition-complete**. Their remaining debt is evidence/status only: an independent trusted headline control is required before promotion to Gold. No new event logic should be invented merely to remove that status.
+Total Duels is now definition-closed rather than provisional: Gold Total Ground Duels **72–72** plus Gold Total Aerial Duels **55–55** gives **127–127**. Duels Lost is the corresponding remainder against Duels Won **61–66**, giving **66–61**.
+
+### Second-fixture control — Bournemouth 2–2 Leeds (`whoscored:1903384`)
+
+Independent published figures report **Duels Won 48–64** and **Aerial Duels Won 22–28**. Therefore Ground Duels Won is **26–36**. Because each ground duel has one winner and one loser, that independently implies:
+
+- Ground Duels Lost: **36–26**
+- Total Ground Duels: **62–62**
+- Total Aerial Duels: **50–50**
+- Total Duels: **112–112**
+
+This second fixture supports the same symmetric duel structure; no fixture-specific correction is used by the implementation.
 
 ## Runtime ownership
 
-`ui-extra-metrics.js` loads before the canonical metric modules and still contains legacy fallback predicates for several defensive/duel keys. The later canonical modules overwrite those predicates at runtime, so the current preview resolves to the audited definitions. Removing the stale fallback ownership is a separate cleanup task and must not be mixed with semantic changes.
+`ui-extra-metrics.js` still loads before the canonical modules and contains legacy fallback duel predicates. The later canonical `ui-defensive-residual-definition.js` overwrites those keys at runtime. The canonical module is authoritative; removal of the old fallbacks remains a separate non-semantic cleanup task.
+
+The corrected canonical implementation is `DEFENSIVE_RESIDUAL_V8_2026-08-28`.
 
 ## Closure decision
 
-The defensive/duel **semantic-definition pass is closed**. Remaining work in these families is limited to:
+The ground/total-duel evidence debt is now closed:
 
-- Bournemouth second-fixture execution for Clearances when raw events can be read locally;
-- independent headline controls for Blocked Passes and the four ground/total-duel residuals;
-- removal of legacy fallback predicate ownership from `ui-extra-metrics.js` in a separate non-semantic cleanup commit.
+- **Total Ground Duels 72–72: GOLD_LOCKED**
+- **Ground Duels Lost 41–31: DERIVED_FROM_GOLD_COMPONENTS** with event-level losing-player attribution
+- **Total Duels 127–127: DERIVED_FROM_GOLD_COMPONENTS**
+- **Duels Lost 66–61: DERIVED_FROM_GOLD_COMPONENTS**
 
-Do not reopen the signed-off definitions without contradictory trusted evidence.
+The only metric from this residual set still awaiting an independent headline control is **Blocked Passes 7–5**.
+
+Do not restore the former `34–28`, `65–69`, `59–58` or `120–124` values. Do not count every `Dispossessed` as a duel loss. Do not introduce fixture-specific exceptions.
