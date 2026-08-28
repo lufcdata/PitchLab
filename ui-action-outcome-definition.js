@@ -10,9 +10,6 @@
   const SUCCESS='#43FAD5';
   const UNSUCCESS='#FF1C6B';
 
-  // Administrative/provider companion events are deliberately not player actions.
-  // CornerAwarded is an outcome, not the subsequent delivery. OffsidePass and
-  // OffsideProvoked are companion records; only OffsideGiven is charged.
   const ignoredTypes=new Set([
     'start','end','formationset','formationchange','substitutionoff','substitutionon','card',
     'cornerawarded','offsidepass','offsideprovoked'
@@ -23,15 +20,21 @@
     const t=et(e),outcome=oc(e);
     if(ignoredTypes.has(t))return 'ignore';
 
-    // Shot semantics are intentionally outcome-semantic rather than provider-outcome based.
+    // Shot hierarchy. A non-goal BigChance is a missed big chance and therefore
+    // Unsuccessful even when the attempt was technically on target.
     if(t==='goal')return hq(e,'OwnGoal')?'unsuccessful':'successful';
+    if(['missedshots','shotonpost','savedshot'].includes(t)&&hq(e,'BigChance'))return 'unsuccessful';
     if(t==='missedshots'||t==='shotonpost')return 'unsuccessful';
     if(t==='savedshot')return hq(e,'Blocked','OutfielderBlock')?'unsuccessful':'successful';
 
+    // Explicit positive attacking outcomes are one Successful underlying action,
+    // never additive bonus actions on top of the same pass/event.
+    if(hq(e,'IntentionalGoalAssist','BigChanceCreated','KeyPass'))return 'successful';
+
     // Defensive / possession events with signed-off PitchLab semantics.
     if(['ballrecovery','interception','clearance','blockedpass','save'].includes(t))return 'successful';
-    if(t==='tackle')return 'successful'; // Gold Tackles Won / Ground Duels Won semantics.
-    if(t==='challenge')return 'unsuccessful'; // Dribbled past / ground duel lost.
+    if(t==='tackle')return 'successful';
+    if(t==='challenge')return 'unsuccessful';
     if(['dispossessed','error','offsidegiven'].includes(t))return 'unsuccessful';
 
     // Goalkeeper action outcomes. Successful save events are handled above.
@@ -48,17 +51,17 @@
 
   const successful=e=>classifyAction(e)==='successful';
   const unsuccessful=e=>classifyAction(e)==='unsuccessful';
-  const definition='PitchLab signed-off action classifier. Each underlying player event is counted at most once as Successful or Unsuccessful; metric labels such as assist, chance created, big chance created and progressive pass do not create duplicate actions. Successful ordinary BallTouch is included. Blocked shots, misses, woodwork, own goals, errors, dispossessions, offsides and lost duels are Unsuccessful. CornerAwarded, Possession Lost and provider companion offside records are excluded.';
+  const definition='PitchLab signed-off action classifier. Each underlying player event is counted at most once as Successful or Unsuccessful; assist, chance-created, big-chance-created and progressive-pass labels do not create duplicate actions. Successful ordinary BallTouch is included. Blocked shots, misses, woodwork, non-goal Big Chances, own goals, errors, dispossessions, offsides and lost duels are Unsuccessful. CornerAwarded, Possession Lost and provider companion offside records are excluded.';
 
   const defs=Object.freeze({
     successful_actions:Object.freeze({
       label:'Successful Actions',kind:'event',surfaces,status:'GOLD_LOCKED',definitionSource:'PITCHLAB_SIGNED_OFF',colour:SUCCESS,
-      observedFixtureCounts:Object.freeze({forestLeeds:Object.freeze({forest:535,leeds:434}),bournemouthLeeds:Object.freeze({bournemouth:585,leeds:489})}),
+      observedFixtureCounts:Object.freeze({forestLeeds:Object.freeze({forest:535,leeds:434}),bournemouthLeeds:Object.freeze({bournemouth:584,leeds:489})}),
       definition,test:successful
     }),
     unsuccessful_actions:Object.freeze({
       label:'Unsuccessful Actions',kind:'event',surfaces,status:'GOLD_LOCKED',definitionSource:'PITCHLAB_SIGNED_OFF',colour:UNSUCCESS,
-      observedFixtureCounts:Object.freeze({forestLeeds:Object.freeze({forest:207,leeds:190}),bournemouthLeeds:Object.freeze({bournemouth:222,leeds:174})}),
+      observedFixtureCounts:Object.freeze({forestLeeds:Object.freeze({forest:207,leeds:190}),bournemouthLeeds:Object.freeze({bournemouth:223,leeds:174})}),
       definition,test:unsuccessful
     })
   });
@@ -81,8 +84,6 @@
   ensureOption('successful_actions','Successful Actions');
   ensureOption('unsuccessful_actions','Unsuccessful Actions');
 
-  // Pitch Events: these are mixed action families, so show each action as a point.
-  // Patch only the generic point renderer and legend colour for the two new keys.
   const originalDrawPoint=window.drawPoint;
   if(typeof originalDrawPoint==='function'){
     window.drawPoint=function(root,e,colour){
@@ -103,7 +104,7 @@
   applyMetricColour();
 
   window.PitchLabActionOutcomeDefinition=Object.freeze({
-    version:'ACTION_OUTCOME_V1_2026-08-28',
+    version:'ACTION_OUTCOME_V2_2026-08-28',
     colours:Object.freeze({successful:SUCCESS,unsuccessful:UNSUCCESS}),
     ignoredTypes:Object.freeze([...ignoredTypes]),
     classifyAction,defs
