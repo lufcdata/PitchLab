@@ -25,19 +25,29 @@
   });
   const accurateDef=Object.freeze({
     label:'Accurate Long Balls',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
-    definition:'Total Long Ball with successful outcome.',test:isAccurateLongBall
+    status:'GOLD_LOCKED',
+    definition:'Total Long Ball with successful outcome.',
+    controls:Object.freeze({forest:28,leeds:24}),test:isAccurateLongBall
   });
   const inaccurateDef=Object.freeze({
     label:'Inaccurate Long Balls',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
-    definition:'Total Long Ball with unsuccessful outcome.',test:isInaccurateLongBall
+    status:'GOLD_LOCKED',
+    definition:'Total Long Ball with unsuccessful outcome.',
+    controls:Object.freeze({forest:43,leeds:34}),test:isInaccurateLongBall
   });
 
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,
     long_passes:totalDef,accurate_long_passes:accurateDef,inaccurate_long_passes:inaccurateDef
   });
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),'long_passes','accurate_long_passes','inaccurate_long_passes'])]);
-  window.PitchLabLongPassDefinition=Object.freeze({version:'OPTA_LONG_BALL_V1_2026-08-28',controls:Object.freeze({forest:71,leeds:58}),test:isLongBall,accurateTest:isAccurateLongBall,inaccurateTest:isInaccurateLongBall});
+  window.PitchLabLongPassDefinition=Object.freeze({
+    version:'OPTA_LONG_BALL_V2_2026-08-28',
+    controls:Object.freeze({
+      total:Object.freeze({forest:71,leeds:58}),
+      accurate:Object.freeze({forest:28,leeds:24}),
+      inaccurate:Object.freeze({forest:43,leeds:34})
+    }),
+    test:isLongBall,accurateTest:isAccurateLongBall,inaccurateTest:isInaccurateLongBall
+  });
   document.dispatchEvent(new CustomEvent('pitchlab:long-pass-definition-ready',{detail:{version:window.PitchLabLongPassDefinition.version}}));
 })();
