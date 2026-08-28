@@ -6,6 +6,7 @@
   const isFirst=e=>{const p=periodName(e);return p.includes('first')||p==='1'||p==='firsthalf'};
   const isSecond=e=>{const p=periodName(e);return p.includes('second')||p==='2'||p==='secondhalf'};
   const isEnd=e=>{const t=typeName(e);return t==='end'||t.includes('periodend')||t.includes('halfend')||t.includes('endperiod')};
+  const PERIOD_BOUNDARY_EPSILON=0.001;
   let timing={firstHalfEnd:45*60,secondHalfEnd:90*60,fullTimeline:90*60};
   let activePreset='full';
   let applyingPreset=false;
@@ -16,16 +17,16 @@
     const fEndPool=first.filter(isEnd),sEndPool=second.filter(isEnd);
     const firstHalfEnd=Math.max(45*60,...(fEndPool.length?fEndPool:first).map(localSecond).filter(Number.isFinite));
     const secondHalfEnd=Math.max(90*60,...(sEndPool.length?sEndPool:second).map(localSecond).filter(Number.isFinite));
-    timing={firstHalfEnd,secondHalfEnd,fullTimeline:firstHalfEnd+Math.max(0,secondHalfEnd-45*60)};
+    timing={firstHalfEnd,secondHalfEnd,fullTimeline:firstHalfEnd+PERIOD_BOUNDARY_EPSILON+Math.max(0,secondHalfEnd-45*60)};
     return timing;
   }
 
   function timelineSecond(e){
     if(isFirst(e))return localSecond(e);
-    if(isSecond(e))return timing.firstHalfEnd+Math.max(0,localSecond(e)-45*60);
+    if(isSecond(e))return timing.firstHalfEnd+PERIOD_BOUNDARY_EPSILON+Math.max(0,localSecond(e)-45*60);
     return NaN;
   }
-  function clockSecond(timeline){const t=Math.max(0,Number(timeline)||0);return t<=timing.firstHalfEnd?t:45*60+(t-timing.firstHalfEnd)}
+  function clockSecond(timeline){const t=Math.max(0,Number(timeline)||0);return t<=timing.firstHalfEnd?t:45*60+Math.max(0,t-timing.firstHalfEnd-PERIOD_BOUNDARY_EPSILON)}
   function formatClock(timeline){const s=Math.max(0,Math.round(clockSecond(timeline)));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
   function bounds(){
     const from=document.getElementById('fromRange'),to=document.getElementById('toRange'),max=timing.fullTimeline;
@@ -60,7 +61,7 @@
     for(const id of ['toText','sumTo']){const el=document.getElementById(id);if(el)el.textContent=toLabel}
     const plot=document.getElementById('plotWindow');if(plot)plot.textContent=`${fromLabel} - ${toLabel}`;
   }
-  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V3_2026-08-28',timing:{...timing},activePreset}}))}
+  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V4_2026-08-28',timing:{...timing},activePreset}}))}
   function refresh(source=window.events){derive(source);patchBible();updateLabels();announce()}
   function applyPreset(kind){
     const from=document.getElementById('fromRange'),to=document.getElementById('toRange');if(!from||!to)return;const max=timing.fullTimeline;
@@ -81,6 +82,6 @@
     if(activePreset)applyPreset(activePreset);else updateLabels();
     announce();
   });
-  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V3_2026-08-28',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing},get activePreset(){return activePreset}});
+  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V4_2026-08-28',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing},get activePreset(){return activePreset}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
