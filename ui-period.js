@@ -1,232 +1,49 @@
-(() => {
-  const $ = id => document.getElementById(id);
-  const from = $('fromRange');
-  const to = $('toRange');
-  const wrap = document.querySelector('.period-card .range-wrap');
-  if (!from || !to || !wrap) return;
+(()=>{
+  const $=id=>document.getElementById(id);
+  const from=$('fromRange'),to=$('toRange');
+  const wrap=document.querySelector('.period-card .range-wrap');
+  if(!from||!to||!wrap)return;
 
-  const FALLBACK = { firstHalfEnd: 46 * 60 + 57, fullTime: 98 * 60 + 18 };
-  let timing = { ...FALLBACK };
-  let secondHalfPresetActive = false;
-  let applyingPreset = false;
-  let draggingProxy = false;
+  const ticks=document.createElement('div');ticks.className='period-ticks';wrap.appendChild(ticks);
+  const firstAdded=document.createElement('div');firstAdded.className='period-added-segment period-added-segment--first';firstAdded.setAttribute('aria-hidden','true');wrap.appendChild(firstAdded);
+  const secondAdded=document.createElement('div');secondAdded.className='period-added-segment period-added-segment--second';secondAdded.setAttribute('aria-hidden','true');wrap.appendChild(secondAdded);
+  const halftimeGap=document.createElement('div');halftimeGap.className='halftime-gap';halftimeGap.setAttribute('aria-hidden','true');wrap.appendChild(halftimeGap);
 
-  const dn = v => v && typeof v === 'object' ? (v.displayName ?? v.name ?? v.value) : v;
-  const eventSecond = e => Number(e?.minute || 0) * 60 + Number(e?.second || 0);
-  const periodName = e => String(dn(e?.period) || '').toLowerCase().replace(/[\s_-]/g, '');
-  const typeName = e => String(dn(e?.type) || '').toLowerCase().replace(/[\s_-]/g, '');
-  const isFirst = e => { const p = periodName(e); return p.includes('first') || p === '1' || p === 'firsthalf'; };
-  const isSecond = e => { const p = periodName(e); return p.includes('second') || p === '2' || p === 'secondhalf'; };
-  const isPeriodEnd = e => { const t = typeName(e); return t === 'end' || t.includes('periodend') || t.includes('halfend') || t.includes('endperiod'); };
-
-  const formatTime = seconds => {
-    const total = Math.max(0, Math.round(seconds));
-    const mins = Math.floor(total / 60);
-    const secs = total % 60;
-    return `${mins}:${String(secs).padStart(2, '0')}`;
-  };
-
-  function derive(events) {
-    const list = Array.isArray(events) ? events : [];
-    const first = list.filter(isFirst);
-    const second = list.filter(isSecond);
-    const firstEnds = first.filter(isPeriodEnd);
-    const secondEnds = second.filter(isPeriodEnd);
-    const firstHalfEnd = Math.max(45 * 60, ...(firstEnds.length ? firstEnds : first).map(eventSecond).filter(Number.isFinite));
-    const fullTime = Math.max(90 * 60, ...(secondEnds.length ? secondEnds : (second.length ? second : list)).map(eventSecond).filter(Number.isFinite));
-    return {
-      firstHalfEnd: Number.isFinite(firstHalfEnd) ? firstHalfEnd : FALLBACK.firstHalfEnd,
-      fullTime: Number.isFinite(fullTime) ? fullTime : FALLBACK.fullTime
-    };
+  function addTick(label,timeline,className=''){
+    const clock=window.PitchLabCanonicalTime;if(!clock)return;
+    const max=clock.timing.fullTimeline||90*60;
+    const tick=document.createElement('span');tick.className=`period-tick ${className}`.trim();
+    tick.style.left=`${Math.min(100,Math.max(0,timeline/max*100))}%`;
+    tick.innerHTML=`<span class="period-tick__main">${label}</span>`;ticks.appendChild(tick);
   }
 
-  const ticks = document.createElement('div');
-  ticks.className = 'period-ticks';
-  wrap.appendChild(ticks);
-
-  const firstAdded = document.createElement('div');
-  firstAdded.className = 'period-added-segment period-added-segment--first';
-  firstAdded.setAttribute('aria-hidden', 'true');
-  wrap.appendChild(firstAdded);
-
-  const secondAdded = document.createElement('div');
-  secondAdded.className = 'period-added-segment period-added-segment--second';
-  secondAdded.setAttribute('aria-hidden', 'true');
-  wrap.appendChild(secondAdded);
-
-  const halftimeGap = document.createElement('div');
-  halftimeGap.className = 'halftime-gap';
-  halftimeGap.setAttribute('aria-hidden', 'true');
-  wrap.appendChild(halftimeGap);
-
-  const secondHalfThumb = document.createElement('div');
-  secondHalfThumb.className = 'period-second-half-thumb';
-  secondHalfThumb.setAttribute('aria-hidden', 'true');
-  wrap.appendChild(secondHalfThumb);
-
-  function addTick(label, seconds, className = '') {
-    const max = timing.fullTime;
-    const tick = document.createElement('span');
-    tick.className = `period-tick ${className}`.trim();
-    tick.style.left = `${Math.min(100, Math.max(0, (seconds / max) * 100))}%`;
-    tick.innerHTML = `<span class="period-tick__main">${label}</span>`;
-    ticks.appendChild(tick);
+  function timelineForClockSecond(clockSeconds){
+    const clock=window.PitchLabCanonicalTime;if(!clock)return clockSeconds;
+    const ht=clock.timing.firstHalfEnd||45*60;
+    return clockSeconds<=45*60?clockSeconds:ht+(clockSeconds-45*60);
   }
 
-  function visualSecondHalfStartPct() {
-    return Math.min(100, Math.max(0, (timing.firstHalfEnd / timing.fullTime) * 100));
-  }
-
-  function syncActiveTrackVisual() {
-    const activeTrack = $('activeTrack');
-    if (!activeTrack || !secondHalfPresetActive) return;
-    const startPct = visualSecondHalfStartPct();
-    activeTrack.style.left = `${startPct}%`;
-    activeTrack.style.width = `${Math.max(0, 100 - startPct)}%`;
-  }
-
-  function setSecondHalfThumbVisual(active) {
-    secondHalfPresetActive = active;
-    from.classList.toggle('period-range--proxy-hidden', active);
-    secondHalfThumb.classList.toggle('is-visible', active);
-    if (active) {
-      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
-      requestAnimationFrame(syncActiveTrackVisual);
+  function draw(){
+    const clock=window.PitchLabCanonicalTime;if(!clock)return;
+    clock.derive(window.events);
+    const {firstHalfEnd,secondHalfEnd,fullTimeline}=clock.timing;
+    ticks.innerHTML='';
+    for(const m of [0,15,30,45,60,75,90]){
+      const t=timelineForClockSecond(m*60);if(t<fullTimeline-1)addTick(String(m),t,m===0?'period-tick--start':'');
     }
+    addTick('HT',firstHalfEnd,'period-tick--milestone');
+    addTick('FT',fullTimeline,'period-tick--milestone period-tick--end');
+    const pct=s=>Math.min(100,Math.max(0,s/fullTimeline*100));
+    firstAdded.style.left=`${pct(45*60)}%`;firstAdded.style.width=`${Math.max(0,pct(firstHalfEnd)-pct(45*60))}%`;
+    const secondAddedStart=timelineForClockSecond(90*60);secondAdded.style.left=`${pct(secondAddedStart)}%`;secondAdded.style.width=`${Math.max(0,100-pct(secondAddedStart))}%`;
+    halftimeGap.style.left=`${pct(firstHalfEnd)}%`;
+    from.step=to.step=String(100/fullTimeline);
   }
 
-  function drawScale() {
-    const max = timing.fullTime;
-    ticks.innerHTML = '';
-
-    [0, 15, 30, 45, 60, 75, 90].forEach(mins => {
-      if (mins * 60 < max - 1) addTick(String(mins), mins * 60, mins === 0 ? 'period-tick--start' : '');
-    });
-
-    addTick('HT', timing.firstHalfEnd, 'period-tick--milestone');
-    addTick('FT', max, 'period-tick--milestone period-tick--end');
-
-    const pct = seconds => Math.min(100, Math.max(0, (seconds / max) * 100));
-    const firstStart = pct(45 * 60);
-    const firstEnd = pct(timing.firstHalfEnd);
-    firstAdded.style.left = `${firstStart}%`;
-    firstAdded.style.width = `${Math.max(0, firstEnd - firstStart)}%`;
-
-    const secondStart = pct(90 * 60);
-    secondAdded.style.left = `${secondStart}%`;
-    secondAdded.style.width = `${Math.max(0, 100 - secondStart)}%`;
-
-    halftimeGap.style.left = `${firstEnd}%`;
-
-    const secondStep = 100 / max;
-    from.step = String(secondStep);
-    to.step = String(secondStep);
-    if (secondHalfPresetActive) {
-      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
-      requestAnimationFrame(syncActiveTrackVisual);
-    }
-  }
-
-  function updateLabels() {
-    const max = timing.fullTime;
-    const loSeconds = (+from.value / 100) * max;
-    const hiSeconds = (+to.value / 100) * max;
-    const fromLabel = secondHalfPresetActive ? '45:00' : (loSeconds < 0.5 ? '0:00' : formatTime(loSeconds));
-    const toLabel = hiSeconds >= max - 0.5 ? 'FT' : formatTime(hiSeconds);
-
-    if ($('fromText')) $('fromText').textContent = fromLabel;
-    if ($('toText')) $('toText').textContent = toLabel;
-    if ($('sumFrom')) $('sumFrom').textContent = fromLabel;
-    if ($('sumTo')) $('sumTo').textContent = toLabel;
-    if ($('plotWindow')) $('plotWindow').textContent = `${fromLabel} - ${toLabel}`;
-    if (secondHalfPresetActive) requestAnimationFrame(syncActiveTrackVisual);
-  }
-
-  function applyPreset(kind) {
-    const max = timing.fullTime;
-    applyingPreset = true;
-    setSecondHalfThumbVisual(false);
-    if (kind === 'full') {
-      from.value = 0;
-      to.value = 100;
-    } else if (kind === 'first') {
-      from.value = 0;
-      to.value = Math.min(100, (timing.firstHalfEnd / max) * 100);
-    } else {
-      from.value = Math.min(100, (45 * 60 / max) * 100);
-      to.value = 100;
-      setSecondHalfThumbVisual(true);
-    }
-    from.dispatchEvent(new Event('input', { bubbles: true }));
-    to.dispatchEvent(new Event('input', { bubbles: true }));
-    applyingPreset = false;
-    requestAnimationFrame(() => {
-      updateLabels();
-      if (kind === 'second') syncActiveTrackVisual();
-    });
-  }
-
-  function updateFromPointer(clientX) {
-    const rect = wrap.getBoundingClientRect();
-    const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-    from.value = pct;
-    secondHalfThumb.style.left = `${pct}%`;
-    from.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
-  secondHalfThumb.addEventListener('pointerdown', e => {
-    if (!secondHalfPresetActive) return;
-    draggingProxy = true;
-    secondHalfThumb.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
-  });
-  secondHalfThumb.addEventListener('pointermove', e => {
-    if (!draggingProxy) return;
-    updateFromPointer(e.clientX);
-  });
-  const stopProxyDrag = e => {
-    if (!draggingProxy) return;
-    draggingProxy = false;
-    secondHalfThumb.releasePointerCapture?.(e.pointerId);
-    setSecondHalfThumbVisual(false);
-    requestAnimationFrame(updateLabels);
-  };
-  secondHalfThumb.addEventListener('pointerup', stopProxyDrag);
-  secondHalfThumb.addEventListener('pointercancel', stopProxyDrag);
-
-  function refresh() {
-    drawScale();
-    updateLabels();
-  }
-
-  async function loadTiming() {
-    try {
-      const r = await fetch('./WS_1903384_raw.json?v=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) return;
-      const data = await r.json();
-      timing = derive(data?.events);
-      refresh();
-    } catch (_) {
-      refresh();
-    }
-  }
-
-  from.addEventListener('input', () => {
-    if (!applyingPreset && !draggingProxy) setSecondHalfThumbVisual(false);
-    requestAnimationFrame(updateLabels);
-  });
-  to.addEventListener('input', () => requestAnimationFrame(updateLabels));
-  ['metric', 'team', 'player'].forEach(id => $(id)?.addEventListener('change', () => requestAnimationFrame(updateLabels)));
-  $('fullBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('full')));
-  $('firstBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('first')));
-  $('secondBtn')?.addEventListener('click', () => requestAnimationFrame(() => applyPreset('second')));
-  window.addEventListener('resize', () => {
-    if (secondHalfPresetActive) requestAnimationFrame(() => {
-      secondHalfThumb.style.left = `${visualSecondHalfStartPct()}%`;
-      syncActiveTrackVisual();
-    });
-  });
-
+  function refresh(){requestAnimationFrame(draw)}
+  document.addEventListener('pitchlab:canonical-time-ready',refresh);
+  document.addEventListener('pitchlab:match-loaded',refresh);
+  from.addEventListener('input',refresh);to.addEventListener('input',refresh);
+  window.addEventListener('resize',refresh);
   refresh();
-  loadTiming();
 })();
