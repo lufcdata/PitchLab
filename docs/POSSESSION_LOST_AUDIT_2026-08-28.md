@@ -15,8 +15,6 @@ Source status: concrete Opta control supplied during the metric audit. Treat thi
 
 ## Raw-event audit
 
-The uploaded WhoScored raw fixture contains these obvious possession-loss candidate actions:
-
 | Component | Forest | Leeds |
 |---|---:|---:|
 | Raw unsuccessful `Pass` events | 109 | 105 |
@@ -29,39 +27,45 @@ The uploaded WhoScored raw fixture contains these obvious possession-loss candid
 
 The near-match is useful but is NOT sufficient to define the metric. No fixture-specific correction is permitted.
 
-### Satisfied-event evidence
+## New residual finding: offsides are highly informative
 
-The current WhoScored feed also exposes satisfied-event classifications consistent with the component families above:
+The raw fixture contains exactly **3 `OffsideGiven` events for Forest and 3 for Leeds**.
 
-- Gold/statistical inaccurate passes: 90–94 after the normal pass exclusions.
+Adding all three offsides to the naive candidate population produces:
+
+- Forest: 146 + 3 = **149**, which is **2 too high**.
+- Leeds: 126 + 3 = **129**, an **exact match** to the trusted Opta control.
+
+This is a strong clue that an offside can count as Possession Lost, but it also proves that the correct rule is NOT simply `add every OffsideGiven event`.
+
+The next forensic target is therefore the three Forest offside chains. Only **one net additional Forest loss** is needed to reach 147, while all three Leeds offside chains are consistent with the control. We must inspect whether some Forest offsides already have their loss represented by an unsuccessful pass or another candidate event, while the Leeds chains are not double-counted. The likely solution is event-chain de-duplication rather than a flat event-type sum.
+
+Forest also has one `Error` event, but it must not be added merely because the residual is +1: the Error is successful at event level and requires chain-level evidence before inclusion.
+
+## Satisfied-event evidence
+
+The WhoScored feed exposes dedicated classifications for the relevant event families:
+
+- Gold/statistical inaccurate passes: 90–94 after normal pass exclusions.
 - Raw unsuccessful passes: 109–105 when crosses/restarts are retained.
-- Unsuccessful touch/turnover-style events: 16–13.
-- Dispossessed: 9–3.
-- Unsuccessful take-ons: 12–5.
+- Unsuccessful `BallTouch`: 16–13.
+- `Dispossessed`: 9–3.
+- Unsuccessful `TakeOn`: 12–5.
+- `OffsideGiven`: 3–3.
 
-This strongly suggests Opta Possession Lost is broader than the Gold statistical-pass population and likely includes multiple ways of surrendering the ball. However, the exact inclusion/exclusion rule is still unresolved.
-
-## Other candidate events requiring forensic inspection
-
-Events that may explain the residual, but must not be added merely to force the control:
-
-- Offside events / `OffsidePass`: 3 per team in this fixture.
-- Forest `Error`: 1.
-- Restart-specific unsuccessful passes (corners, throw-ins, goal kicks, free-kicks).
-- Event-chain cases where an action is recorded as successful at event level but immediately ends team possession.
-
-A simple addition of all offsides does not solve both teams simultaneously, so offsides cannot currently be promoted as the missing rule.
+This supports a broad possession-ending concept, but exact chain-level de-duplication remains unresolved.
 
 ## Status
 
 `Possession Lost`: **DEFINITION_UNDER_INVESTIGATION**
 
-Trusted control is now secured at **147–129**, but the canonical predicate must remain unchanged/uncreated until the residual is explained by a general event rule and preferably validated by half/player or second-fixture controls.
+Trusted control is secured at **147–129**. Leeds can now be reconstructed exactly by the current candidate components plus its three offsides, while Forest demonstrates why naive summation is unsafe. Do not canonicalize until the Forest offside chains explain the two-event overcount and the rule generalizes.
 
 ## Next validation tests
 
-1. Reconstruct possession-ending event chains rather than relying only on event outcome labels.
-2. Inspect the exact +1 Forest / +3 Leeds residual events against offside, error and restart semantics.
-3. Obtain half or player Possession Lost controls if available; these will sharply constrain the candidate population.
-4. Validate the resulting rule on a second fixture before Gold-locking.
-5. Keep the separate 16–13 Turnovers control unresolved until its own event semantics are proved.
+1. Inspect all six offside chains and identify whether a preceding unsuccessful pass already records the same possession loss.
+2. Determine why Leeds requires all three offside losses while Forest requires only one net additional loss.
+3. Test the Forest `Error` only through possession-chain evidence, not residual fitting.
+4. Obtain half/player Possession Lost controls if available.
+5. Validate the resulting chain/de-duplication rule on a second fixture before Gold-locking.
+6. Keep the separate 16–13 Turnovers control unresolved until its own semantics are proved.
