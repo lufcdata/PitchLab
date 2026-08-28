@@ -7,7 +7,7 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="index.html?v=metrics-67" title="PitchLab UI Integration Preview"></iframe>
+<iframe id="pitchlab" src="index.html?v=metrics-68" title="PitchLab UI Integration Preview"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
@@ -15,65 +15,10 @@ frame.addEventListener('load',()=>{
   if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.async=false;el.dataset[key]='1';doc.body.appendChild(el)};
-  const V='metrics-67';
-  addCss(`ui-integration.css?v=${V}`,'uiIntegration');
-  addCss(`ui-leaders.css?v=${V}`,'uiLeaders');
-  addCss(`ui-timings.css?v=${V}`,'uiTimings');
-  addCss(`ui-arrow-style.css?v=${V}`,'uiArrowStyle');
-  addCss(`ui-period.css?v=${V}`,'uiPeriod');
-  addCss(`ui-match-stats.css?v=${V}`,'uiMatchStats');
-  addCss(`ui-match-stats-selector.css?v=${V}`,'uiMatchStatsSelector');
-  addCss(`ui-pass-combinations.css?v=${V}`,'uiPassCombinations');
-  addCss(`ui-positions.css?v=${V}`,'uiPositions');
-  addCss(`ui-passing-network.css?v=${V}`,'uiPassingNetwork');
-  addCss(`ui-match-events.css?v=${V}`,'uiMatchEvents');
-  addCss(`ui-team-colours.css?v=${V}`,'uiTeamColours');
-  addCss(`ui-polish.css?v=${V}`,'uiPolish');
-  addCss(`ui-v31-fixes.css?v=${V}`,'uiV31Fixes');
-
-  addJs(`ui-header.js?v=${V}`,'uiIntegration');
-  addJs(`ui-carry-metrics.js?v=${V}`,'uiCarryMetrics');
-  addJs(`ui-timings.js?v=${V}`,'uiTimings');
-  addJs(`ui-extra-metrics.js?v=${V}`,'uiExtraMetrics');
-  addJs(`ui-golden-metrics-v2.js?v=${V}`,'uiGoldenMetricsV2');
-  addJs(`ui-possession-golden.js?v=${V}`,'uiPossessionGolden');
-  addJs(`ui-period.js?v=${V}`,'uiPeriod');
-  addJs(`ui-touch-metrics-fix.js?v=${V}`,'uiTouchMetricsFix');
-  addJs(`ui-forest-touch-map.js?v=${V}`,'uiForestTouchMap');
-  addJs(`ui-passing-metrics-golden.js?v=${V}`,'uiPassingMetricsGolden');
-  addJs(`ui-metric-bible-sync.js?v=${V}`,'uiMetricBibleSync');
-  addJs(`ui-gold-passing-family.js?v=${V}`,'uiGoldPassingFamily');
-  addJs(`ui-forward-pass-definition.js?v=${V}`,'uiForwardPassDefinition');
-  addJs(`ui-long-pass-definition.js?v=${V}`,'uiLongPassDefinition');
-  addJs(`ui-through-ball-definition.js?v=${V}`,'uiThroughBallDefinition');
-  addJs(`ui-progressive-pass-definition.js?v=${V}`,'uiProgressivePassDefinition');
-  addJs(`ui-penalty-box-pass-definition.js?v=${V}`,'uiPenaltyBoxPassDefinition');
-  addJs(`ui-gold-simple-event-family.js?v=${V}`,'uiGoldSimpleEventFamily');
-  addJs(`ui-open-play-cross-definition.js?v=${V}`,'uiOpenPlayCrossDefinition');
-  addJs(`ui-throw-in-touch-territory-definition.js?v=${V}`,'uiThrowInTouchTerritoryDefinition');
-  addJs(`ui-takeon-corner-definition.js?v=${V}`,'uiTakeOnCornerDefinition');
-  addJs(`ui-goal-family-definition.js?v=${V}`,'uiGoalFamilyDefinition');
-  addJs(`ui-defensive-residual-definition.js?v=${V}`,'uiDefensiveResidualDefinition');
-  addJs(`ui-free-kick-definition.js?v=${V}`,'uiFreeKickDefinition');
-  addJs(`ui-gold-recovery-duels-family.js?v=${V}`,'uiGoldRecoveryDuelsFamily');
-  addJs(`ui-gold-attacking-family.js?v=${V}`,'uiGoldAttackingFamily');
-  addJs(`ui-final-third-entries-gold.js?v=${V}`,'uiFinalThirdEntriesGold');
-  addJs(`ui-team-metric-bible.js?v=${V}`,'uiTeamMetricBible');
-
-  addJs(`ui-leaders.js?v=${V}`,'uiLeaders');
-  addJs(`ui-match-stats.js?v=${V}`,'uiMatchStats');
-  addJs(`ui-match-stats-sync-v1.js?v=${V}`,'uiMatchStatsSyncV1');
-  addJs(`ui-match-stats-selector.js?v=${V}`,'uiMatchStatsSelector');
-  addJs(`ui-sequence-metrics.js?v=${V}`,'uiSequenceMetrics');
-  addJs(`ui-pass-combinations.js?v=${V}`,'uiPassCombinations');
-  addJs(`ui-positions.js?v=${V}`,'uiPositions');
-  addJs(`ui-passing-network.js?v=${V}`,'uiPassingNetwork');
-  addJs(`ui-match-events.js?v=${V}`,'uiMatchEvents');
-  addJs(`ui-team-colours.js?v=${V}`,'uiTeamColours');
-  addJs(`ui-polish.js?v=${V}`,'uiPolish');
-  addJs(`ui-match-switcher.js?v=${V}`,'uiMatchSwitcher');
-  addJs(`ui-v31-fixes.js?v=${V}`,'uiV31Fixes');
-  addJs(`ui-view-tabs-fix.js?v=${V}`,'uiViewTabsFix');
+  const V='metrics-68';
+  addCss(`ui-integration.css?v=${V}`,'uiIntegration');addCss(`ui-leaders.css?v=${V}`,'uiLeaders');addCss(`ui-timings.css?v=${V}`,'uiTimings');addCss(`ui-arrow-style.css?v=${V}`,'uiArrowStyle');addCss(`ui-period.css?v=${V}`,'uiPeriod');addCss(`ui-match-stats.css?v=${V}`,'uiMatchStats');addCss(`ui-match-stats-selector.css?v=${V}`,'uiMatchStatsSelector');addCss(`ui-pass-combinations.css?v=${V}`,'uiPassCombinations');addCss(`ui-positions.css?v=${V}`,'uiPositions');addCss(`ui-passing-network.css?v=${V}`,'uiPassingNetwork');addCss(`ui-match-events.css?v=${V}`,'uiMatchEvents');addCss(`ui-team-colours.css?v=${V}`,'uiTeamColours');addCss(`ui-polish.css?v=${V}`,'uiPolish');addCss(`ui-v31-fixes.css?v=${V}`,'uiV31Fixes');
+  addJs(`ui-header.js?v=${V}`,'uiIntegration');addJs(`ui-carry-metrics.js?v=${V}`,'uiCarryMetrics');addJs(`ui-timings.js?v=${V}`,'uiTimings');addJs(`ui-extra-metrics.js?v=${V}`,'uiExtraMetrics');addJs(`ui-golden-metrics-v2.js?v=${V}`,'uiGoldenMetricsV2');addJs(`ui-possession-golden.js?v=${V}`,'uiPossessionGolden');addJs(`ui-period.js?v=${V}`,'uiPeriod');addJs(`ui-touch-metrics-fix.js?v=${V}`,'uiTouchMetricsFix');addJs(`ui-forest-touch-map.js?v=${V}`,'uiForestTouchMap');addJs(`ui-passing-metrics-golden.js?v=${V}`,'uiPassingMetricsGolden');addJs(`ui-metric-bible-sync.js?v=${V}`,'uiMetricBibleSync');addJs(`ui-gold-passing-family.js?v=${V}`,'uiGoldPassingFamily');addJs(`ui-forward-pass-definition.js?v=${V}`,'uiForwardPassDefinition');addJs(`ui-long-pass-definition.js?v=${V}`,'uiLongPassDefinition');addJs(`ui-through-ball-definition.js?v=${V}`,'uiThroughBallDefinition');addJs(`ui-progressive-pass-definition.js?v=${V}`,'uiProgressivePassDefinition');addJs(`ui-penalty-box-pass-definition.js?v=${V}`,'uiPenaltyBoxPassDefinition');addJs(`ui-gold-simple-event-family.js?v=${V}`,'uiGoldSimpleEventFamily');addJs(`ui-open-play-cross-definition.js?v=${V}`,'uiOpenPlayCrossDefinition');addJs(`ui-throw-in-touch-territory-definition.js?v=${V}`,'uiThrowInTouchTerritoryDefinition');addJs(`ui-takeon-corner-definition.js?v=${V}`,'uiTakeOnCornerDefinition');addJs(`ui-corner-delivery-definition.js?v=${V}`,'uiCornerDeliveryDefinition');addJs(`ui-goal-family-definition.js?v=${V}`,'uiGoalFamilyDefinition');addJs(`ui-defensive-residual-definition.js?v=${V}`,'uiDefensiveResidualDefinition');addJs(`ui-free-kick-definition.js?v=${V}`,'uiFreeKickDefinition');addJs(`ui-gold-recovery-duels-family.js?v=${V}`,'uiGoldRecoveryDuelsFamily');addJs(`ui-gold-attacking-family.js?v=${V}`,'uiGoldAttackingFamily');addJs(`ui-final-third-entries-gold.js?v=${V}`,'uiFinalThirdEntriesGold');addJs(`ui-team-metric-bible.js?v=${V}`,'uiTeamMetricBible');
+  addJs(`ui-leaders.js?v=${V}`,'uiLeaders');addJs(`ui-match-stats.js?v=${V}`,'uiMatchStats');addJs(`ui-match-stats-sync-v1.js?v=${V}`,'uiMatchStatsSyncV1');addJs(`ui-match-stats-selector.js?v=${V}`,'uiMatchStatsSelector');addJs(`ui-sequence-metrics.js?v=${V}`,'uiSequenceMetrics');addJs(`ui-pass-combinations.js?v=${V}`,'uiPassCombinations');addJs(`ui-positions.js?v=${V}`,'uiPositions');addJs(`ui-passing-network.js?v=${V}`,'uiPassingNetwork');addJs(`ui-match-events.js?v=${V}`,'uiMatchEvents');addJs(`ui-team-colours.js?v=${V}`,'uiTeamColours');addJs(`ui-polish.js?v=${V}`,'uiPolish');addJs(`ui-match-switcher.js?v=${V}`,'uiMatchSwitcher');addJs(`ui-v31-fixes.js?v=${V}`,'uiV31Fixes');addJs(`ui-view-tabs-fix.js?v=${V}`,'uiViewTabsFix');
 });
 </script>
 </body>
