@@ -4,7 +4,8 @@
     'Shots - Outside Box':['Shots Outside Box'],
     'Shots - Penalty Area':['Shots Inside The Box','Shots Inside Box'],
     'Shots - Head':['Headed Shots'],
-    'Woodwork Shots':['Shots - Woodwork','Woodwork']
+    'Woodwork Shots':['Shots - Woodwork','Woodwork'],
+    'Progressive Passes':['Open Play Progressive Passes','Open-Play Progressive Passes']
   };
   const retiredLabels=new Set(['Passes Into Final Third','Successful Passes Into Final Third']);
   function makeRow(label,h,a){
@@ -31,13 +32,15 @@
     removeRetired(body);
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const metrics=[
+      ['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
       ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Off-Target','shots_off'],['Blocked Shots','shots_blocked'],['Woodwork Shots','woodwork'],
       ['Shots - Open Play','shots_open'],['Shots - Fast Break','shots_fastbreak'],['Shots from Set-Pieces','shots_setpiece'],['Shots - From Free-Kicks','shots_dfk'],
       ['Shots - 6 Yard Box','shots_6yd'],['Shots - Penalty Box','shots_box'],['Shots - Penalty Area','shots_penalty_area'],['Shots - Outside Box','shots_outside'],
       ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
       ['Big Chances','big_chances'],['Big Chances Created','big_chances_created'],['Chances Created','chances_created'],['Assists','assists'],['Headed Clearances','headed_clearances'],
-      ['Final Third Entries','final_third_entries'],
+      ['Total Passes','allpasses'],['Successful Passes','successful'],['Unsuccessful Passes','unsuccessful'],['Progressive Passes','progressive'],['Final Third Passes','final_third_passes'],['Successful Final Third Passes','final_third_passes_success'],['Final Third Entries','final_third_entries'],
+      ['Ball Recoveries','recoveries'],['Tackles Won','tackles_won'],['Ground Duels Won','ground_duels_won'],['Aerial Duels Won','aerial_duels_won'],['Duels Won','duels_won'],
       ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
       ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
@@ -50,10 +53,15 @@
       if(label==='Goal Kicks'){
         const marker=findRow(body,'Interceptions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
+      }else if(label==='Successful Actions'){
+        body.insertBefore(row,body.firstElementChild);
+      }else if(label==='Unsuccessful Actions'){
+        const marker=findRow(body,'Successful Actions');
+        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else body.appendChild(row);
     }
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
