@@ -58,11 +58,17 @@
   });
   const forwardSuccessDef=Object.freeze({
     label:'Successful Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',definition:'Forward Pass with successful outcome.',test:isSuccessfulForwardPass
+    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
+    definition:'Forward Pass with successful outcome.',
+    observedFixtureCounts:Object.freeze({forest:85,leeds:68}),
+    test:isSuccessfulForwardPass
   });
   const backwardSuccessDef=Object.freeze({
     label:'Successful Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',definition:'Backward Pass with successful outcome.',test:isSuccessfulBackwardPass
+    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
+    definition:'Backward Pass with successful outcome.',
+    observedFixtureCounts:Object.freeze({forest:60,leeds:42}),
+    test:isSuccessfulBackwardPass
   });
 
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,
@@ -75,6 +81,7 @@
     version:'OPTA_DIRECTIONAL_PASS_V2_2026-08-28',
     keys:Object.freeze(['forward','forward_success','backward','backward_success']),
     controls:Object.freeze({forward:Object.freeze({forest:149,leeds:135}),backward:Object.freeze({forest:69,leeds:49})}),
+    observations:Object.freeze({forwardSuccess:Object.freeze({forest:85,leeds:68}),backwardSuccess:Object.freeze({forest:60,leeds:42})}),
     direction,test:isForwardPass,backwardTest:isBackwardPass,
     successfulTest:isSuccessfulForwardPass,successfulBackwardTest:isSuccessfulBackwardPass
   });
