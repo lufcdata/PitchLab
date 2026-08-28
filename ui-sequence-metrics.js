@@ -3,7 +3,8 @@
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
   const outcome=e=>String(dn(e?.outcomeType)||'').toLowerCase();
-  const evtSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+  const localSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+  const evtSec=e=>window.PitchLabCanonicalTime?.timelineSecond?.(e)??localSec(e);
   const teamNameOf=e=>typeof teamName==='function'?teamName(e):'';
 
   // GOLDEN v1 — validated against WS_1983552: Nottingham Forest 6 / Leeds 7.
@@ -54,12 +55,13 @@
 
   function windowEvents(){
     if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return [];
+    if(window.PitchLabCanonicalTime?.windowEvents)return window.PitchLabCanonicalTime.windowEvents(events);
     const from=$('fromRange'),to=$('toRange');
     if(!from||!to)return events;
-    const max=Math.max(90*60,...events.map(evtSec));
+    const max=Math.max(90*60,...events.map(localSec));
     let a=Number(from.value||0),b=Number(to.value||100);if(b<=a)b=Math.min(100,a+1);
     const lo=a/100*max,hi=b/100*max;
-    return events.filter(e=>evtSec(e)>=lo&&evtSec(e)<=hi);
+    return events.filter(e=>localSec(e)>=lo&&localSec(e)<=hi);
   }
 
   function patchMatchStats(){
@@ -76,9 +78,10 @@
     if(tracks[1])tracks[1].style.width=`${a/denom*100}%`;
   }
 
-  window.PitchLabSequences={version:'10-pass-golden-v1',tenPassSequences};
+  window.PitchLabSequences={version:'10-pass-golden-v1-canonical-time',tenPassSequences};
   const body=$('matchStatsBody');if(body)new MutationObserver(()=>requestAnimationFrame(patchMatchStats)).observe(body,{childList:true,subtree:true});
   [$('fromRange'),$('toRange')].filter(Boolean).forEach(el=>{el.addEventListener('input',()=>requestAnimationFrame(patchMatchStats));el.addEventListener('change',()=>requestAnimationFrame(patchMatchStats));});
+  document.addEventListener('pitchlab:canonical-time-ready',()=>requestAnimationFrame(patchMatchStats));
   document.addEventListener('pitchlab:match-loaded',()=>requestAnimationFrame(patchMatchStats));
   let tries=0;const timer=setInterval(()=>{tries++;patchMatchStats();if(tries>60)clearInterval(timer);},100);
 })();
