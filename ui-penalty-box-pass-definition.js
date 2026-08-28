@@ -23,26 +23,30 @@
   }
 
   const surfaces=Object.freeze(['pitch','leaders','matchStats']);
+  const version='PENALTY_BOX_PASS_GOLD_V1_2026-08-28';
   const totalDef=Object.freeze({
     label:'Passes Into Penalty Box',kind:'event',surfaces,
-    status:'AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL',
-    definition:'Gold statistical pass whose end coordinate is inside the opposition penalty area (x 83-100, y 21.1-78.9).',
-    observedFixtureCounts:Object.freeze({forest:22,leeds:15}),
+    status:'GOLD_LOCKED',version,
+    definition:'Gold statistical pass whose end coordinate is inside the opposition penalty area (x 83-100, y 21.1-78.9). Includes pass-classified free kicks/corners/goal kicks; Cross, ThrowIn and KeeperThrow are excluded by the canonical statistical-pass predicate.',
+    golden:Object.freeze([22,15]),
+    secondFixtureControl:Object.freeze({bournemouth:37,leeds:13}),
     test:isBoxPass
   });
   const successDef=Object.freeze({
     label:'Successful Passes Into Penalty Box',kind:'event',surfaces,
-    status:'AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL',
+    status:'GOLD_LOCKED',version,
     definition:'Successful outcome within the canonical Passes Into Penalty Box population.',
-    observedFixtureCounts:Object.freeze({forest:9,leeds:3}),
+    golden:Object.freeze([9,3]),
+    secondFixtureControl:Object.freeze({bournemouth:12,leeds:7}),
     test:isSuccessfulBoxPass
   });
   const unsuccessDef=Object.freeze({
     label:'Unsuccessful Passes Into Penalty Box',kind:'event',surfaces,
-    status:'AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL',
+    status:'GOLD_LOCKED',version,
     definition:'Unsuccessful outcome within the canonical Passes Into Penalty Box population.',
-    observedFixtureCounts:Object.freeze({forest:13,leeds:12}),
-    checksum:'9+13=22; 3+12=15.',
+    golden:Object.freeze([13,12]),
+    secondFixtureControl:Object.freeze({bournemouth:25,leeds:6}),
+    checksum:'9+13=22; 3+12=15. Bournemouth: 12+25=37; Leeds: 7+6=13.',
     test:isUnsuccessfulBoxPass
   });
 
@@ -60,10 +64,14 @@
   }
 
   window.PitchLabPenaltyBoxPassDefinition=Object.freeze({
-    version:'PENALTY_BOX_PASS_V1_2026-08-28',
+    version,
+    status:'GOLD_LOCKED',
     keys:Object.freeze(['box_passes','box_passes_success','box_passes_unsuccess']),
     box:Object.freeze({minX:83,maxX:100,minY:21.1,maxY:78.9}),
-    observations:Object.freeze({total:Object.freeze({forest:22,leeds:15}),successful:Object.freeze({forest:9,leeds:3}),unsuccessful:Object.freeze({forest:13,leeds:12})}),
+    observations:Object.freeze({
+      forestLeeds:Object.freeze({total:Object.freeze({forest:22,leeds:15}),successful:Object.freeze({forest:9,leeds:3}),unsuccessful:Object.freeze({forest:13,leeds:12})}),
+      bournemouthLeeds:Object.freeze({total:Object.freeze({bournemouth:37,leeds:13}),successful:Object.freeze({bournemouth:12,leeds:7}),unsuccessful:Object.freeze({bournemouth:25,leeds:6})})
+    }),
     test:isBoxPass,successfulTest:isSuccessfulBoxPass,unsuccessfulTest:isUnsuccessfulBoxPass
   });
 
