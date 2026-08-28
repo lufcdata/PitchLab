@@ -46,7 +46,6 @@
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
     for(const [label,key] of metrics){
-      const def=bible.canonicalRegistry?.[key];if(!def?.test)continue;
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
       let row=findRow(body,label);
       if(row){setRow(row,h,a,label);continue}
