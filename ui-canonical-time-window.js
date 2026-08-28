@@ -11,16 +11,9 @@
   let activePreset='full';
   let applyingPreset=false;
 
-  function expandedSecond(e){
-    const x=Number(e?.expandedMinute);
-    return Number.isFinite(x)?x*60+Number(e?.second||0):NaN;
-  }
   function periodEnd(events,period,minClock){
     const pool=events.filter(period),ends=pool.filter(isEnd);
-    const values=(ends.length?ends:pool).map(e=>{
-      const local=localSecond(e),expanded=expandedSecond(e);
-      return Math.max(Number.isFinite(local)?local:0,Number.isFinite(expanded)?expanded:0);
-    }).filter(Number.isFinite);
+    const values=(ends.length?ends:pool).map(localSecond).filter(Number.isFinite);
     return Math.max(minClock,...values);
   }
   function derive(source=window.events){
