@@ -1,149 +1,89 @@
 # PitchLab Metric Closure Review — 2026-08-28
 
-Purpose: drive the remaining metric audit to completion without silently preserving conflicting legacy definitions. This is a live closure ledger, not permission to Gold-lock anything without evidence.
+Purpose: final closure ledger for the metric synchronization audit. Current `main` remains untouched; this document describes the audit branch only.
 
 ## Rules
 
 - One metric -> one authoritative definition -> all permitted surfaces.
-- Trusted controls and raw events outrank provider assumptions.
-- No fixture-specific correction factors.
+- Trusted controls and raw events outrank assumptions.
+- No fixture-specific correction factors or event IDs.
 - `GOLD_LOCKED` requires a trusted numerical control or equivalent signed-off evidence.
-- `DERIVED_FROM_GOLD_COMPONENTS` is permitted when the metric is an exact disjoint composition/subtraction of already Gold components.
-- `RAW_RECONCILED_PENDING_HEADLINE_CONTROL` and `DEFINITION_UNDER_INVESTIGATION` stay visibly provisional.
+- `DERIVED_FROM_GOLD_COMPONENTS` is allowed only for exact compositions of Gold components.
+- Evidence-debt metrics remain visibly provisional.
 - Team-only metrics remain Match Stats-only.
-- Retired `into_final_third` and `into_final_third_success` remain retired.
+- Retired `into_final_third` and `into_final_third_success` stay retired.
+- Existing standalone **Possession Lost** is protected and is not a parent/category for Dispossessed or Turnovers.
 
 ## Closed / secured families
 
-### Core passing
+### Passing
 
-- Total Passes `allpasses` — GOLD_LOCKED — Forest 411, Leeds 326.
-- Successful Passes `successful` — GOLD_LOCKED — 321, 232.
-- Unsuccessful Passes `unsuccessful` — GOLD_LOCKED — 90, 94.
-- Pass Accuracy `pass_accuracy` — GOLD_LOCKED derived Match Stats metric — 78.1%, 71.2%.
-- Final Third Passes `final_third_passes` — GOLD_LOCKED — 110, 92.
-- Successful Final Third Passes `final_third_passes_success` — GOLD_LOCKED — 72, 38.
-- Forward Passes `forward` — GOLD_LOCKED — 244, 211; independently corroborated by 59.4%, 64.7%.
-- Long Balls `long_passes` — GOLD_LOCKED — 71, 58.
-- Accurate Long Balls `accurate_long_passes` — GOLD_LOCKED — 28, 24.
-- Inaccurate Long Balls `inaccurate_long_passes` — GOLD_LOCKED — 43, 34.
-- Through Balls `through_balls` — GOLD_LOCKED — 2, 0.
+Gold: Total Passes 411–326; Successful 321–232; Unsuccessful 90–94; Pass Accuracy 78.1–71.2; Final Third Passes 110–92; Successful Final Third Passes 72–38; Forward Passes 244–211; Backward Passes 69–49; Long Balls 71–58; Accurate Long Balls 28–24; Inaccurate Long Balls 43–34; Through Balls 2–0.
 
-### Cross family
+Derived from the Gold directional family: Successful Forward Passes and Successful Backward Passes. Correct Forest–Leeds successful-backward reconstruction is **65–44**.
 
-- Total Crosses `crosses` — GOLD_LOCKED — 19, 8.
-- Accurate Crosses `accurate_crosses` — GOLD_LOCKED — 4, 3.
-- Inaccurate Crosses `inaccurate_crosses` — GOLD_LOCKED — 15, 5.
-- Successful Set Play Crosses `set_play_crosses_success` — GOLD_LOCKED — 1, 1.
-- Unsuccessful Set Play Crosses `set_play_crosses_unsuccess` — GOLD_LOCKED — 5, 2.
-- Open-Play Crosses `open_play_crosses` — DERIVED_FROM_GOLD_COMPONENTS — 13, 5.
-- Accurate Open-Play Crosses `accurate_open_play_crosses` — DERIVED_FROM_GOLD_COMPONENTS — 3, 2.
-- Inaccurate Open-Play Crosses `inaccurate_open_play_crosses` — DERIVED_FROM_GOLD_COMPONENTS — 10, 3.
+Evidence debt only: Progressive Passes 27–8 and Penalty-Box Passes 22–15 (successful 9–3, unsuccessful 13–12) retain their explicit spatial definitions pending independent headline controls.
 
-The open-play family is an exact remainder of Gold Crosses after removing the Gold set-play cross population. Raw Forest-Leeds event reconstruction agrees exactly, but these are intentionally not relabelled `GOLD_LOCKED` without an independent headline control.
+### Cross / throw-in / restart
 
-### Throw-in family
+Gold: Crosses 19–8; Accurate 4–3; Inaccurate 15–5; Successful Set-Play Crosses 1–1; Unsuccessful Set-Play Crosses 5–2; Successful Throw-Ins 21–6; Unsuccessful Throw-Ins 4–6; Goal Kicks 6–10.
 
-Forest-Leeds raw reconstruction exactly matches the embedded Opta team throw-in statistics:
+Open-play cross variants are exact derived remainders. Throw-in spatial variants remain raw-reconciled pending independent controls. Free-kick family has an explicit raw definition (`Pass + FreekickTaken`, excluding corners, throw-ins, goal kicks and penalties) and remains pending controls.
 
-- Total Throw-Ins — embedded control 25, 12.
-- Successful Throw-Ins `throwins_success` — GOLD_LOCKED — 21, 6.
-- Unsuccessful Throw-Ins `throwins_unsuccess` — GOLD_LOCKED — 4, 6.
-- Successful Final Third Throw-Ins `throwins_success_final_third` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 4, 3.
-- Successful Throw-Ins Into Penalty Box `throwins_success_box` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 1, 2.
-- Throw-Ins Into Penalty Box `throwins_box` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 5, 4.
+### Touch / attacking / goal
 
-The Gold throw-in outcome family uses `Pass + ThrowIn` with the event outcome. Spatial variants retain the existing end-location geometry but are not Gold-locked without independent controls.
+Gold: Touches 617–500; Penalty Box Touches 22–15; Take-Ons 22–12 / successful 10–7 / unsuccessful 12–5; shot family; Big Chances; Big Chances Created; Chances Created; Assists; goal family and validated body-part/location/phase families.
 
-### Touch / shot / attacking family
+Territorial touch buckets are exact derived partitions of Gold Touches.
 
-- Touches — GOLD_LOCKED — 617, 500.
-- Defensive-Third Touches `touch_def_third` — DERIVED_FROM_GOLD_COMPONENTS — 238, 162.
-- Middle-Third Touches `touch_mid_third` — DERIVED_FROM_GOLD_COMPONENTS — 252, 240.
-- Final-Third Touches `touch_final_third` — DERIVED_FROM_GOLD_COMPONENTS — 127, 98.
-- Penalty Box Touches — GOLD_LOCKED — 22, 15.
+### Corner family
 
-The three territorial touch buckets form an exact, non-overlapping partition of Gold Touches: Forest 238+252+127=617 and Leeds 162+240+98=500.
+Gold outcome family: Corners 3–2; Successful 1–1; Unsuccessful 2–1.
 
-- Shot family in the Metric Bible — GOLD_LOCKED, including total, on-target, off-target, blocked, woodwork, phase/location/body-part subfamilies and headed set-piece shots.
-- Big Chances — GOLD_LOCKED — Bournemouth-Leeds 4, 1.
-- Big Chances Created — GOLD_LOCKED — Bournemouth-Leeds 4, 0.
-- Chances Created — GOLD_LOCKED — Bournemouth-Leeds 14, 7; authoritative event predicate is the `KeyPass` qualifier, not the Gold statistical-pass subset.
-- Assists — GOLD_LOCKED — Bournemouth-Leeds 2, 0.
-- Headed Clearances — GOLD_LOCKED — Bournemouth-Leeds 10, 38.
+The established PitchLab spatial delivery classes **Short / Near / Central / Far / Overhit** are preserved as `PITCHLAB_DERIVED_SPATIAL_DEFINITION`; they are not replaced by provider `Zone=Center`. 6-yard corners, corner chances and corner assists remain pending independent controls.
 
-### Take-On family
+### Defensive / duel family
 
-The Forest-Leeds raw `TakeOn` population exactly matches embedded Opta `dribblesAttempted`, `dribblesWon` and `dribblesLost` team stats:
+Gold: Ball Recoveries 47–43; Tackles 15–29; Tackles Won 8–19; Tackles Lost 7–10; Interceptions 2–15; Clearances 32–31; Dispossessed 9–3; Errors 1–0; Aerial Duels 55–55; Aerial Duels Won 30–25; Aerial Duels Lost 25–30; Attacking Aerial Duels 27–28; Defensive Aerial Duels 28–27; Blocked Shots 6–1; Blocked Crosses 7–7; Blocks 13–8.
 
-- Total Take-Ons `takeons` — GOLD_LOCKED — 22, 12.
-- Successful Take-Ons `takeons_success` — GOLD_LOCKED — 10, 7.
-- Unsuccessful Take-Ons `takeons_unsuccess` — GOLD_LOCKED — 12, 5.
+Attacking/defensive aerial won/lost splits are derived from Gold components. Ground Duels Lost 34–28, Total Ground Duels 65–69, Duels Lost 59–58, Total Duels 120–124 and Blocked Passes 7–5 have explicit raw definitions but await independent headline controls.
 
-### Corner outcome family
+Clearances are `Clearance && !BlockedCross`. Blocks are the exact union of Gold Blocked Shots (`Save + OutfielderBlock`) and Gold Blocked Crosses (`BlockedPass OR Clearance+BlockedCross`).
 
-Embedded Opta corner totals and raw `CornerTaken` events agree exactly:
+### Carry family
 
-- Corners `corners` — GOLD_LOCKED — 3, 2.
-- Successful Corners `corners_success` — GOLD_LOCKED — 1, 1.
-- Unsuccessful Corners `corners_unsuccess` — GOLD_LOCKED — 2, 1.
+Closed and preserved. Carries, Carrying Distance, Avg Carrying Distance, Progressive Carries, Progressive Carrying Distance and Avg Progressive Carrying Distance use the signed-off shared carry engine: >=5m same-player movement on 105×68m geometry, forward-x >=5m for progressive carries, with established continuity/OffsideGiven handling. Do not rebuild this family.
 
-Corner delivery subtypes (short, near, central, far, overhit, 6-yard, chances created and corner assists) remain in the review queue because they require separate semantic/spatial validation; they are not implied by the outcome controls above.
+### Sequence / team-only family
 
-### Defensive / duel / restart family
+Gold: Possession 56.3–43.7; PPDA 12.9–8.8; 10+ Pass Sequences 6–7; Pressed Sequences 2–16; High Turnovers 4–8; Shot-Ending High Turnovers 1–1.
 
-- Ball Recoveries — GOLD_LOCKED — 47, 43.
-- Tackles Won — GOLD_LOCKED — 8, 19.
-- Ground Duels Won — GOLD_LOCKED — 31, 41.
-- Aerial Duels Won — GOLD_LOCKED — 30, 25.
-- Duels Won — DERIVED_FROM_GOLD_COMPONENTS.
-- Interceptions — GOLD_LOCKED — 2, 15.
-- Goal Kicks — GOLD_LOCKED — 6, 10.
-- Fouls — GOLD_LOCKED — 15, 14.
-- Fouled — GOLD_LOCKED — 14, 15.
-- Final Third Entries — GOLD_LOCKED — Forest-Leeds 60, 63; Bournemouth-Leeds 71, 53.
+High Turnovers and Shot-Ending High Turnovers remain sequence-engine metrics; they must not be simplified into ordinary event predicates.
 
-### Team-only Match Stats
+### Penalty Area Entries
 
-- Possession — validated Forest-Leeds 56.3%, 43.7%; keep Match Stats-only.
-- PPDA — GOLD_LOCKED — 12.9, 8.8.
-- 10+ Pass Sequences — GOLD_LOCKED — 6, 7.
-- Pressed Sequences — currently declared Gold in the team registry; provenance/control should be rechecked during the sequence-family pass before final closure.
-- High Turnovers and Shot-Ending High Turnovers remain sequence-engine metrics and must not be simplified into ordinary event predicates.
+`GOLD_LOCKED` — Forest **36–21** Leeds. Authoritative definition: **all Pass attempts**, regardless of outcome, starting outside the opposition penalty area and ending inside it. This is separate from Penalty Box Touches 22–15 and must coexist with that metric in Match Stats.
 
-## Intentionally unresolved / provisional
+### Possession Lost / Dispossessed / Turnovers
 
-- Successful Forward Passes `forward_success` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — raw Forest 164, Leeds 126.
-- Backward Passes `backward` — DEFINITION_UNDER_INVESTIGATION — 69, 49 is the separate four-way BBC/compass field and must not be silently promoted to the headline Opta family.
-- Successful Backward Passes `backward_success` — DEFINITION_UNDER_INVESTIGATION — raw provisional 60, 42.
-- Progressive Passes `progressive` — AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL — exact 25%-closer-to-goal rule implemented; raw Forest 27, Leeds 8.
-- Successful Through Balls `through_balls_success` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — raw 1, 0.
-- Throw-in spatial variants — raw reconciled as above, pending independent controls.
-- Corner delivery/location variants — not yet closed.
-- Penalty Area Entries — unresolved.
-- Turnovers / Loss of Possession — unresolved.
+These are three independent metrics.
 
-## Remaining catalogue review queue
+- **Possession Lost** — existing working metric; protected and untouched by this audit.
+- **Dispossessed** — `GOLD_LOCKED`, raw `Dispossessed`, Forest 9–3 Leeds; provider-period first half 4–3.
+- **Turnovers** — definition strongly raw-reconciled but not Gold. Forest–Leeds marker-69 unsuccessful `BallTouch` base is 16–13; two general possession-chain duplicate suppressions give the trusted full-match **14–13** exactly. Bournemouth–Leeds independently reproduces the marker-69 family: 23/23 marker-69 events are unsuccessful `BallTouch`, observed 16–7, and the unchanged duplicate detector suppresses zero events there. No trusted Bournemouth headline Turnovers control is currently available, so 16–7 is validation evidence, not a Gold control.
 
-These are the families that still require an explicit current-code review before the metric audit can be declared complete. Existing definitions must be inspected first; no rebuilding from memory.
+Forest–Leeds provider-period first-half Turnovers are **12–8**. The trusted/displayed 12–9 can be produced by the separate elapsed-minute period-window contamination that includes Leeds' SecondHalf 45:48 event. That UI bug must not become part of the metric definition.
 
-1. Goal family: total, open play, fast break, set piece, corner, free-kick, penalty, own goals, location and body-part variants.
-2. Corner delivery family: short, near/central/far/overhit, 6-yard, chances created, assists from corners.
-3. Free-kick family: total, accurate, final-third.
-4. Defensive residuals: total/lost tackles, blocks, blocked passes, blocked crosses, clearances, errors.
-5. Duel residuals: lost/total ground and aerial duels, attacking/defensive aerial splits, dispossessed.
-6. Carry family: carries, progressive carries, carries into final third, average carry length and related spatial entries. Preserve the shared carry engine unless evidence requires a definition change.
-7. Sequence family: High Turnovers, Shot-Ending High Turnovers, Pressed Sequences and any other sequence metrics. Preserve possession-chain logic.
-8. Passing residuals: side passes / successful side passes, penalty-box passes, successful penalty-box passes, and any remaining non-retired selector metrics.
-9. Unresolved Penalty Area Entries and Turnovers/Loss Possession last, because they currently lack a clean signed-off reconstruction.
+## Remaining evidence / engineering debt
+
+The semantic audit is now largely closed. Remaining work is deliberately narrow:
+
+1. Turnovers: obtain an independent trusted headline control if possible before `GOLD_LOCKED`; retain the documented first-half provenance distinction.
+2. Fix the shared period-window contamination separately, using provider-period / expanded-time semantics and regression-testing all affected metrics.
+3. Remove stale runtime fallback ownership only where a later canonical module is proven to cover every user-facing surface; especially inspect `ui-extra-metrics.js` High Turnovers and defensive/duel fallbacks without changing semantics.
+4. Resolve independent headline-control debt for Progressive Passes, Penalty-Box Passes, throw-in spatial variants, free-kick variants, corner residuals, ground/total duel residuals and Blocked Passes.
+5. Run a final surface/load-order regression before any merge to `main`.
 
 ## Closure condition
 
-The audit is complete only when every user-facing metric is in one of these explicit states:
-
-- `GOLD_LOCKED`
-- `DERIVED_FROM_GOLD_COMPONENTS`
-- deliberately retained provisional state with documented reason/control needed
-- retired and removed from every user-facing surface
-
-No metric should remain merely because a legacy `FILTERS` function happens to exist.
+A user-facing metric must be `GOLD_LOCKED`, `DERIVED_FROM_GOLD_COMPONENTS`, explicitly provisional with its evidence debt documented, a protected pre-existing metric, or deliberately retired. No metric is considered authoritative merely because a legacy `FILTERS` predicate still exists.
