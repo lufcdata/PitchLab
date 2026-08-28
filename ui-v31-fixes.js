@@ -21,7 +21,7 @@
   const qnames=e=>(e?.qualifiers||[]).map(q=>String(dn(q?.type)||'')).filter(Boolean);
   const ownGoal=e=>eventType(e)==='owngoal'||qnames(e).some(q=>q.toLowerCase()==='owngoal');
   const scoreGoal=e=>eventType(e)==='goal'||eventType(e)==='owngoal'||ownGoal(e);
-  const evtSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
+  const localEvtSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
 
   function patchForestShirts(){
     if(typeof raw==='undefined'||!raw)return;
@@ -87,16 +87,23 @@
     }
   }
 
-  function patchDynamicPitchScore(){
-    if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
-    const from=$('fromRange'),to=$('toRange');if(!from||!to)return;
-    const max=Math.max(90*60,...events.map(evtSec));
+  function scoreWindowEvents(){
+    if(typeof events==='undefined'||!Array.isArray(events)||!events.length)return [];
+    const canonical=window.PitchLabCanonicalTime;
+    if(canonical?.windowEvents)return canonical.windowEvents(events);
+    const from=$('fromRange'),to=$('toRange');if(!from||!to)return events;
+    const max=Math.max(90*60,...events.map(localEvtSec));
     let a=Number(from.value||0),b=Number(to.value||100);if(b<=a)b=Math.min(100,a+1);
     const lo=a/100*max,hi=b/100*max;
+    return events.filter(e=>{const s=localEvtSec(e);return s>=lo&&s<=hi;});
+  }
+
+  function patchDynamicPitchScore(){
+    if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
     const home=raw.home?.name||'Home',away=raw.away?.name||'Away';
     let hs=0,as=0;
-    for(const e of events){
-      const s=evtSec(e);if(s<lo||s>hi||!scoreGoal(e))continue;
+    for(const e of scoreWindowEvents()){
+      if(!scoreGoal(e))continue;
       const eventTeam=typeof teamName==='function'?teamName(e):'';
       const credited=ownGoal(e)?(eventTeam===home?away:eventTeam===away?home:''):eventTeam;
       if(credited===home)hs++;else if(credited===away)as++;
@@ -143,6 +150,7 @@
     const stats=$('matchStatsScore');if(stats)new MutationObserver(()=>patchFixtureLogos()).observe(stats,{childList:true,subtree:true});
     const count=$('eventCount');if(count)new MutationObserver(()=>requestAnimationFrame(()=>{patchDynamicPitchScore();patchLeaderLogos();})).observe(count,{childList:true,subtree:true,characterData:true});
     [$('fromRange'),$('toRange')].forEach(el=>{if(el){el.addEventListener('input',()=>requestAnimationFrame(patchDynamicPitchScore));el.addEventListener('change',()=>requestAnimationFrame(patchDynamicPitchScore));}});
+    document.addEventListener('pitchlab:canonical-time-ready',()=>requestAnimationFrame(patchDynamicPitchScore));
     document.addEventListener('pitchlab:match-loaded',()=>requestAnimationFrame(refresh));
     let tries=0;const timer=setInterval(()=>{tries++;refresh();if(tries>60)clearInterval(timer);},100);
   }
