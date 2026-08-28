@@ -23,6 +23,8 @@
   const offensiveAerial=e=>aerialEvent(e)&&hq(e,'Offensive');
   const defensiveAerial=e=>aerialEvent(e)&&hq(e,'Defensive');
   const blockedShot=e=>et(e)==='save'&&hq(e,'OutfielderBlock');
+  const blockedCross=e=>et(e)==='blockedpass'||(et(e)==='clearance'&&hq(e,'BlockedCross'));
+  const block=e=>blockedShot(e)||blockedCross(e);
   const defs=Object.freeze({
     tackles:gold('Tackles',{forest:15,leeds:29},e=>tackleWon(e)||tackleLost(e),'Embedded Opta tacklesTotal = Tackle + Challenge events.'),
     tackles_lost:gold('Tackles Lost',{forest:7,leeds:10},tackleLost,'Embedded Opta tackleUnsuccesful matches Challenge events exactly.'),
@@ -42,13 +44,13 @@
     duels_lost:raw('Duels Lost',{forest:59,leeds:58},e=>groundLost(e)||(aerialEvent(e)&&!aerialWon(e)),'Ground Duels Lost plus canonical Aerial Duels Lost; raw reconstruction is explicit but awaits an independent headline control.'),
     total_duels:raw('Total Duels',{forest:120,leeds:124},e=>groundEvent(e)||aerialEvent(e),'Canonical ground-duel population plus canonical aerial-duel population; pending independent headline total control.'),
     blocked_shots:gold('Blocked Shots',{forest:6,leeds:1},blockedShot,'Trusted Opta control 6-1 exactly matches Save + OutfielderBlock raw events.'),
-    blocks:investigate('Blocks',{forest:13,leeds:8},blockedShot,'Trusted Opta headline Blocks = 13-8 and decomposes as Blocked Shots 6-1 + Blocked Crosses 7-7. Save + OutfielderBlock is only the Blocked Shots component, not total Blocks.'),
-    blocked_passes:raw('Blocked Passes',{forest:7,leeds:5},e=>et(e)==='blockedpass','Dedicated defensive BlockedPass event population is 7-5. It is distinct from Opta headline Blocks and awaits an independent Blocked Passes headline control.'),
-    blocked_crosses:investigate('Blocked Crosses',{forest:7,leeds:7},e=>et(e)==='clearance'&&hq(e,'BlockedCross'),'Trusted Opta control is 7-7. Clearance + BlockedCross yields only 0-2, proving that qualifier is a subset rather than the complete headline metric; exact reconstruction remains under investigation.')
+    blocked_crosses:gold('Blocked Crosses',{forest:7,leeds:7},blockedCross,'Trusted Opta control 7-7 is reconstructed exactly by the defensive BlockedPass population plus Clearance events explicitly qualified BlockedCross: Forest 7+0, Leeds 5+2.'),
+    blocks:gold('Blocks',{forest:13,leeds:8},block,'Trusted Opta headline Blocks 13-8 is the exact union of Gold Blocked Shots 6-1 and Gold Blocked Crosses 7-7.'),
+    blocked_passes:raw('Blocked Passes',{forest:7,leeds:5},e=>et(e)==='blockedpass','Dedicated defensive BlockedPass event population is 7-5. It is a raw event subtype inside the Gold Blocked Crosses reconstruction, but awaits an independent Blocked Passes headline control before being Gold-locked as its own user-facing metric.')
   });
   if(typeof FILTERS!=='undefined')for(const [k,d] of Object.entries(defs))FILTERS[k]=d.test;
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
-  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V5_2026-08-28',defs,fixture:'whoscored:1983552'});
+  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V6_2026-08-28',defs,fixture:'whoscored:1983552'});
   document.dispatchEvent(new CustomEvent('pitchlab:defensive-residual-definition-ready',{detail:{version:window.PitchLabDefensiveResidualDefinition.version}}));
 })();
