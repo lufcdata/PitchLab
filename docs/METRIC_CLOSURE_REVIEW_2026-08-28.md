@@ -42,16 +42,53 @@ Purpose: drive the remaining metric audit to completion without silently preserv
 
 The open-play family is an exact remainder of Gold Crosses after removing the Gold set-play cross population. Raw Forest-Leeds event reconstruction agrees exactly, but these are intentionally not relabelled `GOLD_LOCKED` without an independent headline control.
 
+### Throw-in family
+
+Forest-Leeds raw reconstruction exactly matches the embedded Opta team throw-in statistics:
+
+- Total Throw-Ins — embedded control 25, 12.
+- Successful Throw-Ins `throwins_success` — GOLD_LOCKED — 21, 6.
+- Unsuccessful Throw-Ins `throwins_unsuccess` — GOLD_LOCKED — 4, 6.
+- Successful Final Third Throw-Ins `throwins_success_final_third` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 4, 3.
+- Successful Throw-Ins Into Penalty Box `throwins_success_box` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 1, 2.
+- Throw-Ins Into Penalty Box `throwins_box` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — 5, 4.
+
+The Gold throw-in outcome family uses `Pass + ThrowIn` with the event outcome. Spatial variants retain the existing end-location geometry but are not Gold-locked without independent controls.
+
 ### Touch / shot / attacking family
 
 - Touches — GOLD_LOCKED — 617, 500.
+- Defensive-Third Touches `touch_def_third` — DERIVED_FROM_GOLD_COMPONENTS — 238, 162.
+- Middle-Third Touches `touch_mid_third` — DERIVED_FROM_GOLD_COMPONENTS — 252, 240.
+- Final-Third Touches `touch_final_third` — DERIVED_FROM_GOLD_COMPONENTS — 127, 98.
 - Penalty Box Touches — GOLD_LOCKED — 22, 15.
+
+The three territorial touch buckets form an exact, non-overlapping partition of Gold Touches: Forest 238+252+127=617 and Leeds 162+240+98=500.
+
 - Shot family in the Metric Bible — GOLD_LOCKED, including total, on-target, off-target, blocked, woodwork, phase/location/body-part subfamilies and headed set-piece shots.
 - Big Chances — GOLD_LOCKED — Bournemouth-Leeds 4, 1.
 - Big Chances Created — GOLD_LOCKED — Bournemouth-Leeds 4, 0.
 - Chances Created — GOLD_LOCKED — Bournemouth-Leeds 14, 7; authoritative event predicate is the `KeyPass` qualifier, not the Gold statistical-pass subset.
 - Assists — GOLD_LOCKED — Bournemouth-Leeds 2, 0.
 - Headed Clearances — GOLD_LOCKED — Bournemouth-Leeds 10, 38.
+
+### Take-On family
+
+The Forest-Leeds raw `TakeOn` population exactly matches embedded Opta `dribblesAttempted`, `dribblesWon` and `dribblesLost` team stats:
+
+- Total Take-Ons `takeons` — GOLD_LOCKED — 22, 12.
+- Successful Take-Ons `takeons_success` — GOLD_LOCKED — 10, 7.
+- Unsuccessful Take-Ons `takeons_unsuccess` — GOLD_LOCKED — 12, 5.
+
+### Corner outcome family
+
+Embedded Opta corner totals and raw `CornerTaken` events agree exactly:
+
+- Corners `corners` — GOLD_LOCKED — 3, 2.
+- Successful Corners `corners_success` — GOLD_LOCKED — 1, 1.
+- Unsuccessful Corners `corners_unsuccess` — GOLD_LOCKED — 2, 1.
+
+Corner delivery subtypes (short, near, central, far, overhit, 6-yard, chances created and corner assists) remain in the review queue because they require separate semantic/spatial validation; they are not implied by the outcome controls above.
 
 ### Defensive / duel / restart family
 
@@ -81,6 +118,8 @@ The open-play family is an exact remainder of Gold Crosses after removing the Go
 - Successful Backward Passes `backward_success` — DEFINITION_UNDER_INVESTIGATION — raw provisional 60, 42.
 - Progressive Passes `progressive` — AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL — exact 25%-closer-to-goal rule implemented; raw Forest 27, Leeds 8.
 - Successful Through Balls `through_balls_success` — RAW_RECONCILED_PENDING_HEADLINE_CONTROL — raw 1, 0.
+- Throw-in spatial variants — raw reconciled as above, pending independent controls.
+- Corner delivery/location variants — not yet closed.
 - Penalty Area Entries — unresolved.
 - Turnovers / Loss of Possession — unresolved.
 
@@ -88,18 +127,15 @@ The open-play family is an exact remainder of Gold Crosses after removing the Go
 
 These are the families that still require an explicit current-code review before the metric audit can be declared complete. Existing definitions must be inspected first; no rebuilding from memory.
 
-1. Throw-ins: successful, unsuccessful, final-third, penalty-box variants.
-2. Touch territory: defensive-third, middle-third, final-third.
-3. Goal family: total, open play, fast break, set piece, corner, free-kick, penalty, own goals, location and body-part variants.
-4. Take-ons: total, successful, unsuccessful.
-5. Corner family: total/success/failure, short, near/central/far/overhit, 6-yard, chances created, assists from corners.
-6. Free-kick family: total, accurate, final-third.
-7. Defensive residuals: total/lost tackles, blocks, blocked passes, blocked crosses, clearances, errors.
-8. Duel residuals: lost/total ground and aerial duels, attacking/defensive aerial splits, dispossessed.
-9. Carry family: carries, progressive carries, carries into final third, average carry length and related spatial entries. Preserve the shared carry engine unless evidence requires a definition change.
-10. Sequence family: High Turnovers, Shot-Ending High Turnovers, Pressed Sequences and any other sequence metrics. Preserve possession-chain logic.
-11. Passing residuals: side passes / successful side passes, penalty-box passes, successful penalty-box passes, and any remaining non-retired selector metrics.
-12. Unresolved Penalty Area Entries and Turnovers/Loss Possession last, because they currently lack a clean signed-off reconstruction.
+1. Goal family: total, open play, fast break, set piece, corner, free-kick, penalty, own goals, location and body-part variants.
+2. Corner delivery family: short, near/central/far/overhit, 6-yard, chances created, assists from corners.
+3. Free-kick family: total, accurate, final-third.
+4. Defensive residuals: total/lost tackles, blocks, blocked passes, blocked crosses, clearances, errors.
+5. Duel residuals: lost/total ground and aerial duels, attacking/defensive aerial splits, dispossessed.
+6. Carry family: carries, progressive carries, carries into final third, average carry length and related spatial entries. Preserve the shared carry engine unless evidence requires a definition change.
+7. Sequence family: High Turnovers, Shot-Ending High Turnovers, Pressed Sequences and any other sequence metrics. Preserve possession-chain logic.
+8. Passing residuals: side passes / successful side passes, penalty-box passes, successful penalty-box passes, and any remaining non-retired selector metrics.
+9. Unresolved Penalty Area Entries and Turnovers/Loss Possession last, because they currently lack a clean signed-off reconstruction.
 
 ## Closure condition
 
