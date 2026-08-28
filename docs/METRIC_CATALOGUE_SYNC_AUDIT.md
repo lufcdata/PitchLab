@@ -37,7 +37,22 @@ Gold controls include Touches 617–500, Penalty Box Touches 22–15, Take-Ons 2
 
 Gold controls include Ball Recoveries 47–43, Tackles 15–29, Tackles Won 8–19, Tackles Lost 7–10, Interceptions 2–15, Clearances 32–31, Dispossessed 9–3, Errors 1–0, Aerial Duels 55–55, Aerial Duels Won 30–25, Aerial Duels Lost 25–30, Blocks 13–8, Blocked Shots 6–1 and Blocked Crosses 7–7.
 
-Ground/total duel residuals and Blocked Passes have explicit raw definitions but remain pending independent headline controls.
+The former provisional ground-duel residual has now been corrected using the independent Forest–Leeds control **Ground Duels Won 31/72–41/72**. Canonical Ground Duels Lost is the losing-side partner population: `Challenge + unsuccessful TakeOn + unsuccessful non-aerial Foul + Dispossessed only when paired at the same provider clock/period with an opponent Tackle`.
+
+Closed controls/statuses:
+
+- Ground Duels Won **31–41** — `GOLD_LOCKED`
+- Ground Duels Lost **41–31** — `DERIVED_FROM_GOLD_COMPONENTS`
+- Total Ground Duels **72–72** — `GOLD_LOCKED`
+- Duels Won **61–66** — `DERIVED_FROM_GOLD_COMPONENTS`
+- Duels Lost **66–61** — `DERIVED_FROM_GOLD_COMPONENTS`
+- Total Duels **127–127** — `DERIVED_FROM_GOLD_COMPONENTS`
+
+The previous provisional values `34–28`, `65–69`, `59–58` and `120–124` are retired and must not be restored.
+
+A second published Bournemouth–Leeds control reports Duels Won **48–64** and Aerial Duels Won **22–28**, implying Ground Duels Won **26–36**, Total Ground Duels **62–62** and Total Duels **112–112** under the same one-winner/one-loser duel structure.
+
+**Blocked Passes 7–5** remains the only defensive residual in this set with explicit raw ownership but no independent headline control.
 
 ### Corners
 
@@ -80,4 +95,4 @@ Forest–Leeds strict provider-period first half is 12–8. A nominal first-half
 
 ## Current audit position
 
-The catalogue is no longer waiting on Penalty Area Entries: that metric is closed and Gold. Turnovers' event family and Forest–Leeds full-match reconstruction are strongly resolved, with independent second-fixture raw-family validation; only the missing independent headline control and the documented first-half provenance issue prevent Gold promotion. The remaining work is principally integration/ownership cleanup, period-filter correction and explicit evidence debt — not a broad metric-definition rebuild.
+Penalty Area Entries and the ground/total-duel family are closed. The duel correction is semantic and evidence-backed, not fixture-specific: only `Dispossessed` events paired to an opposition Tackle are added to the losing ground-duel population, while standalone Dispossessed remains independent. Turnovers' event family and Forest–Leeds full-match reconstruction are strongly resolved, with independent second-fixture raw-family validation; only the missing independent headline control and the documented first-half provenance issue prevent Gold promotion. The remaining work is principally integration/ownership cleanup, period-filter regression and explicit evidence debt for metrics such as Blocked Passes — not a broad metric-definition rebuild.
