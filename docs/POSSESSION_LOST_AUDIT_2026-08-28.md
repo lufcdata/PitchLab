@@ -33,22 +33,30 @@ The full-match Forest overcount is explained by two event-chain duplicates rathe
 1. **68:36 Forest unsuccessful BallTouch** occurs after Forest have already lost possession: Forest successful TakeOn (68:32) -> Forest unsuccessful Pass (68:33) -> Leeds successful Interception (68:34) -> Forest unsuccessful BallTouch (68:36). Opposition control is already established before the BallTouch, so the BallTouch is not a new turnover.
 2. **88:37 Forest unsuccessful BallTouch** is part of a blocked-delivery chain: Forest successful BallTouch (88:35) -> Forest unsuccessful BallTouch at `(79.4,65.1)` (88:37) -> Leeds Clearance (88:38) + Forest successful `BlockedPass` at the identical `(79.4,65.1)` coordinates (88:38). The unsuccessful BallTouch is therefore not an independent possession-loss turnover.
 
-Excluding those two chain duplicates gives **Forest 14 – 13 Leeds**, exactly matching the trusted full-match control.
+A generalized detector — (a) suppress unsuccessful BallTouch after an opposition successful interception when no same-team control has been re-established, and (b) suppress an unsuccessful BallTouch immediately followed by a same-team successful `BlockedPass` at the same coordinates — flags **only those two Forest candidates** in the 29-event unsuccessful-BallTouch population. No fixture IDs or timestamps are needed. Applying those exclusions gives **Forest 14 – 13 Leeds**, exactly matching the trusted full-match control.
 
-### First-half boundary
+## First-half boundary — correction after period-engine audit
 
-The trusted first-half control is Forest 12 – 9 Leeds. Forest has 12 qualifying unsuccessful BallTouches in the first period and therefore matches directly. Leeds has eight events tagged `FirstHalf`, plus an unsuccessful BallTouch at **45:48** that is tagged `SecondHalf` in the raw feed even though it occurs inside the fixture's first-half elapsed-time window. Counting by the match's real first-half time boundary rather than the anomalous raw period tag produces **12 – 9**, matching the trusted control.
+The trusted first-half control is Forest 12 – 9 Leeds. The provider-period event population itself is **Forest 12 – 8 Leeds**: Leeds' extra unsuccessful BallTouch at **45:48** is unequivocally tagged `SecondHalf` and has `expandedMinute: 48`. The raw fixture declares the first-period end at expanded minute 47.
 
-### Candidate general rule
+The previous audit text incorrectly treated 45:48 as being inside the provider first half. That statement is retired.
 
-`Turnover` is an unsuccessful `BallTouch` representing a genuine loss of controlled possession, excluding BallTouch records that are merely secondary records inside an already-resolved possession-loss/defensive-action chain. Period filtering must use PitchLab's established real match-period boundary semantics rather than trusting a contradictory individual event period tag.
+PitchLab currently has a separate timing/window bug that can explain why a UI first-half window can nevertheless show 12–9. `ui-period.js` derives the HT endpoint from first-period events, but the shared event-window functions compare only `minute * 60 + second`. Because WhoScored resets ordinary `minute` to 45 at the start of the second half, second-half events between local 45:00 and the first-half stoppage-time endpoint can leak into a nominal first-half slider window. The 45:48 Leeds BallTouch is one such event.
 
-This rule reconstructs both trusted controls simultaneously:
+This UI-window behaviour **must not be promoted into the Turnovers definition**. Period-aware filtering should eventually use provider period / expanded-time semantics. Therefore the first-half turnover control remains a genuine evidence residual until its provenance is confirmed or a period-correct candidate population explains 12–9 independently.
 
-- First half: **Forest 12 – 9 Leeds**
-- Full match: **Forest 14 – 13 Leeds**
+## Candidate general rule
 
-It is not yet `GOLD_LOCKED`: the semantic rule is now raw-reconciled on the Forest–Leeds fixture but requires a second fixture or equivalent independent control before Gold promotion.
+`Turnover` remains strongly supported as an unsuccessful `BallTouch` representing a genuine fresh loss of controlled possession, excluding BallTouch records that are secondary records inside an already-resolved possession-loss/defensive-action chain.
+
+Current evidence:
+
+- Full match: **Forest 14 – 13 Leeds** — raw-reconciled exactly with a general two-part chain-suppression rule.
+- Provider-period first half: **Forest 12 – 8 Leeds** from the same rule/base family.
+- Current PitchLab elapsed-minute first-half window can show **12 – 9** because of a separate period-window contamination issue.
+- Trusted first-half headline control remains **12 – 9** and is not yet semantically explained without relying on that UI bug.
+
+Turnovers is therefore **not `GOLD_LOCKED`**. It requires a second fixture / independent control and resolution of the 1H provenance residual before Gold promotion.
 
 ## Protected implementation rule
 
@@ -58,3 +66,4 @@ It is not yet `GOLD_LOCKED`: the semantic rule is now raw-reconciled on the Fore
 4. Do not sum Dispossessed + Turnovers and call the result Possession Lost.
 5. Do not expose a `Possession Lost` parent label for these two metrics.
 6. Do not implement fixture-specific event IDs/timestamps as exclusions; implementation must express the general chain rule above.
+7. Do not use the current elapsed-minute period-window leak as a metric-definition rule.
