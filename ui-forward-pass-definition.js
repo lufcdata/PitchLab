@@ -18,9 +18,10 @@
     return Math.atan2((endY-y)*0.68,(endX-x)*1.05);
   };
 
-  // Opta/BBC directional controls for Forest 0-1 Leeds reconcile exactly when the
-  // statistical-pass population is split into four 90-degree sectors:
-  // Forward +/-45; Left 45..135; Backward >135 from forward; Right -135..-45.
+  // The Forest 0-1 Leeds statistical-pass population splits exactly into four
+  // 90-degree sectors matching the supplied directional shares. BBC also reports
+  // 149 Forward / 69 Backward for Forest and 135 / 49 for Leeds, but BBC's passing
+  // stat family is being treated as separate provenance until equivalence is proven.
   const direction=e=>{
     const a=signedAngle(e);
     if(!Number.isFinite(a))return null;
@@ -52,9 +53,11 @@
   });
   const backwardDef=Object.freeze({
     label:'Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'GOLD_LOCKED',
+    status:'RAW_RECONCILED_PENDING_CONTROL_PROVENANCE',
     definition:'Statistical pass whose full-precision coordinate-derived direction is within 45 degrees of straight backward.',
-    controls:Object.freeze({forest:69,leeds:49}),test:isBackwardPass
+    candidateControls:Object.freeze({forest:69,leeds:49}),
+    controlNote:'69-49 matches the raw four-way directional reconstruction and BBC display, but BBC passing-family equivalence to PitchLab controls is not yet proven.',
+    test:isBackwardPass
   });
   const forwardSuccessDef=Object.freeze({
     label:'Successful Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
@@ -65,7 +68,7 @@
   });
   const backwardSuccessDef=Object.freeze({
     label:'Successful Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
+    status:'RAW_RECONCILED_PENDING_PARENT_CONTROL',
     definition:'Backward Pass with successful outcome.',
     observedFixtureCounts:Object.freeze({forest:60,leeds:42}),
     test:isSuccessfulBackwardPass
@@ -80,7 +83,8 @@
   window.PitchLabForwardPassDefinition=Object.freeze({
     version:'OPTA_DIRECTIONAL_PASS_V2_2026-08-28',
     keys:Object.freeze(['forward','forward_success','backward','backward_success']),
-    controls:Object.freeze({forward:Object.freeze({forest:149,leeds:135}),backward:Object.freeze({forest:69,leeds:49})}),
+    controls:Object.freeze({forward:Object.freeze({forest:149,leeds:135})}),
+    candidateControls:Object.freeze({backward:Object.freeze({forest:69,leeds:49})}),
     observations:Object.freeze({forwardSuccess:Object.freeze({forest:85,leeds:68}),backwardSuccess:Object.freeze({forest:60,leeds:42})}),
     direction,test:isForwardPass,backwardTest:isBackwardPass,
     successfulTest:isSuccessfulForwardPass,successfulBackwardTest:isSuccessfulBackwardPass
