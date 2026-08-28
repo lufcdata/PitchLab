@@ -9,20 +9,21 @@
   const outcome=e=>String((e?.outcomeType?.displayName??e?.outcomeType?.name??e?.outcomeType?.value??e?.outcomeType)||'').toLowerCase();
   const isSuccess=e=>outcome(e)==='successful';
 
-  // Use the full-precision event coordinates for directional boundaries. WhoScored's
-  // qualifier 213 Angle is rounded and can move boundary events into the wrong sector.
-  // Physical 105 x 68 scaling preserves the provider geometry represented by q213.
+  // Headline Opta Forward Passes are the Gold statistical-pass population with
+  // positive longitudinal movement. Forest 244 / Leeds 211 is independently
+  // confirmed by Forward Pass %: 244/411=59.4%, 211/326=64.7%.
+  const isForwardPass=e=>passing.isStatPass(e)&&Number(e?.endX)>Number(e?.x);
+  const isSuccessfulForwardPass=e=>isForwardPass(e)&&isSuccess(e);
+
+  // Keep the separate four-way compass reconstruction available for forensic work.
+  // It reproduces BBC-displayed 149/135 forward-sector and 69/49 backward-sector
+  // values, but these are NOT the headline Opta Forward Pass metric.
   const signedAngle=e=>{
     const x=Number(e?.x),y=Number(e?.y),endX=Number(e?.endX),endY=Number(e?.endY);
     if(![x,y,endX,endY].every(Number.isFinite))return NaN;
     return Math.atan2((endY-y)*0.68,(endX-x)*1.05);
   };
-
-  // The Forest 0-1 Leeds statistical-pass population splits exactly into four
-  // 90-degree sectors matching the supplied directional shares. BBC also reports
-  // 149 Forward / 69 Backward for Forest and 135 / 49 for Leeds, but BBC's passing
-  // stat family is being treated as separate provenance until equivalence is proven.
-  const direction=e=>{
+  const compassDirection=e=>{
     const a=signedAngle(e);
     if(!Number.isFinite(a))return null;
     const d=a*180/Math.PI;
@@ -31,47 +32,45 @@
     if(d>=135||d<-135)return 'backward';
     return 'right';
   };
-
-  const isDirectionalPass=e=>passing.isStatPass(e);
-  const isForwardPass=e=>isDirectionalPass(e)&&direction(e)==='forward';
-  const isBackwardPass=e=>isDirectionalPass(e)&&direction(e)==='backward';
-  const isSuccessfulForwardPass=e=>isForwardPass(e)&&isSuccess(e);
-  const isSuccessfulBackwardPass=e=>isBackwardPass(e)&&isSuccess(e);
+  const isBackwardCompassPass=e=>passing.isStatPass(e)&&compassDirection(e)==='backward';
+  const isSuccessfulBackwardCompassPass=e=>isBackwardCompassPass(e)&&isSuccess(e);
 
   if(typeof FILTERS!=='undefined'){
     FILTERS.forward=isForwardPass;
     FILTERS.forward_success=isSuccessfulForwardPass;
-    FILTERS.backward=isBackwardPass;
-    FILTERS.backward_success=isSuccessfulBackwardPass;
+    FILTERS.backward=isBackwardCompassPass;
+    FILTERS.backward_success=isSuccessfulBackwardCompassPass;
   }
 
   const forwardDef=Object.freeze({
     label:'Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
     status:'GOLD_LOCKED',
-    definition:'Statistical pass whose full-precision coordinate-derived direction is within 45 degrees of straight forward.',
-    controls:Object.freeze({forest:149,leeds:135}),test:isForwardPass
+    definition:'Gold statistical pass with positive longitudinal movement (endX > x).',
+    controls:Object.freeze({forest:244,leeds:211}),
+    percentageControls:Object.freeze({forest:59.4,leeds:64.7}),
+    test:isForwardPass
   });
   const backwardDef=Object.freeze({
     label:'Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'RAW_RECONCILED_PENDING_CONTROL_PROVENANCE',
-    definition:'Statistical pass whose full-precision coordinate-derived direction is within 45 degrees of straight backward.',
+    status:'DEFINITION_UNDER_INVESTIGATION',
+    definition:'Current compatibility predicate uses the backward sector of the separate four-way compass reconstruction; do not treat as a secured headline Opta Backward Pass definition.',
     candidateControls:Object.freeze({forest:69,leeds:49}),
-    controlNote:'69-49 matches the raw four-way directional reconstruction and BBC display, but BBC passing-family equivalence to PitchLab controls is not yet proven.',
-    test:isBackwardPass
+    test:isBackwardCompassPass
   });
   const forwardSuccessDef=Object.freeze({
     label:'Successful Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
-    definition:'Forward Pass with successful outcome.',
-    observedFixtureCounts:Object.freeze({forest:85,leeds:68}),
+    status:'RAW_RECONCILED_PENDING_HEADLINE_CONTROL',
+    definition:'Headline Forward Pass with successful outcome.',
+    observedFixtureCounts:Object.freeze({forest:164,leeds:126}),
+    note:'BBC 149-135 is not assumed to be Successful Forward Passes; that hypothesis conflicts with this raw successful headline-forward population and remains unresolved.',
     test:isSuccessfulForwardPass
   });
   const backwardSuccessDef=Object.freeze({
     label:'Successful Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'RAW_RECONCILED_PENDING_PARENT_CONTROL',
-    definition:'Backward Pass with successful outcome.',
+    status:'DEFINITION_UNDER_INVESTIGATION',
+    definition:'Successful event in the provisional four-way backward compass sector; parent headline Backward Pass definition is unresolved.',
     observedFixtureCounts:Object.freeze({forest:60,leeds:42}),
-    test:isSuccessfulBackwardPass
+    test:isSuccessfulBackwardCompassPass
   });
 
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,
@@ -81,13 +80,13 @@
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),'forward','forward_success','backward','backward_success'])]);
 
   window.PitchLabForwardPassDefinition=Object.freeze({
-    version:'OPTA_DIRECTIONAL_PASS_V2_2026-08-28',
+    version:'OPTA_FORWARD_HEADLINE_V3_2026-08-28',
     keys:Object.freeze(['forward','forward_success','backward','backward_success']),
-    controls:Object.freeze({forward:Object.freeze({forest:149,leeds:135})}),
-    candidateControls:Object.freeze({backward:Object.freeze({forest:69,leeds:49})}),
-    observations:Object.freeze({forwardSuccess:Object.freeze({forest:85,leeds:68}),backwardSuccess:Object.freeze({forest:60,leeds:42})}),
-    direction,test:isForwardPass,backwardTest:isBackwardPass,
-    successfulTest:isSuccessfulForwardPass,successfulBackwardTest:isSuccessfulBackwardPass
+    controls:Object.freeze({forward:Object.freeze({forest:244,leeds:211}),forwardPct:Object.freeze({forest:59.4,leeds:64.7})}),
+    candidateControls:Object.freeze({compassForward:Object.freeze({forest:149,leeds:135}),compassBackward:Object.freeze({forest:69,leeds:49})}),
+    observations:Object.freeze({forwardSuccess:Object.freeze({forest:164,leeds:126}),compassBackwardSuccess:Object.freeze({forest:60,leeds:42})}),
+    compassDirection,test:isForwardPass,backwardTest:isBackwardCompassPass,
+    successfulTest:isSuccessfulForwardPass,successfulBackwardTest:isSuccessfulBackwardCompassPass
   });
 
   document.dispatchEvent(new CustomEvent('pitchlab:forward-pass-definition-ready',{
