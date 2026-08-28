@@ -9,24 +9,15 @@
   const surfaces=Object.freeze(['pitch','leaders','matchStats']);
   const gold=(label,controls,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'GOLD_LOCKED',controls:Object.freeze(controls),definition,test});
   const derived=(label,observed,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'DERIVED_FROM_GOLD_COMPONENTS',observedFixtureCounts:Object.freeze(observed),definition,test});
-  const pending=(label,observed,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL',observedFixtureCounts:Object.freeze(observed),definition,test});
   const tackleWon=e=>et(e)==='tackle';
   const tackleLost=e=>et(e)==='challenge';
   const clearance=e=>et(e)==='clearance'&&!hq(e,'BlockedCross');
   const nonAerialFoul=e=>et(e)==='foul'&&!hq(e,'AerialFoul');
   const groundWon=e=>tackleWon(e)||(et(e)==='takeon'&&ok(e))||(nonAerialFoul(e)&&ok(e));
-
-  // A tackle win can be represented on the losing side either by an unsuccessful
-  // TakeOn or by a paired Dispossessed event. Only the latter Dispossessed events
-  // belong in Ground Duels Lost; standalone Dispossessed events remain their own metric.
   const periodKey=e=>String(dn(e?.period)||dn(e?.periodType)||'').replace(/[\s_-]/g,'').toLowerCase();
   const sameClock=(a,b)=>Number(a?.minute||0)===Number(b?.minute||0)&&Number(a?.second||0)===Number(b?.second||0);
   const samePeriod=(a,b)=>{const ap=periodKey(a),bp=periodKey(b);return !ap||!bp||ap===bp;};
-  const pairedTackleDispossessed=e=>{
-    if(et(e)!=='dispossessed'||typeof events==='undefined'||!Array.isArray(events))return false;
-    const tm=String(e?.teamId??'');
-    return events.some(q=>q!==e&&String(q?.teamId??'')!==tm&&et(q)==='tackle'&&sameClock(q,e)&&samePeriod(q,e));
-  };
+  const pairedTackleDispossessed=e=>{if(et(e)!=='dispossessed'||typeof events==='undefined'||!Array.isArray(events))return false;const tm=String(e?.teamId??'');return events.some(q=>q!==e&&String(q?.teamId??'')!==tm&&et(q)==='tackle'&&sameClock(q,e)&&samePeriod(q,e));};
   const groundLost=e=>tackleLost(e)||(et(e)==='takeon'&&!ok(e))||(nonAerialFoul(e)&&!ok(e)||pairedTackleDispossessed(e));
   const groundEvent=e=>groundWon(e)||groundLost(e);
   const aerialEvent=e=>et(e)==='aerial'||(et(e)==='foul'&&hq(e,'AerialFoul'));
@@ -34,6 +25,8 @@
   const offensiveAerial=e=>aerialEvent(e)&&hq(e,'Offensive');
   const defensiveAerial=e=>aerialEvent(e)&&hq(e,'Defensive');
   const blockedShot=e=>et(e)==='save'&&hq(e,'OutfielderBlock');
+  // Raw BlockedPass remains an internal event primitive because it is required to
+  // reconstruct the user-facing Gold Blocked Crosses metric. It is not itself exposed.
   const blockedCross=e=>et(e)==='blockedpass'||(et(e)==='clearance'&&hq(e,'BlockedCross'));
   const block=e=>blockedShot(e)||blockedCross(e);
   const defs=Object.freeze({
@@ -55,13 +48,13 @@
     duels_lost:derived('Duels Lost',{forest:66,leeds:61},e=>groundLost(e)||(aerialEvent(e)&&!aerialWon(e)),'Derived from closed Ground Duels Lost 41-31 plus Gold Aerial Duels Lost 25-30.'),
     total_duels:derived('Total Duels',{forest:127,leeds:127},e=>groundEvent(e)||aerialEvent(e),'Derived from Gold Total Ground Duels 72-72 plus Gold Total Aerial Duels 55-55. Forest-Leeds Gold Duels Won 61-66 therefore leaves Duels Lost 66-61.'),
     blocked_shots:gold('Blocked Shots',{forest:6,leeds:1},blockedShot,'Trusted Opta control 6-1 exactly matches Save + OutfielderBlock raw events.'),
-    blocked_crosses:gold('Blocked Crosses',{forest:7,leeds:7},blockedCross,'Trusted Opta control 7-7 is reconstructed exactly by the defensive BlockedPass population plus Clearance events explicitly qualified BlockedCross: Forest 7+0, Leeds 5+2.'),
-    blocks:gold('Blocks',{forest:13,leeds:8},block,'Trusted Opta headline Blocks 13-8 is the exact union of Gold Blocked Shots 6-1 and Gold Blocked Crosses 7-7.'),
-    blocked_passes:pending('Blocked Passes',{forest:7,leeds:5},e=>et(e)==='blockedpass','Authoritative semantic definition is raw BlockedPass. Opta publicly defines a Blocked Pass as a player trying to cut out an opposition pass, matching the feed event exactly. Forest-Leeds reconstructs 7-5, but no independent numerical headline control has been located, so Gold promotion remains blocked on evidence only.')
+    blocked_crosses:gold('Blocked Crosses',{forest:7,leeds:7},blockedCross,'Trusted Opta control 7-7 is reconstructed exactly by the defensive BlockedPass population plus Clearance events explicitly qualified BlockedCross: Forest 7+0, Leeds 5+2. Raw BlockedPass is retained only as an internal component, not a standalone metric.'),
+    blocks:gold('Blocks',{forest:13,leeds:8},block,'Trusted Opta headline Blocks 13-8 is the exact union of Gold Blocked Shots 6-1 and Gold Blocked Crosses 7-7.')
   });
   if(typeof FILTERS!=='undefined')for(const [k,d] of Object.entries(defs))FILTERS[k]=d.test;
-  bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
-  bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
-  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V9_2026-08-28',defs,fixture:'whoscored:1983552'});
+  if(typeof FILTERS!=='undefined')delete FILTERS.blocked_passes;
+  bible.canonicalRegistry=Object.freeze(Object.fromEntries(Object.entries({...bible.canonicalRegistry,...defs}).filter(([k])=>k!=='blocked_passes')));
+  bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]).filter(k=>k!=='blocked_passes'),...Object.keys(defs)])]);
+  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V10_2026-08-28',defs,fixture:'whoscored:1983552',retired:Object.freeze(['blocked_passes'])});
   document.dispatchEvent(new CustomEvent('pitchlab:defensive-residual-definition-ready',{detail:{version:window.PitchLabDefensiveResidualDefinition.version}}));
 })();
