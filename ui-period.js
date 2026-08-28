@@ -8,6 +8,7 @@
   const firstAdded=document.createElement('div');firstAdded.className='period-added-segment period-added-segment--first';firstAdded.setAttribute('aria-hidden','true');wrap.appendChild(firstAdded);
   const secondAdded=document.createElement('div');secondAdded.className='period-added-segment period-added-segment--second';secondAdded.setAttribute('aria-hidden','true');wrap.appendChild(secondAdded);
   const halftimeGap=document.createElement('div');halftimeGap.className='halftime-gap';halftimeGap.setAttribute('aria-hidden','true');wrap.appendChild(halftimeGap);
+  let frame=0;
 
   function addTick(label,timeline,className=''){
     const clock=window.PitchLabCanonicalTime;if(!clock)return;
@@ -19,14 +20,14 @@
 
   function timelineForClockSecond(clockSeconds){
     const clock=window.PitchLabCanonicalTime;if(!clock)return clockSeconds;
-    const ht=clock.timing.firstHalfEnd||45*60;
-    return clockSeconds<=45*60?clockSeconds:ht+(clockSeconds-45*60);
+    if(clockSeconds<=45*60)return clockSeconds;
+    return clock.timing.secondHalfStart+(clockSeconds-45*60);
   }
 
   function draw(){
+    frame=0;
     const clock=window.PitchLabCanonicalTime;if(!clock)return;
-    clock.derive(window.events);
-    const {firstHalfEnd,secondHalfEnd,fullTimeline}=clock.timing;
+    const {firstHalfEnd,secondHalfStart,fullTimeline}=clock.timing;
     ticks.innerHTML='';
     for(const m of [0,15,30,45,60,75,90]){
       const t=timelineForClockSecond(m*60);if(t<fullTimeline-1)addTick(String(m),t,m===0?'period-tick--start':'');
@@ -37,13 +38,13 @@
     firstAdded.style.left=`${pct(45*60)}%`;firstAdded.style.width=`${Math.max(0,pct(firstHalfEnd)-pct(45*60))}%`;
     const secondAddedStart=timelineForClockSecond(90*60);secondAdded.style.left=`${pct(secondAddedStart)}%`;secondAdded.style.width=`${Math.max(0,100-pct(secondAddedStart))}%`;
     halftimeGap.style.left=`${pct(firstHalfEnd)}%`;
+    halftimeGap.style.width=`${Math.max(.12,pct(secondHalfStart)-pct(firstHalfEnd))}%`;
     from.step=to.step=String(100/fullTimeline);
   }
 
-  function refresh(){requestAnimationFrame(draw)}
+  function refresh(){if(frame)return;frame=requestAnimationFrame(draw)}
   document.addEventListener('pitchlab:canonical-time-ready',refresh);
   document.addEventListener('pitchlab:match-loaded',refresh);
-  from.addEventListener('input',refresh);to.addEventListener('input',refresh);
-  window.addEventListener('resize',refresh);
+  window.addEventListener('resize',refresh,{passive:true});
   refresh();
 })();
