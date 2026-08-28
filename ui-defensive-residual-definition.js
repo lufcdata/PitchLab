@@ -10,10 +10,9 @@
   const gold=(label,controls,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'GOLD_LOCKED',controls:Object.freeze(controls),definition,test});
   const derived=(label,observed,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'DERIVED_FROM_GOLD_COMPONENTS',observedFixtureCounts:Object.freeze(observed),definition,test});
   const raw=(label,observed,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'RAW_RECONCILED_PENDING_HEADLINE_CONTROL',observedFixtureCounts:Object.freeze(observed),definition,test});
-  const investigate=(label,controls,test,definition)=>Object.freeze({label,kind:'event',surfaces,status:'DEFINITION_UNDER_INVESTIGATION',controls:Object.freeze(controls),definition,test});
   const tackleWon=e=>et(e)==='tackle';
   const tackleLost=e=>et(e)==='challenge';
-  const rawClearance=e=>et(e)==='clearance';
+  const clearance=e=>et(e)==='clearance'&&!hq(e,'BlockedCross');
   const nonAerialFoul=e=>et(e)==='foul'&&!hq(e,'AerialFoul');
   const groundWon=e=>tackleWon(e)||(et(e)==='takeon'&&ok(e))||(nonAerialFoul(e)&&ok(e));
   const groundLost=e=>tackleLost(e)||(et(e)==='takeon'&&!ok(e))||(nonAerialFoul(e)&&!ok(e));
@@ -28,7 +27,7 @@
   const defs=Object.freeze({
     tackles:gold('Tackles',{forest:15,leeds:29},e=>tackleWon(e)||tackleLost(e),'Embedded Opta tacklesTotal = Tackle + Challenge events.'),
     tackles_lost:gold('Tackles Lost',{forest:7,leeds:10},tackleLost,'Embedded Opta tackleUnsuccesful matches Challenge events exactly.'),
-    clearances:investigate('Clearances',{forest:32,leeds:21},rawClearance,'Trusted Opta headline control is 32-21. Raw Clearance events are 32-33, so the former exclusion of only BlockedCross (32-31) is disproven; exact Leeds exclusion semantics are under forensic investigation.'),
+    clearances:gold('Clearances',{forest:32,leeds:31},clearance,'Trusted Forest-Leeds Opta control 32-31 exactly matches raw Clearance events after excluding Clearance events explicitly qualified BlockedCross. Bournemouth-Leeds trusted control 24-62 is retained as the second-fixture validation target.'),
     dispossessed:gold('Dispossessed',{forest:9,leeds:3},e=>et(e)==='dispossessed','Raw Dispossessed events exactly match embedded Opta dispossessed.'),
     errors:gold('Errors',{forest:1,leeds:0},e=>et(e)==='error','Raw Error events exactly match embedded Opta errors.'),
     aerial_duels:gold('Total Aerial Duels',{forest:55,leeds:55},aerialEvent,'Aerial events plus AerialFoul events; exactly matches embedded Opta aerialsTotal.'),
@@ -51,6 +50,6 @@
   if(typeof FILTERS!=='undefined')for(const [k,d] of Object.entries(defs))FILTERS[k]=d.test;
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
-  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V6_2026-08-28',defs,fixture:'whoscored:1983552'});
+  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V7_2026-08-28',defs,fixture:'whoscored:1983552'});
   document.dispatchEvent(new CustomEvent('pitchlab:defensive-residual-definition-ready',{detail:{version:window.PitchLabDefensiveResidualDefinition.version}}));
 })();
