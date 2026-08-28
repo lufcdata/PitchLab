@@ -32,6 +32,7 @@
     removeRetired(body);
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const metrics=[
+      ['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
       ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Off-Target','shots_off'],['Blocked Shots','shots_blocked'],['Woodwork Shots','woodwork'],
       ['Shots - Open Play','shots_open'],['Shots - Fast Break','shots_fastbreak'],['Shots from Set-Pieces','shots_setpiece'],['Shots - From Free-Kicks','shots_dfk'],
@@ -45,6 +46,7 @@
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
     for(const [label,key] of metrics){
+      const def=bible.canonicalRegistry?.[key];if(!def?.test)continue;
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
       let row=findRow(body,label);
       if(row){setRow(row,h,a,label);continue}
@@ -52,10 +54,15 @@
       if(label==='Goal Kicks'){
         const marker=findRow(body,'Interceptions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
+      }else if(label==='Successful Actions'){
+        body.insertBefore(row,body.firstElementChild);
+      }else if(label==='Unsuccessful Actions'){
+        const marker=findRow(body,'Successful Actions');
+        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else body.appendChild(row);
     }
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
