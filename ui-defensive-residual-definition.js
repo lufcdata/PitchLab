@@ -15,7 +15,19 @@
   const clearance=e=>et(e)==='clearance'&&!hq(e,'BlockedCross');
   const nonAerialFoul=e=>et(e)==='foul'&&!hq(e,'AerialFoul');
   const groundWon=e=>tackleWon(e)||(et(e)==='takeon'&&ok(e))||(nonAerialFoul(e)&&ok(e));
-  const groundLost=e=>tackleLost(e)||(et(e)==='takeon'&&!ok(e))||(nonAerialFoul(e)&&!ok(e));
+
+  // A tackle win can be represented on the losing side either by an unsuccessful
+  // TakeOn or by a paired Dispossessed event. Only the latter Dispossessed events
+  // belong in Ground Duels Lost; standalone Dispossessed events remain their own metric.
+  const periodKey=e=>String(dn(e?.period)||dn(e?.periodType)||'').replace(/[\s_-]/g,'').toLowerCase();
+  const sameClock=(a,b)=>Number(a?.minute||0)===Number(b?.minute||0)&&Number(a?.second||0)===Number(b?.second||0);
+  const samePeriod=(a,b)=>{const ap=periodKey(a),bp=periodKey(b);return !ap||!bp||ap===bp;};
+  const pairedTackleDispossessed=e=>{
+    if(et(e)!=='dispossessed'||typeof events==='undefined'||!Array.isArray(events))return false;
+    const tm=String(e?.teamId??'');
+    return events.some(q=>q!==e&&String(q?.teamId??'')!==tm&&et(q)==='tackle'&&sameClock(q,e)&&samePeriod(q,e));
+  };
+  const groundLost=e=>tackleLost(e)||(et(e)==='takeon'&&!ok(e))||(nonAerialFoul(e)&&!ok(e)||pairedTackleDispossessed(e));
   const groundEvent=e=>groundWon(e)||groundLost(e);
   const aerialEvent=e=>et(e)==='aerial'||(et(e)==='foul'&&hq(e,'AerialFoul'));
   const aerialWon=e=>(et(e)==='aerial'&&ok(e))||(et(e)==='foul'&&ok(e)&&hq(e,'AerialFoul'));
@@ -38,10 +50,10 @@
     att_aerial_duels_lost:derived('Attacking Aerial Duels Lost',{forest:14,leeds:17},e=>offensiveAerial(e)&&!aerialWon(e),'Exact remainder of Gold Attacking Aerial Duels after its won component.'),
     def_aerial_duels_won:derived('Defensive Aerial Duels Won',{forest:17,leeds:14},e=>defensiveAerial(e)&&aerialWon(e),'Outcome split of Gold Defensive Aerial Duels using the Gold aerial-win predicate.'),
     def_aerial_duels_lost:derived('Defensive Aerial Duels Lost',{forest:11,leeds:13},e=>defensiveAerial(e)&&!aerialWon(e),'Exact remainder of Gold Defensive Aerial Duels after its won component.'),
-    ground_duels_lost:raw('Ground Duels Lost',{forest:34,leeds:28},groundLost,'Symmetric counterpart to the signed-off Ground Duels Won engine: Challenge + unsuccessful TakeOn + unsuccessful non-aerial Foul.'),
-    ground_duels:raw('Total Ground Duels',{forest:65,leeds:69},groundEvent,'Union of the signed-off Ground Duels Won population and its outcome-symmetric lost population; pending an independent headline total control.'),
-    duels_lost:raw('Duels Lost',{forest:59,leeds:58},e=>groundLost(e)||(aerialEvent(e)&&!aerialWon(e)),'Ground Duels Lost plus canonical Aerial Duels Lost; raw reconstruction is explicit but awaits an independent headline control.'),
-    total_duels:raw('Total Duels',{forest:120,leeds:124},e=>groundEvent(e)||aerialEvent(e),'Canonical ground-duel population plus canonical aerial-duel population; pending independent headline total control.'),
+    ground_duels_lost:derived('Ground Duels Lost',{forest:41,leeds:31},groundLost,'Derived from the independently controlled 72-72 total Ground Duel population minus Gold Ground Duels Won 31-41. Event attribution is Challenge + unsuccessful TakeOn + unsuccessful non-aerial Foul + Dispossessed only when paired at the same provider clock/period with an opponent Tackle.'),
+    ground_duels:gold('Total Ground Duels',{forest:72,leeds:72},groundEvent,'Independent 365Scores control displays Ground Duels Won as 31/72 Forest and 41/72 Leeds. The canonical raw population is Ground Duels Won plus its losing-side partner events, including tackle-paired Dispossessed but excluding standalone Dispossessed.'),
+    duels_lost:derived('Duels Lost',{forest:66,leeds:61},e=>groundLost(e)||(aerialEvent(e)&&!aerialWon(e)),'Derived from closed Ground Duels Lost 41-31 plus Gold Aerial Duels Lost 25-30.'),
+    total_duels:derived('Total Duels',{forest:127,leeds:127},e=>groundEvent(e)||aerialEvent(e),'Derived from Gold Total Ground Duels 72-72 plus Gold Total Aerial Duels 55-55. Forest-Leeds Gold Duels Won 61-66 therefore leaves Duels Lost 66-61.'),
     blocked_shots:gold('Blocked Shots',{forest:6,leeds:1},blockedShot,'Trusted Opta control 6-1 exactly matches Save + OutfielderBlock raw events.'),
     blocked_crosses:gold('Blocked Crosses',{forest:7,leeds:7},blockedCross,'Trusted Opta control 7-7 is reconstructed exactly by the defensive BlockedPass population plus Clearance events explicitly qualified BlockedCross: Forest 7+0, Leeds 5+2.'),
     blocks:gold('Blocks',{forest:13,leeds:8},block,'Trusted Opta headline Blocks 13-8 is the exact union of Gold Blocked Shots 6-1 and Gold Blocked Crosses 7-7.'),
@@ -50,6 +62,6 @@
   if(typeof FILTERS!=='undefined')for(const [k,d] of Object.entries(defs))FILTERS[k]=d.test;
   bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,...defs});
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
-  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V7_2026-08-28',defs,fixture:'whoscored:1983552'});
+  window.PitchLabDefensiveResidualDefinition=Object.freeze({version:'DEFENSIVE_RESIDUAL_V8_2026-08-28',defs,fixture:'whoscored:1983552'});
   document.dispatchEvent(new CustomEvent('pitchlab:defensive-residual-definition-ready',{detail:{version:window.PitchLabDefensiveResidualDefinition.version}}));
 })();
