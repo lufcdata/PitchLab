@@ -1,71 +1,50 @@
-# Possession Lost Audit — 2026-08-28
+# Possession Lost / Dispossessed / Turnovers clarification — 2026-08-28
 
-## Trusted control
+## Taxonomy correction
 
-Nottingham Forest 0–1 Leeds United (`whoscored:1983552`):
+`Possession Lost`, `Dispossessed`, and `Turnovers` are **three independent PitchLab metrics**.
 
-- Nottingham Forest: **147 Possession Lost**
-- Leeds United: **129 Possession Lost**
+The existing **Possession Lost** metric is already working correctly and is protected. It must remain standalone and **must not be renamed, recalculated, regrouped, or modified by this audit**.
 
-Source status: concrete Opta control supplied during the metric audit. Treat this as authoritative numerical evidence for the Possession Lost metric.
+The previous attempt to reconstruct a new 147–129 `Possession Lost` definition is retired. It was auditing the wrong semantic target and must not drive implementation changes.
 
-## Important semantic separation
+There is no parent/category label called `Possession Lost` for the Dispossessed / Turnovers work.
 
-`Possession Lost` must NOT be assumed to be the same metric as the existing unresolved `Turnovers / Loss Possession` control of 16–13. The magnitudes are plainly different and the two concepts remain separate until independently reconstructed.
+## Trusted controls — Forest 0–1 Leeds (`whoscored:1983552`)
 
-## Raw-event audit
+| Metric | First half | Full match | Status |
+|---|---:|---:|---|
+| Dispossessed | Forest 4 – 3 Leeds | Forest 9 – 3 Leeds | `GOLD_LOCKED` |
+| Turnovers | Forest 12 – 9 Leeds | Forest 14 – 13 Leeds | `DEFINITION_UNDER_INVESTIGATION` |
 
-| Component | Forest | Leeds |
-|---|---:|---:|
-| Raw unsuccessful `Pass` events | 109 | 105 |
-| Unsuccessful `BallTouch` events | 16 | 13 |
-| Unsuccessful `TakeOn` events | 12 | 5 |
-| `Dispossessed` events | 9 | 3 |
-| **Naive candidate total** | **146** | **126** |
-| **Trusted Opta Possession Lost** | **147** | **129** |
-| **Residual** | **+1** | **+3** |
+## Dispossessed
 
-The near-match is useful but is NOT sufficient to define the metric. No fixture-specific correction is permitted.
+Authoritative definition remains the raw `Dispossessed` event population. Full-match control is 9–3 and first-half control is 4–3. Do not alter this definition while solving Turnovers.
 
-## New residual finding: offsides are highly informative
+## Turnovers — current forensic finding
 
-The raw fixture contains exactly **3 `OffsideGiven` events for Forest and 3 for Leeds**.
+Raw unsuccessful `BallTouch` is the strongest event-family candidate:
 
-Adding all three offsides to the naive candidate population produces:
+- Forest: 16 full match; 12 events explicitly tagged `FirstHalf`.
+- Leeds: 13 full match; 8 events explicitly tagged `FirstHalf`.
 
-- Forest: 146 + 3 = **149**, which is **2 too high**.
-- Leeds: 126 + 3 = **129**, an **exact match** to the trusted Opta control.
+Against the trusted Turnovers controls:
 
-This is a strong clue that an offside can count as Possession Lost, but it also proves that the correct rule is NOT simply `add every OffsideGiven event`.
+- Forest full match: candidate 16 vs control 14 (two-event overcount).
+- Forest first half: candidate 12 vs control 12 (exact).
+- Leeds full match: candidate 13 vs control 13 (exact).
+- Leeds first half: candidate 8 vs control 9 (one-event residual).
 
-The next forensic target is therefore the three Forest offside chains. Only **one net additional Forest loss** is needed to reach 147, while all three Leeds offside chains are consistent with the control. We must inspect whether some Forest offsides already have their loss represented by an unsuccessful pass or another candidate event, while the Leeds chains are not double-counted. The likely solution is event-chain de-duplication rather than a flat event-type sum.
+This is strong evidence that Turnovers are closely related to unsuccessful `BallTouch`, but it is **not sufficient to canonicalize `Turnovers = unsuccessful BallTouch`**. The Forest full-match overcount and Leeds first-half residual must be explained by a general semantic or period-boundary rule rather than fixture-specific correction.
 
-Forest also has one `Error` event, but it must not be added merely because the residual is +1: the Error is successful at event level and requires chain-level evidence before inclusion.
+One timing detail is potentially important: the raw feed marks Leeds' unsuccessful BallTouch at 45:48 as `SecondHalf`, while the fixture's first period ends at expanded minute 47. This must be resolved against the application's existing period/window semantics before using the first-half residual to alter the event definition.
 
-## Satisfied-event evidence
+## Protected implementation rule
 
-The WhoScored feed exposes dedicated classifications for the relevant event families:
+While this investigation continues:
 
-- Gold/statistical inaccurate passes: 90–94 after normal pass exclusions.
-- Raw unsuccessful passes: 109–105 when crosses/restarts are retained.
-- Unsuccessful `BallTouch`: 16–13.
-- `Dispossessed`: 9–3.
-- Unsuccessful `TakeOn`: 12–5.
-- `OffsideGiven`: 3–3.
-
-This supports a broad possession-ending concept, but exact chain-level de-duplication remains unresolved.
-
-## Status
-
-`Possession Lost`: **DEFINITION_UNDER_INVESTIGATION**
-
-Trusted control is secured at **147–129**. Leeds can now be reconstructed exactly by the current candidate components plus its three offsides, while Forest demonstrates why naive summation is unsafe. Do not canonicalize until the Forest offside chains explain the two-event overcount and the rule generalizes.
-
-## Next validation tests
-
-1. Inspect all six offside chains and identify whether a preceding unsuccessful pass already records the same possession loss.
-2. Determine why Leeds requires all three offside losses while Forest requires only one net additional loss.
-3. Test the Forest `Error` only through possession-chain evidence, not residual fitting.
-4. Obtain half/player Possession Lost controls if available.
-5. Validate the resulting chain/de-duplication rule on a second fixture before Gold-locking.
-6. Keep the separate 16–13 Turnovers control unresolved until its own semantics are proved.
+1. Do not touch the existing standalone Possession Lost metric.
+2. Keep Dispossessed as its own Gold metric.
+3. Implement/canonicalize Turnovers only after the 14–13 full-match and 12–9 first-half controls are simultaneously explained.
+4. Do not sum Dispossessed + Turnovers and call the result Possession Lost.
+5. Do not expose a `Possession Lost` parent label for these two metrics.
