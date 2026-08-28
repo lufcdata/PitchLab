@@ -37,6 +37,7 @@
     surfaces:Object.freeze(['pitch','leaders','matchStats']),
     status:'AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL',
     definition:'Completed statistical pass starting in the attacking two-thirds that finishes at least 25% closer to the centre of the opposition goal.',
+    observedFixtureCounts:Object.freeze({forest:27,leeds:8}),
     test:isProgressivePass
   });
 
@@ -51,6 +52,7 @@
     key:'progressive',
     startX:ATTACKING_TWO_THIRDS_X,
     requiredDistanceReduction:0.25,
+    observedFixtureCounts:Object.freeze({forest:27,leeds:8}),
     test:isProgressivePass
   });
 
