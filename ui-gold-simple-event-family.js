@@ -7,6 +7,7 @@
   const surfaces=Object.freeze(['pitch','leaders','matchStats']);
   const eventDef=(label,golden,test)=>Object.freeze({label,kind:'event',surfaces,golden:Object.freeze(golden),test,status:'GOLD_LOCKED'});
   const setPlayCross=e=>et(e)==='pass'&&hq(e,'Cross')&&!hq(e,'ThrowIn','ThrowinSetPiece','GoalKick','GoalKickTaken')&&hq(e,'CornerTaken','FreeKickTaken','FreekickTaken','SetPiece','DirectFreekick');
+  const cross=e=>et(e)==='pass'&&hq(e,'Cross');
 
   const defs=Object.freeze({
     interceptions:eventDef('Interceptions',[2,15],e=>et(e)==='interception'),
@@ -16,8 +17,9 @@
     corners:eventDef('Corners',[3,2],e=>et(e)==='pass'&&hq(e,'CornerTaken')),
     set_play_crosses_success:eventDef('Successful Set Play Crosses',[1,1],e=>setPlayCross(e)&&ok(e)),
     set_play_crosses_unsuccess:eventDef('Unsuccessful Set Play Crosses',[5,2],e=>setPlayCross(e)&&!ok(e)),
-    accurate_crosses:eventDef('Accurate Crosses',[4,3],e=>et(e)==='pass'&&hq(e,'Cross')&&ok(e)),
-    inaccurate_crosses:eventDef('Inaccurate Crosses',[15,5],e=>et(e)==='pass'&&hq(e,'Cross')&&!ok(e))
+    crosses:eventDef('Total Crosses',[19,8],cross),
+    accurate_crosses:eventDef('Accurate Crosses',[4,3],e=>cross(e)&&ok(e)),
+    inaccurate_crosses:eventDef('Inaccurate Crosses',[15,5],e=>cross(e)&&!ok(e))
   });
 
   if(typeof FILTERS!=='undefined'){
@@ -33,7 +35,7 @@
   bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),...Object.keys(defs)])]);
 
   window.PitchLabGoldSimpleEventFamily=Object.freeze({
-    version:'GOLD_SIMPLE_EVENT_FAMILY_V1_2026-08-27',
+    version:'GOLD_SIMPLE_EVENT_FAMILY_V2_2026-08-28',
     defs,
     fixture:'whoscored:1983552'
   });
