@@ -13,7 +13,7 @@
 .period-card .period-second-half-thumb.is-visible{display:block}
 .period-card .period-second-half-thumb:active{cursor:grabbing}
 .period-card .end-label{display:none}
-.period-card .period-added-segment{position:absolute;top:12px;height:3.2px;background:#59616d;pointer-events:none;z-index:1}
+.period-card .period-added-segment{position:absolute;top:12px;height:3.2px;background:#FF336F;pointer-events:none;z-index:1}
 .period-card .period-ticks{position:absolute;left:0;right:0;top:31px;height:28px;pointer-events:none}
 .period-card .period-tick{position:absolute;top:0;transform:translateX(-50%);color:#626978;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;line-height:1.05}
 .period-card .period-tick--start{transform:none}
