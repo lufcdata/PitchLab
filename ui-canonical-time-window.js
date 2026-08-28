@@ -7,6 +7,8 @@
   const isSecond=e=>{const p=periodName(e);return p.includes('second')||p==='2'||p==='secondhalf'};
   const isEnd=e=>{const t=typeName(e);return t==='end'||t.includes('periodend')||t.includes('halfend')||t.includes('endperiod')};
   let timing={firstHalfEnd:45*60,secondHalfEnd:90*60,fullTimeline:90*60};
+  let activePreset='full';
+  let applyingPreset=false;
 
   function derive(source=window.events){
     const list=Array.isArray(source)?source:[];
@@ -58,20 +60,27 @@
     for(const id of ['toText','sumTo']){const el=document.getElementById(id);if(el)el.textContent=toLabel}
     const plot=document.getElementById('plotWindow');if(plot)plot.textContent=`${fromLabel} - ${toLabel}`;
   }
-  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V2_2026-08-28',timing:{...timing}}}))}
+  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V3_2026-08-28',timing:{...timing},activePreset}}))}
   function refresh(source=window.events){derive(source);patchBible();updateLabels();announce()}
   function applyPreset(kind){
     const from=document.getElementById('fromRange'),to=document.getElementById('toRange');if(!from||!to)return;const max=timing.fullTimeline;
+    activePreset=kind;applyingPreset=true;
     if(kind==='full'){from.value=0;to.value=100}else if(kind==='first'){from.value=0;to.value=timing.firstHalfEnd/max*100}else{from.value=timing.firstHalfEnd/max*100;to.value=100}
-    from.dispatchEvent(new Event('input',{bubbles:true}));to.dispatchEvent(new Event('input',{bubbles:true}));requestAnimationFrame(updateLabels);
+    from.dispatchEvent(new Event('input',{bubbles:true}));to.dispatchEvent(new Event('input',{bubbles:true}));applyingPreset=false;requestAnimationFrame(updateLabels);
   }
   function install(){
     refresh(window.events);
-    const from=document.getElementById('fromRange'),to=document.getElementById('toRange');from?.addEventListener('input',()=>requestAnimationFrame(updateLabels));to?.addEventListener('input',()=>requestAnimationFrame(updateLabels));
+    const from=document.getElementById('fromRange'),to=document.getElementById('toRange');
+    const manualRangeChange=()=>{if(!applyingPreset)activePreset=null;requestAnimationFrame(updateLabels)};
+    from?.addEventListener('input',manualRangeChange);to?.addEventListener('input',manualRangeChange);
     document.getElementById('fullBtn')?.addEventListener('click',()=>requestAnimationFrame(()=>applyPreset('full')));document.getElementById('firstBtn')?.addEventListener('click',()=>requestAnimationFrame(()=>applyPreset('first')));document.getElementById('secondBtn')?.addEventListener('click',()=>requestAnimationFrame(()=>applyPreset('second')));
   }
   document.addEventListener('pitchlab:metric-bible-ready',()=>refresh(window.events));
-  document.addEventListener('pitchlab:match-loaded',e=>refresh(e.detail?.events||window.events));
-  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V2_2026-08-28',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing}});
+  document.addEventListener('pitchlab:match-loaded',e=>{
+    derive(e.detail?.events||window.events);patchBible();
+    if(activePreset)applyPreset(activePreset);else updateLabels();
+    announce();
+  });
+  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V3_2026-08-28',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing},get activePreset(){return activePreset}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
