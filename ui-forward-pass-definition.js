@@ -2,77 +2,81 @@
   const bible=window.PitchLabMetricBible;
   const passing=window.PitchLabPassingGolden;
   if(!bible||!passing){
-    console.error('[PitchLab] Metric Bible or Golden passing engine missing; Forward Pass definition not attached.');
+    console.error('[PitchLab] Metric Bible or Golden passing engine missing; directional pass definition not attached.');
     return;
   }
 
   const outcome=e=>String((e?.outcomeType?.displayName??e?.outcomeType?.name??e?.outcomeType?.value??e?.outcomeType)||'').toLowerCase();
   const isSuccess=e=>outcome(e)==='successful';
 
-  const qualifierAngle=e=>{
-    for(const q of (e?.qualifiers||[])){
-      const t=q?.type||{};
-      if(Number(t?.value)===213||String(t?.displayName||'').toLowerCase()==='angle'){
-        const a=Number(q?.value);
-        if(Number.isFinite(a))return a;
-      }
-    }
-    return NaN;
+  // Use the full-precision event coordinates for directional boundaries. WhoScored's
+  // qualifier 213 Angle is rounded and can move boundary events into the wrong sector.
+  // Physical 105 x 68 scaling preserves the provider geometry represented by q213.
+  const signedAngle=e=>{
+    const x=Number(e?.x),y=Number(e?.y),endX=Number(e?.endX),endY=Number(e?.endY);
+    if(![x,y,endX,endY].every(Number.isFinite))return NaN;
+    return Math.atan2((endY-y)*0.68,(endX-x)*1.05);
   };
 
-  const coordinateForward=e=>{
-    const x=Number(e?.x),endX=Number(e?.endX);
-    return Number.isFinite(x)&&Number.isFinite(endX)&&endX>x;
+  // Opta/BBC directional controls for Forest 0-1 Leeds reconcile exactly when the
+  // statistical-pass population is split into four 90-degree sectors:
+  // Forward +/-45; Left 45..135; Backward >135 from forward; Right -135..-45.
+  const direction=e=>{
+    const a=signedAngle(e);
+    if(!Number.isFinite(a))return null;
+    const d=a*180/Math.PI;
+    if(d>=-45&&d<45)return 'forward';
+    if(d>=45&&d<135)return 'left';
+    if(d>=135||d<-135)return 'backward';
+    return 'right';
   };
 
-  // Opta qualifier 213 stores pass angle in radians relative to the attacking direction.
-  // A forward pass occupies the forward half-plane: angle < pi/2 or > 3pi/2.
-  // Coordinate fallback is the exact geometric equivalent: endX > x.
-  const isForwardDirection=e=>{
-    const a=qualifierAngle(e);
-    if(!Number.isFinite(a))return coordinateForward(e);
-    const twoPi=Math.PI*2;
-    const n=((a%twoPi)+twoPi)%twoPi;
-    return n<Math.PI/2||n>3*Math.PI/2;
-  };
-
-  const isForwardPass=e=>passing.isStatPass(e)&&isForwardDirection(e);
+  const isDirectionalPass=e=>passing.isStatPass(e);
+  const isForwardPass=e=>isDirectionalPass(e)&&direction(e)==='forward';
+  const isBackwardPass=e=>isDirectionalPass(e)&&direction(e)==='backward';
   const isSuccessfulForwardPass=e=>isForwardPass(e)&&isSuccess(e);
+  const isSuccessfulBackwardPass=e=>isBackwardPass(e)&&isSuccess(e);
 
   if(typeof FILTERS!=='undefined'){
     FILTERS.forward=isForwardPass;
     FILTERS.forward_success=isSuccessfulForwardPass;
+    FILTERS.backward=isBackwardPass;
+    FILTERS.backward_success=isSuccessfulBackwardPass;
   }
 
   const forwardDef=Object.freeze({
-    label:'Forward Passes',
-    kind:'event',
-    surfaces:Object.freeze(['pitch','leaders','matchStats']),
+    label:'Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
     status:'GOLD_LOCKED',
-    definition:'Statistical pass whose Opta Angle qualifier lies in the forward half-plane (within 90 degrees of the attacking direction); coordinate fallback endX > x.',
-    controls:Object.freeze({forest:244,leeds:211}),
-    test:isForwardPass
+    definition:'Statistical pass whose full-precision coordinate-derived direction is within 45 degrees of straight forward.',
+    controls:Object.freeze({forest:149,leeds:135}),test:isForwardPass
   });
-
+  const backwardDef=Object.freeze({
+    label:'Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
+    status:'GOLD_LOCKED',
+    definition:'Statistical pass whose full-precision coordinate-derived direction is within 45 degrees of straight backward.',
+    controls:Object.freeze({forest:69,leeds:49}),test:isBackwardPass
+  });
   const forwardSuccessDef=Object.freeze({
-    label:'Successful Forward Passes',
-    kind:'event',
-    surfaces:Object.freeze(['pitch','leaders','matchStats']),
-    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',
-    definition:'Forward Pass with successful outcome.',
-    observedFixtureCounts:Object.freeze({forest:164,leeds:126}),
-    test:isSuccessfulForwardPass
+    label:'Successful Forward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
+    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',definition:'Forward Pass with successful outcome.',test:isSuccessfulForwardPass
+  });
+  const backwardSuccessDef=Object.freeze({
+    label:'Successful Backward Passes',kind:'event',surfaces:Object.freeze(['pitch','leaders','matchStats']),
+    status:'DERIVED_FROM_GOLD_COMPONENTS_PENDING_HEADLINE_CONTROL',definition:'Backward Pass with successful outcome.',test:isSuccessfulBackwardPass
   });
 
-  bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,forward:forwardDef,forward_success:forwardSuccessDef});
-  bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),'forward','forward_success'])]);
+  bible.canonicalRegistry=Object.freeze({...bible.canonicalRegistry,
+    forward:forwardDef,forward_success:forwardSuccessDef,
+    backward:backwardDef,backward_success:backwardSuccessDef
+  });
+  bible.canonicalKeys=Object.freeze([...new Set([...(bible.canonicalKeys||[]),'forward','forward_success','backward','backward_success'])]);
 
   window.PitchLabForwardPassDefinition=Object.freeze({
-    version:'FORWARD_PASS_ANGLE_V1_2026-08-28',
-    keys:Object.freeze(['forward','forward_success']),
-    controls:Object.freeze({forest:244,leeds:211}),
-    test:isForwardPass,
-    successfulTest:isSuccessfulForwardPass
+    version:'OPTA_DIRECTIONAL_PASS_V2_2026-08-28',
+    keys:Object.freeze(['forward','forward_success','backward','backward_success']),
+    controls:Object.freeze({forward:Object.freeze({forest:149,leeds:135}),backward:Object.freeze({forest:69,leeds:49})}),
+    direction,test:isForwardPass,backwardTest:isBackwardPass,
+    successfulTest:isSuccessfulForwardPass,successfulBackwardTest:isSuccessfulBackwardPass
   });
 
   document.dispatchEvent(new CustomEvent('pitchlab:forward-pass-definition-ready',{
