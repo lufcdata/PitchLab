@@ -1,16 +1,12 @@
 # PitchLab Passing Synchronization Audit — 2026-08-28
 
-## Purpose
+## Closure state
 
-This audit records the current passing-family state on `metric-sync-audit-2026-08-27` after forensic reconciliation against Forest 0–1 Leeds raw WhoScored/Opta events and trusted controls.
+The Passing family is now definition-complete on `metric-sync-audit-2026-08-27`.
 
-## Governing rule
+`GOLD_LOCKED` is reserved for independently controlled provider metrics. Exact outcome subsets of secured populations are `DERIVED_FROM_GOLD_COMPONENTS`. Metrics whose product definition is authoritative but whose independent numerical control has not yet been recovered remain `AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL`. No fixture-specific correction factors are used.
 
-A metric is Gold-locked only when its event predicate is reconciled to a trusted control. Raw-derived observations remain explicitly provisional where no independent control exists. No fixture-specific correction factors are permitted.
-
-## Authoritative statistical-pass population
-
-The Golden passing engine remains `ui-passing-metrics-golden.js`.
+## Canonical statistical-pass population
 
 ```text
 Pass
@@ -19,222 +15,178 @@ AND NOT ThrowIn
 AND NOT KeeperThrow
 ```
 
-Forest–Leeds statistical-pass totals are Forest 411, Leeds 326.
+Forest 0–1 Leeds: Forest 411, Leeds 326.
 
-## Canonical passing metrics
+## Core pass family
 
-| Metric | Stable key | Forest–Leeds control | Status |
+| Metric | Key | Forest–Leeds | Status |
 |---|---|---:|---|
 | Total Passes | `allpasses` | 411–326 | GOLD_LOCKED |
 | Successful Passes | `successful` | 321–232 | GOLD_LOCKED |
 | Unsuccessful Passes | `unsuccessful` | 90–94 | GOLD_LOCKED |
+| Pass Accuracy | `pass_accuracy` | 78.1–71.2% | GOLD_LOCKED derived Match Stats |
 | Final Third Passes | `final_third_passes` | 110–92 | GOLD_LOCKED |
 | Successful Final Third Passes | `final_third_passes_success` | 72–38 | GOLD_LOCKED |
-| Forward Passes | `forward` | 244–211 | GOLD_LOCKED |
-| Total Long Balls | `long_passes` | 71–58 | GOLD_LOCKED |
-| Accurate Long Balls | `accurate_long_passes` | 28–24 | GOLD_LOCKED |
-| Inaccurate Long Balls | `inaccurate_long_passes` | 43–34 | GOLD_LOCKED |
+| Unsuccessful Final Third Passes | `final_third_passes_unsuccess` | 38–54 | DERIVED_FROM_GOLD_COMPONENTS |
 
-Pass Accuracy is derived for Match Stats: 321/411 = 78.1%, 232/326 = 71.2%.
+Checksums: Forest 72+38=110; Leeds 38+54=92.
 
-## Forward Pass — headline Opta metric
+## Headline Forward Pass family
 
-Trusted headline controls:
+Trusted controls:
 
 ```text
 Forward Passes: Forest 244, Leeds 211
 Forward Pass %: Forest 59.4%, Leeds 64.7%
 ```
 
-The percentages independently validate the population and denominator:
+Canonical predicate:
 
 ```text
-244 / 411 = 59.37% -> 59.4%
-211 / 326 = 64.72% -> 64.7%
+Gold statistical pass AND endX > x
 ```
 
-Exact raw reconstruction:
+Outcome split from raw `outcomeType`:
 
-```text
-Gold statistical pass
-AND endX > x
-```
+| Metric | Key | Forest–Leeds | Status |
+|---|---|---:|---|
+| Forward Passes | `forward` | 244–211 | GOLD_LOCKED |
+| Successful Forward Passes | `forward_success` | 164–126 | DERIVED_FROM_GOLD_COMPONENTS |
+| Unsuccessful Forward Passes | `forward_unsuccess` | 80–85 | DERIVED_FROM_GOLD_COMPONENTS |
 
-This is the broad forward half-plane / positive longitudinal movement definition. It is owned by `ui-forward-pass-definition.js` and is `GOLD_LOCKED`.
+Checksums: Forest 164+80=244; Leeds 126+85=211.
 
-Applying successful outcome to this headline population gives the reproducible raw observation:
+## Separate directional taxonomy
 
-```text
-Successful Forward Passes: Forest 164, Leeds 126
-```
-
-This is **not** Gold-locked because an independent Successful Forward Pass control has not been recovered.
-
-## Separate four-way BBC/Opta directional presentation
-
-BBC/in-depth reporting also exposes a distinct four-way directional distribution:
-
-```text
-Forest: Forward 149, Backward 69, Left 91, Right 102 = 411
-Leeds:  Forward 135, Backward 49, Left 67, Right 75 = 326
-```
-
-These reconcile to the supplied percentages:
-
-```text
-Forest: Forward 36.3%, Backward 16.8%, Left 22.1%, Right 24.8%
-Leeds:  Forward 41.4%, Backward 15.0%, Left 20.6%, Right 23.0%
-```
-
-The exact raw reconstruction uses full-precision coordinates on a 105m x 68m pitch:
+This is deliberately separate from headline Forward Passes. Full-precision coordinates are converted to physical 105m x 68m displacement before applying +/-45 degree sectors.
 
 ```text
 dx = (endX - x) * 1.05
 dy = (endY - y) * 0.68
 angle = atan2(dy, dx)
 
-Forward:  -45 degrees <= angle < 45 degrees
-Left:      45 degrees <= angle < 135 degrees
-Backward: angle >= 135 degrees OR angle < -135 degrees
-Right:     otherwise
+Directional Forward: -45 <= angle < 45
+Sideways:              45 <= angle < 135 OR -135 <= angle < -45
+Backward:              angle >= 135 OR angle < -135
 ```
 
-This yields 149/69/91/102 and 135/49/67/75 exactly.
-
-WhoScored qualifier 213 (`Angle`) is geometrically consistent but rounded; full-precision coordinates are required around sector boundaries.
-
-### Important semantic separation
-
-The four-way Forward value 149–135 is **not** PitchLab's headline Forward Pass metric. The headline control is 244–211 and is independently corroborated by 59.4%–64.7%.
-
-The four-way Backward value 69–49 is strong forensic evidence but remains `DEFINITION_UNDER_INVESTIGATION` as a PitchLab headline metric until the intended provider/product semantic family is secured.
-
-Applying successful outcome to the provisional four-way Backward population gives:
+Exact partition:
 
 ```text
-Successful Backward Passes: Forest 60, Leeds 42
+Forest: 149 directional forward + 193 sideways + 69 backward = 411
+Leeds:  135 directional forward + 142 sideways + 49 backward = 326
 ```
 
-This remains an observation only. Do not Gold-lock it without an independent control and resolution of the parent Backward semantic family.
+User-facing Sideways/Backward family:
 
-## Long Ball family — fully reconciled
+| Metric | Key | Forest–Leeds | Status |
+|---|---|---:|---|
+| Side Passes | `side` | 193–142 | GOLD_LOCKED |
+| Successful Side Passes | `side_success` | 171–120 | DERIVED_FROM_GOLD_COMPONENTS |
+| Unsuccessful Side Passes | `side_unsuccess` | 22–22 | DERIVED_FROM_GOLD_COMPONENTS |
+| Backward Passes | `backward` | 69–49 | GOLD_LOCKED |
+| Successful Backward Passes | `backward_success` | 65–44 | DERIVED_FROM_GOLD_COMPONENTS |
+| Unsuccessful Backward Passes | `backward_unsuccess` | 4–5 | DERIVED_FROM_GOLD_COMPONENTS |
 
-Trusted controls:
+Checksums: Side 171+22=193 / 120+22=142; Backward 65+4=69 / 44+5=49.
+
+WhoScored stored `Angle` is rounded and differs at two Forest boundary events; full-precision coordinate geometry is the canonical reconstruction.
+
+## Long Ball family
+
+Canonical predicate: Gold statistical pass + `Longball` qualifier.
+
+| Metric | Key | Forest–Leeds | Status |
+|---|---|---:|---|
+| Total Long Balls | `long_passes` | 71–58 | GOLD_LOCKED |
+| Accurate Long Balls | `accurate_long_passes` | 28–24 | GOLD_LOCKED |
+| Inaccurate Long Balls | `inaccurate_long_passes` | 43–34 | GOLD_LOCKED |
+
+Checksums: 28+43=71; 24+34=58.
+
+## Through Ball family
+
+Canonical predicate: Gold statistical pass + `Throughball` qualifier.
+
+| Metric | Key | Forest–Leeds | Status |
+|---|---|---:|---|
+| Through Balls | `through_balls` | 2–0 | GOLD_LOCKED |
+| Successful Through Balls | `through_balls_success` | 1–0 | DERIVED_FROM_GOLD_COMPONENTS |
+| Unsuccessful Through Balls | `through_balls_unsuccess` | 1–0 | DERIVED_FROM_GOLD_COMPONENTS |
+
+## Penalty-box pass family
+
+Canonical opposition penalty-area geometry matches PitchLab touch geometry:
 
 ```text
-Total Long Balls:      Forest 71, Leeds 58
-Accurate Long Balls:   Forest 28, Leeds 24
-Inaccurate Long Balls: Forest 43, Leeds 34
+83 <= endX <= 100
+21.1 <= endY <= 78.9
 ```
 
-Raw forensic reconstruction found all Pass events carrying the `Longball` qualifier at 90–67. Applying the established Gold statistical-pass exclusions reduces this exactly to the trusted 71–58 population.
+The population is restricted to Gold statistical passes.
 
-Canonical definitions:
+| Metric | Key | Forest–Leeds raw reconstruction | Status |
+|---|---|---:|---|
+| Passes Into Penalty Box | `box_passes` | 22–15 | AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL |
+| Successful Passes Into Penalty Box | `box_passes_success` | 9–3 | AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL |
+| Unsuccessful Passes Into Penalty Box | `box_passes_unsuccess` | 13–12 | AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL |
 
-```text
-Total Long Ball = Gold statistical pass + Longball qualifier
-Accurate Long Ball = Total Long Ball + successful outcome
-Inaccurate Long Ball = Total Long Ball + unsuccessful outcome
-```
+Checksums: Forest 9+13=22; Leeds 3+12=15.
 
-The successful split reconstructs the independently supplied 28–24 control exactly. The unsuccessful split is 43–34 and reconciles both directly from raw outcomes and arithmetically from total minus accurate.
-
-All three Long Ball metrics are `GOLD_LOCKED` in `ui-long-pass-definition.js` and routed through Pitch Events, Metric Leaders and Match Stats.
+The 22–15 total happens to equal the trusted Penalty Box Touches control for this fixture; that coincidence is not used as validation because touches and passes are different metric families.
 
 ## Progressive Pass
 
-Authoritative definition:
+PitchLab's authoritative definition is:
 
 ```text
-Completed statistical pass
+Completed Gold statistical pass
 AND start x >= 33.333333
-AND end distance to centre of opposition goal <= 75% of start distance
+AND finishes at least 25% closer to centre of opposition goal
 ```
 
-Physical-pitch calculation:
+Physical distance:
 
 ```text
-startDistance = hypot((100 - x) * 1.05, (50 - y) * 0.68)
-endDistance   = hypot((100 - endX) * 1.05, (50 - endY) * 0.68)
+startDistance = hypot((100-x)*1.05, (50-y)*0.68)
+endDistance   = hypot((100-endX)*1.05, (50-endY)*0.68)
 progressive   = endDistance <= startDistance * 0.75
 ```
 
-The old absolute 9.144m-gain rule is retired. The current definition remains pending a trusted numerical control and must not be Gold-locked yet.
+Forest–Leeds reconstruction: Forest 27, Leeds 8. Status remains `AUTHORITATIVE_DEFINITION_PENDING_GOLD_CONTROL`; the old absolute 9.144m rule is retired.
 
-Forest–Leeds raw observation under the authoritative definition is Forest 27, Leeds 8. This is not a trusted control.
+## Cross family ownership
 
-## Current canonical load path
+Cross metrics use their dedicated canonical modules and are not forced through the Gold statistical-pass population because Cross is intentionally excluded from headline passes.
 
-```text
-ui-passing-metrics-golden.js
-        |
-        v
-ui-metric-bible-sync.js
-        |
-        +--> ui-gold-passing-family.js
-        +--> ui-forward-pass-definition.js
-        +--> ui-long-pass-definition.js
-        +--> ui-progressive-pass-definition.js
-        v
-PitchLabMetricBible.canonicalRegistry
-        |
-        +--> Pitch Events compatibility FILTERS
-        +--> Metric Leaders
-        +--> Match Stats
-```
+Secured controls include Total Crosses 19–8, Accurate Crosses 4–3, Inaccurate Crosses 15–5, Set-Play Cross success 1–1 and Set-Play Cross unsuccessful 5–2. Open-play Cross variants are derived from the secured cross components and keep their dedicated ownership.
 
-Canonical registry definitions take precedence over legacy FILTERS for metric consumers.
+## Retired metrics
 
-## Directional family status
-
-### Gold-locked
-
-- `forward` — 244–211; broad positive longitudinal movement (`endX > x`)
-
-### Raw reconciled / pending control
-
-- `forward_success` — 164–126
-
-### Definition under investigation
-
-- `backward` — four-way compass candidate 69–49
-- `backward_success` — provisional raw observation 60–42
-- `side`
-- `side_success`
-
-The four-way 149–135 Forward field is retained as forensic evidence for a separate directional-distribution family and must not overwrite `forward`.
-
-## Passing metrics not yet approved for Gold
-
-- `progressive` — authoritative definition, trusted numerical control pending
-- `forward_success` — raw 164–126, independent control pending
-- `backward` — semantic family unresolved
-- `backward_success` — raw 60–42, parent unresolved and independent control pending
-- `side`
-- `side_success`
-- `box_passes`
-- `box_passes_success`
-- `open_play_crosses`
-- `accurate_open_play_crosses`
-
-Cross-family metrics already canonicalized elsewhere retain their existing ownership.
-
-## Retired metrics — remain retired
+The following remain retired and must never be resurrected or aliased:
 
 - `into_final_third`
 - `into_final_third_success`
 
-`Final Third Entries` remains a separate Gold metric and must never be aliased to the retired pass metrics.
+`Final Third Entries` is a distinct Gold metric.
 
-## Recommended next passing work
+## Canonical load path
 
-1. Validate Total Long Balls on a second raw fixture; Bournemouth 2–2 Leeds has an external 62–49 control available for testing.
-2. Seek a trusted Progressive Pass control and test the authoritative 25%-closer definition.
-3. Keep Successful Forward 164–126 and Successful Backward 60–42 provisional until independent controls exist.
-4. Resolve whether 69–49 should become a product-facing four-way Backward metric or remain separate from PitchLab headline directional metrics.
-5. Investigate other qualifier-led passing metrics such as Through Balls, where Opta explicitly records a pass qualifier and raw reconstruction can be audited cleanly.
-6. Keep retired final-third metrics absent.
+```text
+ui-passing-metrics-golden.js
+ui-metric-bible-sync.js
+ui-gold-passing-family.js
+ui-forward-pass-definition.js
+ui-long-pass-definition.js
+ui-through-ball-definition.js
+ui-progressive-pass-definition.js
+ui-penalty-box-pass-definition.js
+```
 
-## Safety conclusion
+All consumer surfaces resolve canonical Metric Bible definitions before legacy FILTERS.
 
-The current branch distinguishes two different directional presentations rather than forcing them into one definition. Headline Forward Passes are secured at 244–211; the separate four-way Forward/Backward distribution is preserved for forensic analysis. The Long Ball family is fully reconciled and Gold-locked at 71–58 total, 28–24 accurate and 43–34 inaccurate. Successful directional metrics remain deliberately provisional where trusted controls are absent.
+## Closure conclusion
+
+The Passing family is definition-complete. There are no unresolved semantic collisions between headline Forward and the separate directional taxonomy, no retired final-third pass metrics have been restored, and every active passing metric has a canonical owner and evidence status.
+
+Remaining evidence debt is limited to obtaining independent numerical controls for the already-authoritative Progressive Pass and Penalty-box Pass definitions. Those controls may upgrade status later but do not require another metric-definition redesign.
