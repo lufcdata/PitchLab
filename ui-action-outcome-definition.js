@@ -20,30 +20,17 @@
     const t=et(e),outcome=oc(e);
     if(ignoredTypes.has(t))return 'ignore';
 
-    // Shot hierarchy. A non-goal BigChance is a missed big chance and therefore
-    // Unsuccessful even when the attempt was technically on target.
     if(t==='goal')return hq(e,'OwnGoal')?'unsuccessful':'successful';
     if(['missedshots','shotonpost','savedshot'].includes(t)&&hq(e,'BigChance'))return 'unsuccessful';
     if(t==='missedshots'||t==='shotonpost')return 'unsuccessful';
     if(t==='savedshot')return hq(e,'Blocked','OutfielderBlock')?'unsuccessful':'successful';
-
-    // Explicit positive attacking outcomes are one Successful underlying action,
-    // never additive bonus actions on top of the same pass/event.
     if(hq(e,'IntentionalGoalAssist','BigChanceCreated','KeyPass'))return 'successful';
-
-    // Defensive / possession events with signed-off PitchLab semantics.
     if(['ballrecovery','interception','clearance','blockedpass','save'].includes(t))return 'successful';
     if(t==='tackle')return 'successful';
     if(t==='challenge')return 'unsuccessful';
     if(['dispossessed','error','offsidegiven'].includes(t))return 'unsuccessful';
-
-    // Goalkeeper action outcomes. Successful save events are handled above.
     if(['claim','keeperpickup','keepersweeper','punch'].includes(t))return outcome==='unsuccessful'?'unsuccessful':'successful';
-
-    // Direct action families. This includes ordinary BallTouch events by explicit sign-off.
     if(['pass','aerial','balltouch','takeon','foul','shieldballopp'].includes(t))return outcome==='unsuccessful'?'unsuccessful':'successful';
-
-    // Future genuine player-action types fall back to their explicit provider outcome.
     if(outcome==='successful')return 'successful';
     if(outcome==='unsuccessful')return 'unsuccessful';
     return 'ignore';
@@ -51,9 +38,14 @@
 
   const successful=e=>classifyAction(e)==='successful';
   const unsuccessful=e=>classifyAction(e)==='unsuccessful';
+  const total=e=>classifyAction(e)!=='ignore';
   const definition='PitchLab signed-off action classifier. Each underlying player event is counted at most once as Successful or Unsuccessful; assist, chance-created, big-chance-created and progressive-pass labels do not create duplicate actions. Successful ordinary BallTouch is included. Blocked shots, misses, woodwork, non-goal Big Chances, own goals, errors, dispossessions, offsides and lost duels are Unsuccessful. CornerAwarded, Possession Lost and provider companion offside records are excluded.';
 
   const defs=Object.freeze({
+    total_actions:Object.freeze({
+      label:'Total Actions',kind:'event',surfaces,status:'DERIVED_FROM_GOLD_COMPONENTS',definitionSource:'SUCCESSFUL_ACTIONS_UNION_UNSUCCESSFUL_ACTIONS',
+      definition:'Every event classified by the Gold action classifier as either Successful or Unsuccessful. Total Actions = Successful Actions + Unsuccessful Actions with no double counting.',test:total
+    }),
     successful_actions:Object.freeze({
       label:'Successful Actions',kind:'event',surfaces,status:'GOLD_LOCKED',definitionSource:'PITCHLAB_SIGNED_OFF',colour:SUCCESS,
       observedFixtureCounts:Object.freeze({forestLeeds:Object.freeze({forest:535,leeds:434}),bournemouthLeeds:Object.freeze({bournemouth:584,leeds:489})}),
@@ -67,6 +59,7 @@
   });
 
   if(typeof FILTERS!=='undefined'){
+    FILTERS.total_actions=total;
     FILTERS.successful_actions=successful;
     FILTERS.unsuccessful_actions=unsuccessful;
   }
@@ -81,6 +74,7 @@
     if(!option){option=document.createElement('option');option.value=value;group.appendChild(option)}
     option.textContent=label;
   }
+  ensureOption('total_actions','Total Actions');
   ensureOption('successful_actions','Successful Actions');
   ensureOption('unsuccessful_actions','Unsuccessful Actions');
 
@@ -88,7 +82,8 @@
   if(typeof originalDrawPoint==='function'){
     window.drawPoint=function(root,e,colour){
       const key=document.getElementById('metric')?.value;
-      if(key==='successful_actions')colour=SUCCESS;
+      if(key==='total_actions')colour=classifyAction(e)==='successful'?SUCCESS:UNSUCCESS;
+      else if(key==='successful_actions')colour=SUCCESS;
       else if(key==='unsuccessful_actions')colour=UNSUCCESS;
       return originalDrawPoint(root,e,colour);
     };
@@ -104,7 +99,7 @@
   applyMetricColour();
 
   window.PitchLabActionOutcomeDefinition=Object.freeze({
-    version:'ACTION_OUTCOME_V2_2026-08-28',
+    version:'ACTION_OUTCOME_V3_2026-08-29',
     colours:Object.freeze({successful:SUCCESS,unsuccessful:UNSUCCESS}),
     ignoredTypes:Object.freeze([...ignoredTypes]),
     classifyAction,defs
