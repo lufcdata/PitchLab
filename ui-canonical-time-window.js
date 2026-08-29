@@ -36,8 +36,10 @@
   function formatClock(timeline){const s=Math.max(0,Math.round(clockSecond(timeline)));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
   function bounds(){
     const from=document.getElementById('fromRange'),to=document.getElementById('toRange'),max=timing.fullTimeline;
-    if(!from||!to)return{lo:0,hi:max,max};let a=Number(from.value),b=Number(to.value);if(b<=a)b=Math.min(100,a+1);
-    return{lo:a/100*max,hi:b/100*max,max};
+    if(!from||!to)return{lo:0,hi:max,max};
+    const a=Math.min(100,Math.max(0,Number(from.value)||0)),b=Math.min(100,Math.max(0,Number(to.value)||0));
+    const lo=Math.min(a,b)/100*max,hi=Math.max(a,b)/100*max;
+    return{lo,hi,max};
   }
   function inWindow(e,lo,hi){const t=timelineSecond(e);return Number.isFinite(t)&&t>=lo&&t<=hi}
   function windowEvents(source=window.events){const list=Array.isArray(source)?source:[];const {lo,hi}=bounds();return list.filter(e=>inWindow(e,lo,hi))}
@@ -72,7 +74,7 @@
     for(const id of ['toText','sumTo']){const el=document.getElementById(id);if(el)el.textContent=toLabel}
     const plot=document.getElementById('plotWindow');if(plot)plot.textContent=`${fromLabel} - ${toLabel}`;
   }
-  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V5_2026-08-28',timing:{...timing},activePreset}}))}
+  function announce(){document.dispatchEvent(new CustomEvent('pitchlab:canonical-time-ready',{detail:{version:'CANONICAL_TIME_V6_2026-08-29',timing:{...timing},activePreset}}))}
   function refresh(source=window.events){derive(source);patchBible();updateLabels();announce()}
   function applyPreset(kind){
     const from=document.getElementById('fromRange'),to=document.getElementById('toRange');if(!from||!to)return;const max=timing.fullTimeline;
@@ -93,6 +95,6 @@
     if(activePreset)applyPreset(activePreset);else updateLabels();
     announce();
   });
-  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V5_2026-08-28',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing},get activePreset(){return activePreset}});
+  window.PitchLabCanonicalTime=Object.freeze({version:'CANONICAL_TIME_V6_2026-08-29',derive,timelineSecond,clockSecond,formatClock,bounds,inWindow,windowEvents,get timing(){return timing},get activePreset(){return activePreset}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
