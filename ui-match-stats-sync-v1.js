@@ -5,7 +5,10 @@
     'Shots - Penalty Area':['Shots Inside The Box','Shots Inside Box'],
     'Shots - Head':['Headed Shots'],
     'Woodwork Shots':['Shots - Woodwork','Woodwork'],
-    'Progressive Passes':['Open Play Progressive Passes','Open-Play Progressive Passes']
+    'Progressive Passes':['Open Play Progressive Passes','Open-Play Progressive Passes'],
+    'Ground Duels':['Total Ground Duels'],
+    'Aerial Duels':['Total Aerial Duels'],
+    'Total Duels':['Duels']
   };
   const retiredLabels=new Set(['Passes Into Final Third','Successful Passes Into Final Third']);
   function makeRow(label,h,a){
@@ -40,12 +43,19 @@
       ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
       ['Big Chances','big_chances'],['Big Chances Created','big_chances_created'],['Chances Created','chances_created'],['Assists','assists'],['Headed Clearances','headed_clearances'],
       ['Total Passes','allpasses'],['Successful Passes','successful'],['Unsuccessful Passes','unsuccessful'],['Progressive Passes','progressive'],['Final Third Passes','final_third_passes'],['Successful Final Third Passes','final_third_passes_success'],['Final Third Entries','final_third_entries'],
-      ['Ball Recoveries','recoveries'],['Tackles Won','tackles_won'],['Ground Duels Won','ground_duels_won'],['Aerial Duels Won','aerial_duels_won'],['Duels Won','duels_won'],
+      ['Ball Recoveries','recoveries'],['Tackles','tackles'],['Tackles Won','tackles_won'],['Tackles Lost','tackles_lost'],
+      ['Ground Duels','ground_duels'],['Ground Duels Won','ground_duels_won'],['Ground Duels Lost','ground_duels_lost'],
+      ['Aerial Duels','aerial_duels'],['Aerial Duels Won','aerial_duels_won'],['Aerial Duels Lost','aerial_duels_lost'],
+      ['Attacking Aerial Duels','att_aerial_duels'],['Attacking Aerial Duels Won','att_aerial_duels_won'],['Attacking Aerial Duels Lost','att_aerial_duels_lost'],
+      ['Defensive Aerial Duels','def_aerial_duels'],['Defensive Aerial Duels Won','def_aerial_duels_won'],['Defensive Aerial Duels Lost','def_aerial_duels_lost'],
+      ['Total Duels','total_duels'],['Duels Won','duels_won'],['Duels Lost','duels_lost'],
+      ['Total Take-Ons','takeons'],['Successful Take-Ons','takeons_success'],['Unsuccessful Take-Ons','takeons_unsuccess'],
       ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
       ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
     for(const [label,key] of metrics){
+      const def=bible.canonicalRegistry?.[key];if(!def||!def.surfaces?.includes?.('matchStats'))continue;
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
       let row=findRow(body,label);
       if(row){setRow(row,h,a,label);continue}
@@ -64,7 +74,7 @@
       }else body.appendChild(row);
     }
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:defensive-residual-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:takeon-corner-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-attacking-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
