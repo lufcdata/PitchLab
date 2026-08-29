@@ -1,7 +1,8 @@
 (()=>{
   if(typeof drawPoint!=='function'||typeof render!=='function')return;
 
-  const START_DOT_RADIUS='0.48';
+  // 25% smaller than the previous 0.48 start marker.
+  const START_DOT_RADIUS='0.36';
   const START_DOT_STROKE='#0d0e19';
 
   function appendStartDot(root,e,colour='#43ede1'){
@@ -31,8 +32,14 @@
     appendStartDot(root,e,colour);
   };
 
+  // These are pass events and must retain their trajectories on Pitch Events.
+  // Through-ball aliases cover both current and legacy selector keys without changing definitions.
   const baseLineMetric=lineMetric;
-  lineMetric=key=>baseLineMetric(key)||key==='goal_kicks';
+  const extraLineMetrics=new Set([
+    'goal_kicks','final_third_entries',
+    'through_balls','throughballs','through_balls_success','throughballs_success','through_balls_unsuccess','throughballs_unsuccess'
+  ]);
+  lineMetric=key=>baseLineMetric(key)||extraLineMetrics.has(key);
 
   requestAnimationFrame(()=>render());
 })();
