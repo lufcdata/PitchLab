@@ -47,10 +47,12 @@
     const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${list.length} locked-definition ${metric.options[metric.selectedIndex].text.toLowerCase()} events · canonical provider-period timing applied.`;
   }
 
+  let renderFrame=0;
+  function scheduleRender(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;canonicalRender();});}
   try{window.render=canonicalRender}catch(_){/* global function binding remains callable through event rebinds below */}
-  from.oninput=to.oninput=canonicalRender;metric.onchange=canonicalRender;team.onchange=()=>{populatePlayers();canonicalRender()};player.onchange=canonicalRender;
-  document.addEventListener('pitchlab:match-loaded',()=>requestAnimationFrame(canonicalRender));
-  document.addEventListener('pitchlab:metric-bible-ready',()=>requestAnimationFrame(canonicalRender));
+  from.oninput=to.oninput=scheduleRender;metric.onchange=scheduleRender;team.onchange=()=>{populatePlayers();scheduleRender()};player.onchange=scheduleRender;
+  document.addEventListener('pitchlab:match-loaded',scheduleRender);
+  document.addEventListener('pitchlab:metric-bible-ready',scheduleRender);
   window.PitchLabPitchTimeWindow=Object.freeze({version:'PITCH_TIME_WINDOW_V1_2026-08-28',render:canonicalRender});
-  requestAnimationFrame(canonicalRender);
+  scheduleRender();
 })();
