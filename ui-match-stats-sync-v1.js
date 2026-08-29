@@ -68,7 +68,8 @@
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
     for(const [label,key] of metrics){
-      const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
+      const qualified=bible.metricEvents(key,source,'Both');
+      let h=0,a=0;for(const e of qualified){const tm=bible.teamOf(e);if(tm===home)h++;else if(tm===away)a++;}
       let row=findRow(rows,label);
       if(row){setRow(row,h,a,label);continue}
       row=makeRow(label,h,a);rows.set(label,row);
