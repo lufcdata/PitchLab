@@ -127,10 +127,12 @@
       }
     }
 
-    const observer=new MutationObserver(update);
+    let updateFrame=0;
+    function scheduleUpdate(){if(updateFrame)return;updateFrame=requestAnimationFrame(()=>{updateFrame=0;update();});}
+    const observer=new MutationObserver(scheduleUpdate);
     observer.observe(eventCount,{childList:true,characterData:true,subtree:true});
-    [metricEl,teamEl,playerEl,from,to].forEach(el=>{if(el){el.addEventListener('input',update);el.addEventListener('change',update)}});
-    document.addEventListener('pitchlab:metric-bible-ready',update);
+    [metricEl,teamEl,playerEl,from,to].forEach(el=>{if(el){el.addEventListener('input',scheduleUpdate);el.addEventListener('change',scheduleUpdate)}});
+    document.addEventListener('pitchlab:metric-bible-ready',scheduleUpdate);
     update();
   }
 
