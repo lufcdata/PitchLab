@@ -73,14 +73,7 @@
       }else body.appendChild(row);
     }
   }
-
-  // PERFORMANCE ONLY: the old 450ms interval recalculated every Match Stats metric forever,
-  // even while another section was visible. Coalesce genuine invalidations into one frame instead.
-  let frame=0;
-  const schedulePatch=()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;patch();});};
-  const readyEvents=['pitchlab:metric-bible-ready','pitchlab:gold-passing-family-ready','pitchlab:progressive-pass-definition-ready','pitchlab:gold-simple-event-family-ready','pitchlab:gold-recovery-duels-family-ready','pitchlab:final-third-entries-gold-ready','pitchlab:action-outcome-definition-ready','pitchlab:combined-outcome-surfaces-ready','pitchlab:match-loaded','pitchlab:canonical-time-ready'];
-  readyEvents.forEach(name=>document.addEventListener(name,schedulePatch));
-  ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',schedulePatch));
-  document.getElementById('pitchViewToggle')?.addEventListener('click',schedulePatch);
-  schedulePatch();
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(patch,0));
+  ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
+  setTimeout(patch,0);
 })();
