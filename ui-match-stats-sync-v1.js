@@ -37,6 +37,11 @@
       if(retiredLabels.has(label))row.remove();
     }
   }
+  function metricCount(bible,key,windowed,team){
+    const canonicalDef=bible.canonicalRegistry?.[key];
+    const fn=canonicalDef?.test||((typeof FILTERS!=='undefined'&&FILTERS[key])||bible.defs?.[key]?.test||(()=>false));
+    let n=0;for(const e of windowed)if(fn(e)&&bible.teamOf(e)===team)n++;return n;
+  }
   function patch(force=false){
     // PERFORMANCE ONLY: retain the known-working polling lifecycle, but do no expensive
     // Metric Bible work while Match Stats is hidden. This avoids the PR #16 open-view regression.
@@ -45,7 +50,7 @@
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const fromValue=document.getElementById('fromRange')?.value??'',toValue=document.getElementById('toRange')?.value??'',teamValue=document.getElementById('team')?.value??'';
     if(!force&&bible===lastBible&&source===lastSource&&source.length===lastSourceLength&&home===lastHome&&away===lastAway&&fromValue===lastFrom&&toValue===lastTo&&teamValue===lastTeam&&body.firstElementChild===lastBodyFirst)return;
-    removeRetired(body);const rows=rowIndex(body);
+    removeRetired(body);const rows=rowIndex(body),windowed=bible.windowEvents(source);
     const metrics=[
       ['Total Actions','total_actions'],['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
@@ -68,7 +73,7 @@
       ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
     for(const [label,key] of metrics){
-      const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
+      const h=metricCount(bible,key,windowed,home),a=metricCount(bible,key,windowed,away);
       let row=findRow(rows,label);
       if(row){setRow(row,h,a,label);continue}
       row=makeRow(label,h,a);rows.set(label,row);
