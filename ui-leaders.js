@@ -48,6 +48,7 @@
     }
 
     function update(){
+      if(panel.classList.contains('is-combinations-hidden'))return;
       try{
         if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length||typeof FILTERS==='undefined'){
           document.getElementById('leadersList').innerHTML='<div class="metric-leaders__empty">Loading match leaders…</div>';
