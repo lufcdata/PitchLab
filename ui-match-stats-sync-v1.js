@@ -30,6 +30,9 @@
     }
   }
   function patch(){
+    // PERFORMANCE ONLY: retain the known-working polling lifecycle, but do no expensive
+    // Metric Bible work while Match Stats is hidden. This avoids the PR #16 open-view regression.
+    if(!document.querySelector('.pitch-panel')?.classList.contains('is-match-stats-view'))return;
     const bible=window.PitchLabMetricBible,body=$('#matchStatsBody');if(!bible||!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;
     removeRetired(body);
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
