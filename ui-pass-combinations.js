@@ -230,6 +230,9 @@
 
   function escapeHtml(v){return String(v).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));}
 
+  let updateFrame=0,pendingRecipientRebuild=false;
+  function scheduleUpdate(rebuild=false){if(!comboMode)return;pendingRecipientRebuild=pendingRecipientRebuild||rebuild;if(updateFrame)return;updateFrame=requestAnimationFrame(()=>{updateFrame=0;if(pendingRecipientRebuild){pendingRecipientRebuild=false;rebuildRecipientMap();}updatePanel();});}
+
   switcher.addEventListener('click',e=>{const b=e.target.closest('button[data-mode]');if(b)setMode(b.dataset.mode==='combinations');});
   comboList.addEventListener('click',e=>{
     const row=e.target.closest('.pass-combo-row');if(!row)return;
@@ -244,9 +247,9 @@
   });
   document.getElementById('comboClear').addEventListener('click',()=>{selectedPair=null;selectedDirection='both';if(typeof render==='function')render();updatePanel();});
   metricEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;selectedDirection='both';if(typeof render==='function')render();updatePanel();}});
-  teamEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;rebuildRecipientMap();updatePanel();}});
-  [from,to].forEach(el=>{el.addEventListener('input',()=>{if(comboMode)updatePanel()});el.addEventListener('change',()=>{if(comboMode)updatePanel()});});
-  document.addEventListener('pitchlab:canonical-time-ready',()=>{if(comboMode)updatePanel()});
-  document.addEventListener('pitchlab:match-loaded',()=>{rebuildRecipientMap();if(comboMode)updatePanel()});
-  const observer=new MutationObserver(()=>{if(comboMode){rebuildRecipientMap();updatePanel();}});observer.observe(eventCount,{childList:true,characterData:true,subtree:true});
+  teamEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;scheduleUpdate(true);}});
+  [from,to].forEach(el=>{el.addEventListener('input',()=>scheduleUpdate());el.addEventListener('change',()=>scheduleUpdate());});
+  document.addEventListener('pitchlab:canonical-time-ready',()=>scheduleUpdate());
+  document.addEventListener('pitchlab:match-loaded',()=>scheduleUpdate(true));
+  const observer=new MutationObserver(()=>scheduleUpdate(true));observer.observe(eventCount,{childList:true,characterData:true,subtree:true});
 })();
