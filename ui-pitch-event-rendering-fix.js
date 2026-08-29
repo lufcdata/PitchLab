@@ -50,7 +50,8 @@
   const baseLineMetric=lineMetric;
   const extraLineMetrics=new Set([
     'goal_kicks','final_third_entries',
-    'through_balls','throughballs','through_balls_success','throughballs_success','through_balls_unsuccess','throughballs_unsuccess'
+    'through_balls','throughballs','through_balls_success','throughballs_success','through_balls_unsuccess','throughballs_unsuccess',
+    'set_play_crosses_success','set_play_crosses_unsuccess'
   ]);
   lineMetric=key=>baseLineMetric(key)||extraLineMetrics.has(key);
 
