@@ -93,11 +93,14 @@
   // LOCKED GOLDEN CARRY FAMILY: see docs/CARRY_FAMILY_GOLDEN.md.
   function carrySummary(list,team){const empty={carries:0,carryingDistanceM:0,avgCarryingDistanceM:0,progressiveCarries:0,progressiveCarryingDistanceM:0,avgProgressiveCarryingDistanceM:0};if(!window.PitchLabCarry)return empty;const teamEvent=list.find(e=>teamName(e)===team&&e.teamId!=null);if(!teamEvent)return empty;return window.PitchLabCarry.teamSummary(list,teamEvent.teamId);}
 
-  let renderTeamEventsCache=null;
+  let renderTeamEventsCache=null,renderMetricCountCache=null;
   function teamEvents(list,team){return renderTeamEventsCache?.get(team)??list.filter(e=>teamName(e)===team)}
   function countByTeam(list,team,key,home,away){
-    const teamList=teamEvents(list,team);
-    if(key==='goals_adjusted')return adjustedGoals(list,team,home,away);if(key==='own_goals_custom')return teamList.filter(e=>isOwnGoal(e)).length;if(key==='shots_outside_custom')return teamList.filter(isOutsideBox).length;if(key==='shots_inside_custom')return teamList.filter(isInsideBox).length;if(key==='big_chances_custom')return teamList.filter(isBigChance).length;if(key==='big_chances_missed_custom')return teamList.filter(e=>isBigChance(e)&&!isGoal(e)).length;if(key==='set_piece_chances_custom')return teamList.filter(isSetPieceChance).length;if(key==='fouls_custom')return teamList.filter(isFoul).length;if(key==='red_cards_custom')return teamList.filter(isRed).length;return teamList.filter(e=>safeFilter(key,e)).length;
+    const cacheKey=`${team}\u0000${key}`;
+    if(renderMetricCountCache?.has(cacheKey))return renderMetricCountCache.get(cacheKey);
+    const teamList=teamEvents(list,team);let value;
+    if(key==='goals_adjusted')value=adjustedGoals(list,team,home,away);else if(key==='own_goals_custom')value=teamList.filter(e=>isOwnGoal(e)).length;else if(key==='shots_outside_custom')value=teamList.filter(isOutsideBox).length;else if(key==='shots_inside_custom')value=teamList.filter(isInsideBox).length;else if(key==='big_chances_custom')value=teamList.filter(isBigChance).length;else if(key==='big_chances_missed_custom')value=teamList.filter(e=>isBigChance(e)&&!isGoal(e)).length;else if(key==='set_piece_chances_custom')value=teamList.filter(isSetPieceChance).length;else if(key==='fouls_custom')value=teamList.filter(isFoul).length;else if(key==='red_cards_custom')value=teamList.filter(isRed).length;else value=teamList.filter(e=>safeFilter(key,e)).length;
+    renderMetricCountCache?.set(cacheKey,value);return value;
   }
   let renderCarryCache=null,renderOrderedCache=null;
   function valuePair(def,list,home,away){
@@ -111,12 +114,13 @@
     if(!statsView)return;if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length){$('matchStatsBody').innerHTML='<div class="match-stats-panel__empty">Loading match stats…</div>';return}
     const [home,away]=teams();const {list,lo,hi,max}=windowEvents();const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);const hc=crestFor(home),ac=crestFor(away);const canonical=window.PitchLabCanonicalTime;const loLabel=lo<.5?'0:00':(canonical?.formatClock?canonical.formatClock(lo):fmtSec(lo));const hiLabel=hi>=max-.5?'FT':(canonical?.formatClock?canonical.formatClock(hi):fmtSec(hi));
     renderTeamEventsCache=new Map([[home,[]],[away,[]]]);for(const e of list){const bucket=renderTeamEventsCache.get(teamName(e));if(bucket)bucket.push(e);}
+    renderMetricCountCache=new Map();
     renderCarryCache={home:carrySummary(list,home),away:carrySummary(list,away)};
     renderOrderedCache=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
     $('matchStatsScore').innerHTML=`<span class="match-stats-panel__team match-stats-panel__team--home">${home}${hc?`<img class="match-stats-panel__crest" src="${hc}" alt="${home} crest">`:''}</span><span class="match-stats-panel__scoreline"><b>${hg}</b><span class="match-stats-panel__dash">–</span><b>${ag}</b></span><span class="match-stats-panel__team match-stats-panel__team--away">${ac?`<img class="match-stats-panel__crest" src="${ac}" alt="${away} crest">`:''}${away}</span>`;
     $('matchStatsScope').innerHTML=`Both <i>|</i> <b>${loLabel} – ${hiLabel}</b>`;
     $('matchStatsBody').innerHTML=metricDefs.map(def=>{const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);const denom=Math.max(Math.abs(h)+Math.abs(a),1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):Math.abs(h)/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):Math.abs(a)/denom*100;const hv=kind==='pct'?Math.round(h):kind==='decimal'?h.toFixed(1):h,av=kind==='pct'?Math.round(a):kind==='decimal'?a.toFixed(1):a;return `<div class="match-stats-row${kind==='pct'?' is-percentage':''}"><div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${hp}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${hv}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${av}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${ap}%"></div></div></div>`;}).join('');
-    renderTeamEventsCache=null;renderCarryCache=null;renderOrderedCache=null;
+    renderTeamEventsCache=null;renderMetricCountCache=null;renderCarryCache=null;renderOrderedCache=null;
   }
   let renderFrame=0;
   function scheduleRender(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;render();});}
