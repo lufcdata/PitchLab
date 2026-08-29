@@ -247,7 +247,7 @@
   });
   document.getElementById('comboClear').addEventListener('click',()=>{selectedPair=null;selectedDirection='both';if(typeof render==='function')render();updatePanel();});
   metricEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;selectedDirection='both';if(typeof render==='function')render();updatePanel();}});
-  teamEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;scheduleUpdate(true);}});
+  teamEl.addEventListener('change',()=>{if(comboMode){selectedPair=null;scheduleUpdate();}});
   [from,to].forEach(el=>{el.addEventListener('input',()=>scheduleUpdate());el.addEventListener('change',()=>scheduleUpdate());});
   document.addEventListener('pitchlab:canonical-time-ready',()=>scheduleUpdate());
   document.addEventListener('pitchlab:match-loaded',()=>scheduleUpdate(true));
