@@ -74,17 +74,15 @@
   }
 
   // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 6 / Leeds 7.
-  function tenPassSequences(list,team){
-    const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
+  function tenPassSequences(ordered,team){
     const hardEnd=new Set(['foul','offsidegiven','cornerawarded','savedshot','missedshots','shotonpost','goal','tackle','interception','end','start']);let activeTeam='',passes=0,count=0;
     const close=()=>{if(activeTeam===team&&passes>=10)count++;activeTeam='';passes=0};
     for(const e of ordered){const t=eventType(e),etm=teamName(e);if(hardEnd.has(t)){close();continue}if(t!=='pass')continue;if(etm!==activeTeam){close();activeTeam=etm;passes=0}passes++;if(outcome(e)==='unsuccessful')close();}close();return count;
   }
 
   // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 2 / Leeds 16.
-  function pressedSequences(list,pressingTeam,home,away){
+  function pressedSequences(ordered,pressingTeam,home,away){
     const attackingTeam=opposition(pressingTeam,home,away);
-    const ordered=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
     const startTypes=new Set(['pass','ballrecovery','balltouch','takeon']);const stopTypes=new Set(['foul','offsidegiven','cornerawarded','savedshot','missedshots','shotonpost','goal','tackle','interception','end','start']);
     const restartQ=e=>hasAny(e,'CornerTaken','FreeKickTaken','ThrowIn','ThrowinSetPiece','GoalKick','SetPiece','DirectFreekick');const controlled=e=>teamName(e)===attackingTeam&&startTypes.has(eventType(e))&&outcome(e)!=='unsuccessful';
     const contestedTouch=(idx,e)=>{if(eventType(e)!=='balltouch')return false;const s=evtSec(e);for(let j=Math.max(0,idx-3);j<Math.min(ordered.length,idx+4);j++){if(j===idx)continue;const o=ordered[j];if(evtSec(o)===s&&eventType(o)==='balltouch'&&teamName(o)&&teamName(o)!==attackingTeam)return true;}return false;};
@@ -98,9 +96,9 @@
   function countByTeam(list,team,key,home,away){
     if(key==='goals_adjusted')return adjustedGoals(list,team,home,away);if(key==='own_goals_custom')return ownGoalsCommitted(list,team);if(key==='shots_outside_custom')return list.filter(e=>teamName(e)===team&&isOutsideBox(e)).length;if(key==='shots_inside_custom')return list.filter(e=>teamName(e)===team&&isInsideBox(e)).length;if(key==='big_chances_custom')return list.filter(e=>teamName(e)===team&&isBigChance(e)).length;if(key==='big_chances_missed_custom')return list.filter(e=>teamName(e)===team&&isBigChance(e)&&!isGoal(e)).length;if(key==='set_piece_chances_custom')return list.filter(e=>teamName(e)===team&&isSetPieceChance(e)).length;if(key==='fouls_custom')return list.filter(e=>teamName(e)===team&&isFoul(e)).length;if(key==='red_cards_custom')return list.filter(e=>teamName(e)===team&&isRed(e)).length;return list.filter(e=>teamName(e)===team&&safeFilter(key,e)).length;
   }
-  let renderCarryCache=null;
+  let renderCarryCache=null,renderOrderedCache=null;
   function valuePair(def,list,home,away){
-    const [,key]=def;if(key==='ppda_custom')return [ppda(list,home,home,away),ppda(list,away,home,away)];if(key==='ten_pass_sequences_custom')return [tenPassSequences(list,home),tenPassSequences(list,away)];if(key==='pressed_sequences_custom')return [pressedSequences(list,home,home,away),pressedSequences(list,away,home,away)];
+    const [,key]=def;if(key==='ppda_custom')return [ppda(list,home,home,away),ppda(list,away,home,away)];if(key==='ten_pass_sequences_custom')return [tenPassSequences(renderOrderedCache,home),tenPassSequences(renderOrderedCache,away)];if(key==='pressed_sequences_custom')return [pressedSequences(renderOrderedCache,home,home,away),pressedSequences(renderOrderedCache,away,home,away)];
     const carryMetric=key.startsWith('carries_custom')||key.includes('carrying_distance_custom')||key.includes('progressive_carries_custom');
     const hc=carryMetric?(renderCarryCache?.home??carrySummary(list,home)):null,ac=carryMetric?(renderCarryCache?.away??carrySummary(list,away)):null;
     if(key==='carries_custom')return [hc.carries,ac.carries];if(key==='carrying_distance_custom')return [hc.carryingDistanceM,ac.carryingDistanceM];if(key==='avg_carrying_distance_custom')return [hc.avgCarryingDistanceM,ac.avgCarryingDistanceM];if(key==='progressive_carries_custom')return [hc.progressiveCarries,ac.progressiveCarries];if(key==='progressive_carrying_distance_custom')return [hc.progressiveCarryingDistanceM,ac.progressiveCarryingDistanceM];if(key==='avg_progressive_carrying_distance_custom')return [hc.avgProgressiveCarryingDistanceM,ac.avgProgressiveCarryingDistanceM];
@@ -110,10 +108,11 @@
     if(!statsView)return;if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length){$('matchStatsBody').innerHTML='<div class="match-stats-panel__empty">Loading match stats…</div>';return}
     const [home,away]=teams();const {list,lo,hi,max}=windowEvents();const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);const hc=crestFor(home),ac=crestFor(away);const canonical=window.PitchLabCanonicalTime;const loLabel=lo<.5?'0:00':(canonical?.formatClock?canonical.formatClock(lo):fmtSec(lo));const hiLabel=hi>=max-.5?'FT':(canonical?.formatClock?canonical.formatClock(hi):fmtSec(hi));
     renderCarryCache={home:carrySummary(list,home),away:carrySummary(list,away)};
+    renderOrderedCache=[...list].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
     $('matchStatsScore').innerHTML=`<span class="match-stats-panel__team match-stats-panel__team--home">${home}${hc?`<img class="match-stats-panel__crest" src="${hc}" alt="${home} crest">`:''}</span><span class="match-stats-panel__scoreline"><b>${hg}</b><span class="match-stats-panel__dash">–</span><b>${ag}</b></span><span class="match-stats-panel__team match-stats-panel__team--away">${ac?`<img class="match-stats-panel__crest" src="${ac}" alt="${away} crest">`:''}${away}</span>`;
     $('matchStatsScope').innerHTML=`Both <i>|</i> <b>${loLabel} – ${hiLabel}</b>`;
     $('matchStatsBody').innerHTML=metricDefs.map(def=>{const [label,,kind]=def;let [h,a]=valuePair(def,list,home,away);const denom=Math.max(Math.abs(h)+Math.abs(a),1);const hp=kind==='pct'?Math.max(0,Math.min(100,h)):Math.abs(h)/denom*100;const ap=kind==='pct'?Math.max(0,Math.min(100,a)):Math.abs(a)/denom*100;const hv=kind==='pct'?Math.round(h):kind==='decimal'?h.toFixed(1):h,av=kind==='pct'?Math.round(a):kind==='decimal'?a.toFixed(1):a;return `<div class="match-stats-row${kind==='pct'?' is-percentage':''}"><div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${hp}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${hv}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${av}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${ap}%"></div></div></div>`;}).join('');
-    renderCarryCache=null;
+    renderCarryCache=null;renderOrderedCache=null;
   }
   function setView(on){statsView=on;pitchPanel.classList.toggle('is-match-stats-view',on);toggle.textContent=on?'Pitch Map':'Match Stats';toggle.setAttribute('aria-pressed',String(on));if(on)render()}
   toggle.addEventListener('click',()=>setView(!statsView));const observer=new MutationObserver(()=>render());observer.observe(eventCount,{childList:true,characterData:true,subtree:true});[from,to].forEach(el=>{el.addEventListener('input',render);el.addEventListener('change',render)});document.addEventListener('pitchlab:canonical-time-ready',render);document.addEventListener('pitchlab:match-loaded',()=>requestAnimationFrame(render));
