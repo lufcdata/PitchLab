@@ -20,9 +20,16 @@
     row.querySelector('.match-stats-row__value--home').textContent=h;row.querySelector('.match-stats-row__value--away').textContent=a;
     const b=row.querySelectorAll('.match-stats-row__bar');if(b[0])b[0].style.width=`${h/d*100}%`;if(b[1])b[1].style.width=`${a/d*100}%`;
   }
-  function findRow(body,label){
-    const accepted=new Set([label,...(aliases[label]||[])]);
-    return [...body.querySelectorAll('.match-stats-row')].find(r=>accepted.has(r.querySelector('.match-stats-row__label')?.textContent?.trim()));
+  function rowIndex(body){
+    const index=new Map();
+    for(const row of body.querySelectorAll('.match-stats-row')){
+      const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();
+      if(label&&!index.has(label))index.set(label,row);
+    }
+    return index;
+  }
+  function findRow(index,label){
+    for(const accepted of [label,...(aliases[label]||[])]){const row=index.get(accepted);if(row)return row;}
   }
   function removeRetired(body){
     for(const row of body.querySelectorAll('.match-stats-row')){
@@ -38,7 +45,7 @@
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const fromValue=document.getElementById('fromRange')?.value??'',toValue=document.getElementById('toRange')?.value??'',teamValue=document.getElementById('team')?.value??'';
     if(!force&&bible===lastBible&&source===lastSource&&source.length===lastSourceLength&&home===lastHome&&away===lastAway&&fromValue===lastFrom&&toValue===lastTo&&teamValue===lastTeam&&body.firstElementChild===lastBodyFirst)return;
-    removeRetired(body);
+    removeRetired(body);const rows=rowIndex(body);
     const metrics=[
       ['Total Actions','total_actions'],['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
@@ -62,19 +69,19 @@
     ];
     for(const [label,key] of metrics){
       const h=bible.metricEvents(key,source,home).length,a=bible.metricEvents(key,source,away).length;
-      let row=findRow(body,label);
+      let row=findRow(rows,label);
       if(row){setRow(row,h,a,label);continue}
-      row=makeRow(label,h,a);
+      row=makeRow(label,h,a);rows.set(label,row);
       if(label==='Goal Kicks'){
-        const marker=findRow(body,'Interceptions');
+        const marker=findRow(rows,'Interceptions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
       }else if(label==='Total Actions'){
         body.insertBefore(row,body.firstElementChild);
       }else if(label==='Successful Actions'){
-        const marker=findRow(body,'Total Actions');
+        const marker=findRow(rows,'Total Actions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else if(label==='Unsuccessful Actions'){
-        const marker=findRow(body,'Successful Actions');
+        const marker=findRow(rows,'Successful Actions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else body.appendChild(row);
     }
