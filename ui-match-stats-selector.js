@@ -122,7 +122,12 @@
     });
 
     renderPicker();applySelection(metrics,state);
-    const body=$('#matchStatsBody');if(body)new MutationObserver(()=>applySelection(metrics,state)).observe(body,{childList:true,subtree:true,characterData:true});
+    const body=$('#matchStatsBody');
+    if(body){
+      let observerFrame=0;
+      const scheduleSelection=()=>{if(observerFrame)return;observerFrame=requestAnimationFrame(()=>{observerFrame=0;applySelection(metrics,state);});};
+      new MutationObserver(scheduleSelection).observe(body,{childList:true,subtree:true,characterData:true});
+    }
     document.addEventListener('pitchlab:match-loaded',()=>setTimeout(()=>applySelection(metrics,state),50));
     return true;
   }
