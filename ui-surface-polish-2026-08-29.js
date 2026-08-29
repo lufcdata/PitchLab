@@ -3,10 +3,20 @@
   const legend=document.getElementById('plotLegend');
   const from=document.getElementById('fromRange');
   const to=document.getElementById('toRange');
+  const outcomeLabels={
+    total_actions:['Successful Action','Unsuccessful Action'],
+    tackles:['Tackle Won','Tackle Lost'],
+    takeons:['Successful Take-On','Unsuccessful Take-On'],
+    total_duels:['Duel Won','Duel Lost'],
+    ground_duels:['Ground Duel Won','Ground Duel Lost'],
+    aerial_duels:['Aerial Duel Won','Aerial Duel Lost'],
+    att_aerial_duels:['Attacking Aerial Duel Won','Attacking Aerial Duel Lost'],
+    def_aerial_duels:['Defensive Aerial Duel Won','Defensive Aerial Duel Lost']
+  };
 
-  function syncTotalActionsLegend(){
-    if(!metric||!legend||metric.value!=='total_actions')return;
-    legend.innerHTML='<span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#43FAD5"></i>Successful Action</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#FF1C6B"></i>Unsuccessful Action</span>';
+  function syncOutcomeLegend(){
+    if(!metric||!legend)return;const labels=outcomeLabels[metric.value];if(!labels)return;
+    legend.innerHTML=`<span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#43FAD5"></i>${labels[0]}</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#ED1362"></i>${labels[1]}</span>`;
   }
 
   function ensureFullTimeEvent(){
@@ -15,7 +25,6 @@
     const clock=window.PitchLabCanonicalTime;
     if(!clock||!to||Number(to.value)<99.999)return;
     const timing=clock.timing;if(!timing||!Number.isFinite(timing.fullTimeline))return;
-    const footballSecond=clock.clockSecond(timing.fullTimeline);
     const text=clock.formatClock(timing.fullTimeline);
     const row=document.createElement('div');row.className='match-event-row match-event-row--full';row.dataset.syntheticFullTime='1';
     row.innerHTML=`<div class="match-event__club-cell"><span class="match-event__club-neutral"></span></div><div class="match-event__event">Full-Time</div><time class="match-event__time">${text}</time><div class="match-event__player">—</div>`;
@@ -23,7 +32,7 @@
     const count=document.getElementById('matchEventsCount');if(count){const n=list.querySelectorAll('.match-event-row').length;count.textContent=`${n} event${n===1?'':'s'}`}
   }
 
-  function refresh(){requestAnimationFrame(()=>{syncTotalActionsLegend();ensureFullTimeEvent()})}
+  function refresh(){requestAnimationFrame(()=>{syncOutcomeLegend();ensureFullTimeEvent()})}
   metric?.addEventListener('change',refresh);metric?.addEventListener('input',refresh);
   from?.addEventListener('input',refresh);to?.addEventListener('input',refresh);
   document.addEventListener('pitchlab:canonical-time-ready',refresh);
