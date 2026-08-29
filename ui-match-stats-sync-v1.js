@@ -32,7 +32,7 @@
     removeRetired(body);
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
     const metrics=[
-      ['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
+      ['Total Actions','total_actions'],['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
       ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Off-Target','shots_off'],['Blocked Shots','shots_blocked'],['Woodwork Shots','woodwork'],
       ['Shots - Open Play','shots_open'],['Shots - Fast Break','shots_fastbreak'],['Shots from Set-Pieces','shots_setpiece'],['Shots - From Free-Kicks','shots_dfk'],
@@ -53,8 +53,11 @@
       if(label==='Goal Kicks'){
         const marker=findRow(body,'Interceptions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
-      }else if(label==='Successful Actions'){
+      }else if(label==='Total Actions'){
         body.insertBefore(row,body.firstElementChild);
+      }else if(label==='Successful Actions'){
+        const marker=findRow(body,'Total Actions');
+        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else if(label==='Unsuccessful Actions'){
         const marker=findRow(body,'Successful Actions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
