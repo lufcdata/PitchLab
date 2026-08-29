@@ -10,6 +10,7 @@
     'Aerial Duels':['Total Aerial Duels']
   };
   const retiredLabels=new Set(['Passes Into Final Third','Successful Passes Into Final Third']);
+  let lastBible=null,lastSource=null,lastSourceLength=-1,lastHome='',lastAway='',lastFrom='',lastTo='',lastTeam='',lastBodyFirst=null;
   function makeRow(label,h,a){
     const d=Math.max(h+a,1),r=document.createElement('div');r.className='match-stats-row';r.dataset.metricBibleSync=label;
     r.innerHTML=`<div class="match-stats-row__track match-stats-row__track--home"><div class="match-stats-row__bar" style="width:${h/d*100}%"></div></div><div class="match-stats-row__value match-stats-row__value--home">${h}</div><div class="match-stats-row__label">${label}</div><div class="match-stats-row__value match-stats-row__value--away">${a}</div><div class="match-stats-row__track"><div class="match-stats-row__bar" style="width:${a/d*100}%"></div></div>`;return r;
@@ -29,13 +30,15 @@
       if(retiredLabels.has(label))row.remove();
     }
   }
-  function patch(){
+  function patch(force=false){
     // PERFORMANCE ONLY: retain the known-working polling lifecycle, but do no expensive
     // Metric Bible work while Match Stats is hidden. This avoids the PR #16 open-view regression.
     if(!document.querySelector('.pitch-panel')?.classList.contains('is-match-stats-view'))return;
     const bible=window.PitchLabMetricBible,body=$('#matchStatsBody');if(!bible||!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;
-    removeRetired(body);
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
+    const fromValue=document.getElementById('fromRange')?.value??'',toValue=document.getElementById('toRange')?.value??'',teamValue=document.getElementById('team')?.value??'';
+    if(!force&&bible===lastBible&&source===lastSource&&source.length===lastSourceLength&&home===lastHome&&away===lastAway&&fromValue===lastFrom&&toValue===lastTo&&teamValue===lastTeam&&body.firstElementChild===lastBodyFirst)return;
+    removeRetired(body);
     const metrics=[
       ['Total Actions','total_actions'],['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
@@ -75,8 +78,9 @@
         if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else body.appendChild(row);
     }
+    lastBible=bible;lastSource=source;lastSourceLength=source.length;lastHome=home;lastAway=away;lastFrom=fromValue;lastTo=toValue;lastTeam=teamValue;lastBodyFirst=body.firstElementChild;
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(patch,0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(patch,0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
