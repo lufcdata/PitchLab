@@ -2,6 +2,7 @@
   const $=id=>document.getElementById(id);
   const BOURNEMOUTH_ID='1903384';
   const FOREST_ID='1983552';
+  const LOCAL_ID='local-json';
   const FOREST_PARTS=[
     './data/ws1983552_00.part','./data/ws1983552_01.part','./data/ws1983552_02.part',
     './data/ws1983552_03.part','./data/ws1983552_04.part',
@@ -95,18 +96,36 @@
     }finally{if(sel)sel.disabled=false;}
   }
 
+  async function loadLocalFixture(file){
+    if(!file)return;
+    let data;
+    try{data=JSON.parse(await file.text());}
+    catch(_){throw new Error('Selected match file is not valid JSON.');}
+    applyFixture(data,LOCAL_ID);
+    const sel=$('pitchlabMatch');
+    const opt=sel?.querySelector(`option[value="${LOCAL_ID}"]`);
+    if(opt)opt.textContent=fixtureLabel(data);
+    if($('error'))$('error').textContent='';
+  }
+
   function installSelector(){
     const filters=document.querySelector('.controls-panel .filters');
     if(!filters)return false;
     if($('pitchlabMatch'))return true;
     const field=document.createElement('div');
     field.className='field pitchlab-match-field';
-    field.innerHTML=`<label>Match</label><select id="pitchlabMatch" class="selectlike"><option value="${BOURNEMOUTH_ID}">Bournemouth 2–2 Leeds</option><option value="${FOREST_ID}">Nottingham Forest 0–1 Leeds</option></select>`;
+    field.innerHTML=`<label>Match</label><select id="pitchlabMatch" class="selectlike"><option value="${BOURNEMOUTH_ID}">Bournemouth 2–2 Leeds</option><option value="${FOREST_ID}">Nottingham Forest 0–1 Leeds</option><option value="${LOCAL_ID}">Load Match JSON…</option></select><input id="pitchlabMatchFile" type="file" accept=".json,application/json" hidden>`;
     filters.prepend(field);
-    const sel=$('pitchlabMatch');
+    const sel=$('pitchlabMatch'),file=$('pitchlabMatchFile');
     sel.addEventListener('change',async()=>{
+      if(sel.value===LOCAL_ID){file?.click();return;}
       try{await loadFixture(sel.value);}
       catch(err){console.error(err);if($('error'))$('error').textContent=err.message;}
+    });
+    file?.addEventListener('change',async()=>{
+      try{await loadLocalFixture(file.files?.[0]);}
+      catch(err){console.error(err);if($('error'))$('error').textContent=err.message;}
+      finally{file.value='';}
     });
     return true;
   }
