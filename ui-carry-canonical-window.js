@@ -59,6 +59,16 @@
     const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${carries.length} Gold carry trajectories · canonical provider-period timing applied · 5m minimum movement · calibrated to a 105m × 68m pitch.`;
   }
 
+  function installAuthoritativeRenderGuard(){
+    const pitchWindow=window.PitchLabPitchTimeWindow;
+    if(!pitchWindow||pitchWindow.__carryAware)return;
+    const canonical=pitchWindow.render;
+    if(typeof canonical!=='function')return;
+    const guarded=()=>{if(isCarryMetric())renderCanonicalCarries();else canonical();};
+    window.PitchLabPitchTimeWindow=Object.freeze({...pitchWindow,render:guarded,__carryAware:true});
+    try{window.render=guarded}catch(_){/* global binding may be non-writable */}
+  }
+
   for(const id of ['metric','team','player','fromRange','toRange']){
     const el=document.getElementById(id);if(!el)continue;
     el.addEventListener('input',schedule);el.addEventListener('change',schedule);
@@ -66,6 +76,11 @@
   document.addEventListener('pitchlab:match-loaded',schedule);
   document.addEventListener('pitchlab:canonical-time-ready',schedule);
   document.addEventListener('pitchlab:metric-bible-ready',schedule);
-  window.PitchLabCarryCanonicalWindow=Object.freeze({version:'CARRY_CANONICAL_WINDOW_V1_2026-08-28',render:renderCanonicalCarries});
+  window.PitchLabCarryCanonicalWindow=Object.freeze({version:'CARRY_CANONICAL_WINDOW_V2_2026-08-30',render:renderCanonicalCarries});
+
+  // ui-pitch-time-window.js loads immediately before this file and owns the final
+  // generic Pitch Events render. Guard that surface so carry metrics cannot fall
+  // back to their intentionally-false FILTERS entries and erase Gold trajectories.
+  installAuthoritativeRenderGuard();
   schedule();
 })();
