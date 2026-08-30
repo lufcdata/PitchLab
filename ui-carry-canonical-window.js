@@ -66,7 +66,18 @@
     if(typeof canonical!=='function')return;
     const guarded=()=>{if(isCarryMetric())renderCanonicalCarries();else canonical();};
     window.PitchLabPitchTimeWindow=Object.freeze({...pitchWindow,render:guarded,__carryAware:true});
-    try{window.render=guarded}catch(_){/* global binding may be non-writable */}
+    // Do not rely on replacing window.render: the base page declares render with a
+    // top-level function binding, which later scripts can continue to call directly.
+    // Rebind the actual controls below so the carry-aware guard owns Pitch Events.
+  }
+
+  function bindAuthoritativeControls(){
+    const metric=document.getElementById('metric'),team=document.getElementById('team'),player=document.getElementById('player'),from=document.getElementById('fromRange'),to=document.getElementById('toRange');
+    if(!metric||!team||!player||!from||!to)return;
+    const guarded=()=>window.PitchLabPitchTimeWindow?.render?.();
+    from.oninput=guarded;to.oninput=guarded;metric.onchange=guarded;
+    team.onchange=()=>{if(typeof populatePlayers==='function')populatePlayers();guarded()};
+    player.onchange=guarded;
   }
 
   for(const id of ['metric','team','player','fromRange','toRange']){
@@ -76,11 +87,13 @@
   document.addEventListener('pitchlab:match-loaded',schedule);
   document.addEventListener('pitchlab:canonical-time-ready',schedule);
   document.addEventListener('pitchlab:metric-bible-ready',schedule);
-  window.PitchLabCarryCanonicalWindow=Object.freeze({version:'CARRY_CANONICAL_WINDOW_V2_2026-08-30',render:renderCanonicalCarries});
+  window.PitchLabCarryCanonicalWindow=Object.freeze({version:'CARRY_CANONICAL_WINDOW_V3_2026-08-30',render:renderCanonicalCarries});
 
   // ui-pitch-time-window.js loads immediately before this file and owns the final
-  // generic Pitch Events render. Guard that surface so carry metrics cannot fall
-  // back to their intentionally-false FILTERS entries and erase Gold trajectories.
+  // generic Pitch Events render. Guard that surface and rebind its controls so carry
+  // metrics cannot fall back to their intentionally-false FILTERS entries and erase
+  // Gold trajectories after the carry renderer has drawn them.
   installAuthoritativeRenderGuard();
+  bindAuthoritativeControls();
   schedule();
 })();
