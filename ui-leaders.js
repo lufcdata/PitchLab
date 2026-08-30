@@ -159,7 +159,7 @@
   }
 
   function escapeHtml(value){
-    return String(value).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));
+    return String(value).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
