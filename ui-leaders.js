@@ -33,10 +33,14 @@
     function carryRows(source,key){
       if(!window.PitchLabCarry?.isCarryMetric?.(key))return null;
       const summaries=window.PitchLabCarry.playerSummaries(source);
+      const teamById=new Map();
+      for(const e of source){
+        const id=String(e?.teamId??'');
+        if(id&&!teamById.has(id))teamById.set(id,typeof teamName==='function'?teamName(e):'');
+      }
       const rows=[];
       for(const [id,s] of summaries){
-        const teamEvent=source.find(e=>String(e.teamId)===String(s.teamId));
-        const team=teamEvent&&typeof teamName==='function'?teamName(teamEvent):'';
+        const team=teamById.get(String(s.teamId))||'';
         if(teamEl.value!=='Both'&&team!==teamEl.value)continue;
         const value=window.PitchLabCarry.metricValue(s,key);
         const progressiveMetric=['progressive_carries_custom','avg_progressive_carrying_distance_custom'].includes(key);
@@ -45,6 +49,20 @@
         rows.push({id,name:(players[id]||{}).name||`Player ${id}`,team,value,display:window.PitchLabCarry.metricDisplay(value,key)});
       }
       return rows;
+    }
+
+    function canonicalRows(source,key,team,bible){
+      const canonicalDef=bible?.canonicalRegistry?.[key];
+      if(!canonicalDef?.test)return null;
+      const counts=new Map();
+      for(const e of source){
+        if(!canonicalDef.test(e)||!e?.playerId)continue;
+        const eventTeam=bible.teamOf(e);
+        if(team!=='Both'&&eventTeam!==team)continue;
+        const id=String(e.playerId),item=counts.get(id)||{id,team:eventTeam,value:0};
+        item.value+=1;counts.set(id,item);
+      }
+      return [...counts.values()];
     }
 
     function update(){
@@ -70,9 +88,13 @@
         }
 
         const carry=carryRows(windowSource,metricEl.value);
+        const canonical=carry?null:canonicalRows(windowSource,metricEl.value,teamEl.value,bible);
         let rows,countsSize;
         if(carry){
           rows=carry.sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
+          countsSize=rows.length;
+        }else if(canonical){
+          rows=canonical.map(r=>({...r,name:(players[r.id]||{}).name||`Player ${r.id}`})).sort((x,y)=>y.value-x.value||x.name.localeCompare(y.name));
           countsSize=rows.length;
         }else if(bible?.playerRows){
           rows=bible.playerRows(metricEl.value,events,teamEl.value).map(r=>({
@@ -137,7 +159,7 @@
   }
 
   function escapeHtml(value){
-    return String(value).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    return String(value).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
