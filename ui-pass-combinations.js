@@ -167,6 +167,8 @@
   }
 
   function timeWindow(){
+    const bible=window.PitchLabMetricBible;
+    if(bible?.windowBounds)return bible.windowBounds(events);
     const canonical=window.PitchLabCanonicalTime;
     if(canonical?.bounds)return canonical.bounds();
     if(typeof events==='undefined'||!events.length)return {lo:0,hi:90*60,max:90*60};
@@ -177,10 +179,14 @@
 
   function eligiblePasses(){
     if(typeof events==='undefined'||!Array.isArray(events))return [];
+    const bible=window.PitchLabMetricBible;
     const canonical=window.PitchLabCanonicalTime;
-    const {lo,hi}=timeWindow();
+    const windowed=bible?.windowEvents?bible.windowEvents(events):(()=>{
+      const {lo,hi}=timeWindow();
+      return events.filter(e=>canonical?.inWindow?canonical.inWindow(e,lo,hi):(localEventSec(e)>=lo&&localEventSec(e)<=hi));
+    })();
     const key=metricEl.value;
-    let list=events.filter(e=>(canonical?.inWindow?canonical.inWindow(e,lo,hi):(localEventSec(e)>=lo&&localEventSec(e)<=hi))&&passQualifies(e,key));
+    let list=windowed.filter(e=>passQualifies(e,key));
     if(teamEl.value!=='Both')list=list.filter(e=>teamOf(e)===teamEl.value);
     return list;
   }
