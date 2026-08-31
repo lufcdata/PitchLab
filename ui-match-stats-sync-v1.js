@@ -37,7 +37,13 @@
       if(retiredLabels.has(label))row.remove();
     }
   }
-  function metricCount(bible,key,windowed,team){
+  function metricCount(bible,key,windowed,team,stack=new Set()){
+    const composite=bible.compositeRegistry?.[key];
+    if(composite){
+      if(stack.has(key)){console.warn(`[Metric Bible] Composite cycle ignored: ${key}`);return 0}
+      const next=new Set(stack);next.add(key);
+      return composite.components.reduce((sum,component)=>sum+metricCount(bible,component,windowed,team,next),0);
+    }
     const canonicalDef=bible.canonicalRegistry?.[key];
     const fn=canonicalDef?.test||((typeof FILTERS!=='undefined'&&FILTERS[key])||bible.defs?.[key]?.test||(()=>false));
     let n=0;for(const e of windowed)if(fn(e)&&bible.teamOf(e)===team)n++;return n;
@@ -53,6 +59,7 @@
     removeRetired(body);const rows=rowIndex(body),windowed=bible.windowEvents(source);
     const metrics=[
       ['Total Actions','total_actions'],['Successful Actions','successful_actions'],['Unsuccessful Actions','unsuccessful_actions'],
+      ['Defensive Actions','defensive_actions'],['Attacking Actions','attacking_actions'],
       ['Interceptions','interceptions'],['Goal Kicks','goal_kicks'],['Touches','touches'],['Penalty Box Touches','touch_box'],
       ['Shots','shots'],['Shots On-Target','shots_on'],['Shots Off-Target','shots_off'],['Blocked Shots','shots_blocked'],['Woodwork Shots','woodwork'],
       ['Shots - Open Play','shots_open'],['Shots - Fast Break','shots_fastbreak'],['Shots from Set-Pieces','shots_setpiece'],['Shots - From Free-Kicks','shots_dfk'],
@@ -89,11 +96,17 @@
       }else if(label==='Unsuccessful Actions'){
         const marker=findRow(rows,'Successful Actions');
         if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
+      }else if(label==='Defensive Actions'){
+        const marker=findRow(rows,'Unsuccessful Actions');
+        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
+      }else if(label==='Attacking Actions'){
+        const marker=findRow(rows,'Defensive Actions');
+        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
       }else body.appendChild(row);
     }
     lastBible=bible;lastSource=source;lastSourceLength=source.length;lastHome=home;lastAway=away;lastFrom=fromValue;lastTo=toValue;lastTeam=teamValue;lastBodyFirst=body.firstElementChild;
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:free-kick-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-metric-bible-team-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:free-kick-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();

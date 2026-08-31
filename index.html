@@ -7,14 +7,14 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab" src="base.html?v=metrics-89" title="PitchLab"></iframe>
+<iframe id="pitchlab" src="base.html?v=metrics-90" title="PitchLab"></iframe>
 <script>
 const frame=document.getElementById('pitchlab');
 frame.addEventListener('load',()=>{
   const doc=frame.contentDocument;if(!doc)return;
   const addCss=(href,key)=>{if(doc.querySelector(`link[data-${key}]`))return;const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>{if(doc.querySelector(`script[data-${key}]`))return;const el=doc.createElement('script');el.src=src;el.async=false;el.dataset[key]='1';doc.body.appendChild(el)};
-  const V='metrics-89';
+  const V='metrics-90';
   ['ui-integration.css','ui-leaders.css','ui-timings.css','ui-arrow-style.css','ui-period.css','ui-match-stats.css','ui-match-stats-selector.css','ui-pass-combinations.css','ui-positions.css','ui-passing-network.css','ui-match-events.css','ui-team-colours.css','ui-polish.css','ui-v31-fixes.css'].forEach((s,i)=>addCss(`${s}?v=${V}`,`c${i}`));
   const scripts=['ui-header.js','ui-carry-metrics.js','ui-timings.js','ui-extra-metrics.js','ui-golden-metrics-v2.js','ui-possession-golden.js','ui-period.js','ui-touch-metrics-fix.js','ui-forest-touch-map.js','ui-passing-metrics-golden.js','ui-metric-bible-sync.js','ui-gold-passing-family.js','ui-forward-pass-definition.js','ui-long-pass-definition.js','ui-through-ball-definition.js','ui-progressive-pass-definition.js','ui-penalty-box-pass-definition.js','ui-penalty-area-entries-gold.js','ui-gold-simple-event-family.js','ui-open-play-cross-definition.js','ui-throw-in-touch-territory-definition.js','ui-takeon-corner-definition.js','ui-corner-delivery-definition.js','ui-goal-family-definition.js','ui-defensive-residual-definition.js','ui-free-kick-definition.js','ui-gold-recovery-duels-family.js','ui-gold-attacking-family.js','ui-final-third-entries-gold.js','ui-action-outcome-definition.js','ui-pitch-event-rendering-fix.js','ui-combined-outcome-surfaces.js','ui-small-action-touch-dots.js','ui-team-metric-bible.js','ui-canonical-time-window.js','ui-pitch-time-window.js','ui-carry-canonical-window.js','ui-leaders.js','ui-match-stats.js','ui-match-stats-sync-v1.js','ui-match-stats-selector.js','ui-sequence-metrics.js','ui-pass-combinations.js','ui-positions.js','ui-passing-network.js','ui-match-events.js','ui-team-colours.js','ui-polish.js','ui-match-switcher.js','ui-v31-fixes.js','ui-view-tabs-fix.js','ui-time-label-sync.js','ui-surface-polish-2026-08-29.js'];
   scripts.forEach((s,i)=>addJs(`${s}?v=${V}`,`j${i}`));
