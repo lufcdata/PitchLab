@@ -20,31 +20,11 @@
     row.querySelector('.match-stats-row__value--home').textContent=h;row.querySelector('.match-stats-row__value--away').textContent=a;
     const b=row.querySelectorAll('.match-stats-row__bar');if(b[0])b[0].style.width=`${h/d*100}%`;if(b[1])b[1].style.width=`${a/d*100}%`;
   }
-  function rowIndex(body){
-    const index=new Map();
-    for(const row of body.querySelectorAll('.match-stats-row')){
-      const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();
-      if(label&&!index.has(label))index.set(label,row);
-    }
-    return index;
-  }
-  function findRow(index,label){
-    for(const accepted of [label,...(aliases[label]||[])]){const row=index.get(accepted);if(row)return row;}
-  }
-  function removeRetired(body){
-    for(const row of body.querySelectorAll('.match-stats-row')){
-      const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();
-      if(retiredLabels.has(label))row.remove();
-    }
-  }
-  function metricCount(bible,key,windowed,team){
-    const canonicalDef=bible.canonicalRegistry?.[key];
-    const fn=canonicalDef?.test||((typeof FILTERS!=='undefined'&&FILTERS[key])||bible.defs?.[key]?.test||(()=>false));
-    let n=0;for(const e of windowed)if(fn(e)&&bible.teamOf(e)===team)n++;return n;
-  }
+  function rowIndex(body){const index=new Map();for(const row of body.querySelectorAll('.match-stats-row')){const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();if(label&&!index.has(label))index.set(label,row)}return index}
+  function findRow(index,label){for(const accepted of [label,...(aliases[label]||[])]){const row=index.get(accepted);if(row)return row}}
+  function removeRetired(body){for(const row of body.querySelectorAll('.match-stats-row')){const label=row.querySelector('.match-stats-row__label')?.textContent?.trim();if(retiredLabels.has(label))row.remove()}}
+  function metricCount(bible,key,windowed,team){const canonicalDef=bible.canonicalRegistry?.[key];const fn=canonicalDef?.test||((typeof FILTERS!=='undefined'&&FILTERS[key])||bible.defs?.[key]?.test||(()=>false));let n=0;for(const e of windowed)if(fn(e)&&bible.teamOf(e)===team)n++;return n}
   function patch(force=false){
-    // PERFORMANCE ONLY: retain the known-working polling lifecycle, but do no expensive
-    // Metric Bible work while Match Stats is hidden. This avoids the PR #16 open-view regression.
     if(!document.querySelector('.pitch-panel')?.classList.contains('is-match-stats-view'))return;
     const bible=window.PitchLabMetricBible,body=$('#matchStatsBody');if(!bible||!body||typeof raw==='undefined'||!raw||!body.querySelector('.match-stats-row'))return;
     const home=raw.home?.name,away=raw.away?.name;if(!home||!away)return;const source=Array.isArray(events)?events:[];
@@ -60,39 +40,16 @@
       ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
       ['Big Chances','big_chances'],['Big Chances Created','big_chances_created'],['Chances Created','chances_created'],['Assists','assists'],['Headed Clearances','headed_clearances'],
       ['Total Passes','allpasses'],['Successful Passes','successful'],['Unsuccessful Passes','unsuccessful'],['Progressive Passes','progressive'],['Final Third Passes','final_third_passes'],['Successful Final Third Passes','final_third_passes_success'],['Final Third Entries','final_third_entries'],
-      ['Ball Recoveries','recoveries'],
-      ['Tackles','tackles'],['Tackles Won','tackles_won'],['Tackles Lost','tackles_lost'],
+      ['Free-Kicks','free_kicks'],['Free-Kick Passes','free_kick_passes'],['Accurate Free-Kick Passes','free_kicks_accurate'],['Free-Kick Passes In the Final Third','free_kicks_final_third'],
+      ['Ball Recoveries','recoveries'],['Tackles','tackles'],['Tackles Won','tackles_won'],['Tackles Lost','tackles_lost'],
       ['Total Take-Ons','takeons'],['Successful Take-Ons','takeons_success'],['Unsuccessful Take-Ons','takeons_unsuccess'],
-      ['Total Duels','total_duels'],['Duels Won','duels_won'],['Duels Lost','duels_lost'],
-      ['Ground Duels','ground_duels'],['Ground Duels Won','ground_duels_won'],['Ground Duels Lost','ground_duels_lost'],
-      ['Aerial Duels','aerial_duels'],['Aerial Duels Won','aerial_duels_won'],['Aerial Duels Lost','aerial_duels_lost'],
-      ['Defensive Aerial Duels','def_aerial_duels'],['Defensive Aerial Duels Won','def_aerial_duels_won'],['Defensive Aerial Duels Lost','def_aerial_duels_lost'],
-      ['Attacking Aerial Duels','att_aerial_duels'],['Attacking Aerial Duels Won','att_aerial_duels_won'],['Attacking Aerial Duels Lost','att_aerial_duels_lost'],
-      ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],
-      ['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],
-      ['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
+      ['Total Duels','total_duels'],['Duels Won','duels_won'],['Duels Lost','duels_lost'],['Ground Duels','ground_duels'],['Ground Duels Won','ground_duels_won'],['Ground Duels Lost','ground_duels_lost'],
+      ['Aerial Duels','aerial_duels'],['Aerial Duels Won','aerial_duels_won'],['Aerial Duels Lost','aerial_duels_lost'],['Defensive Aerial Duels','def_aerial_duels'],['Defensive Aerial Duels Won','def_aerial_duels_won'],['Defensive Aerial Duels Lost','def_aerial_duels_lost'],['Attacking Aerial Duels','att_aerial_duels'],['Attacking Aerial Duels Won','att_aerial_duels_won'],['Attacking Aerial Duels Lost','att_aerial_duels_lost'],
+      ['Fouls','fouls_committed'],['Fouled','fouled'],['Corners','corners'],['Successful Set Play Crosses','set_play_crosses_success'],['Unsuccessful Set Play Crosses','set_play_crosses_unsuccess'],['Accurate Crosses','accurate_crosses'],['Inaccurate Crosses','inaccurate_crosses']
     ];
-    for(const [label,key] of metrics){
-      const h=metricCount(bible,key,windowed,home),a=metricCount(bible,key,windowed,away);
-      let row=findRow(rows,label);
-      if(row){setRow(row,h,a,label);continue}
-      row=makeRow(label,h,a);rows.set(label,row);
-      if(label==='Goal Kicks'){
-        const marker=findRow(rows,'Interceptions');
-        if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row);
-      }else if(label==='Total Actions'){
-        body.insertBefore(row,body.firstElementChild);
-      }else if(label==='Successful Actions'){
-        const marker=findRow(rows,'Total Actions');
-        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
-      }else if(label==='Unsuccessful Actions'){
-        const marker=findRow(rows,'Successful Actions');
-        if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild);
-      }else body.appendChild(row);
-    }
+    for(const [label,key] of metrics){const h=metricCount(bible,key,windowed,home),a=metricCount(bible,key,windowed,away);let row=findRow(rows,label);if(row){setRow(row,h,a,label);continue}row=makeRow(label,h,a);rows.set(label,row);if(label==='Goal Kicks'){const marker=findRow(rows,'Interceptions');if(marker)marker.insertAdjacentElement('afterend',row);else body.appendChild(row)}else if(label==='Total Actions'){body.insertBefore(row,body.firstElementChild)}else if(label==='Successful Actions'){const marker=findRow(rows,'Total Actions');if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild)}else if(label==='Unsuccessful Actions'){const marker=findRow(rows,'Successful Actions');if(marker)marker.insertAdjacentElement('afterend',row);else body.insertBefore(row,body.firstElementChild)}else body.appendChild(row)}
     lastBible=bible;lastSource=source;lastSourceLength=source.length;lastHome=home;lastAway=away;lastFrom=fromValue;lastTo=toValue;lastTeam=teamValue;lastBodyFirst=body.firstElementChild;
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
-  ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
-  setTimeout(patch,0);
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:free-kick-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
+  ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));setTimeout(patch,0);
 })();
