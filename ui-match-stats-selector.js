@@ -12,6 +12,9 @@
     for(const [key,def] of Object.entries(bible.teamRegistry||{})){
       if(def?.surfaces?.includes('matchStats'))rows.push({key,label:def.label||key,kind:'team'});
     }
+    for(const [key,def] of Object.entries(bible.compositeRegistry||{})){
+      if(def?.surfaces?.includes('matchStats'))rows.push({key,label:def.label||key,kind:'composite'});
+    }
     const seen=new Set();return rows.filter(r=>!seen.has(r.key)&&seen.add(r.key));
   }
 
@@ -24,8 +27,11 @@
     }catch(_){/* ignore */}
     selected=selected.filter(k=>keys.has(k));
     order=order.filter(k=>keys.has(k));
+    const knownOrder=new Set(order);
+    const newKeys=metrics.map(m=>m.key).filter(k=>!knownOrder.has(k));
     for(const m of metrics)if(!order.includes(m.key))order.push(m.key);
     if(!hasSavedSelection)selected=[...order];
+    else for(const key of newKeys)if(!selected.includes(key))selected.push(key);
     return {selected,order};
   }
 
@@ -86,7 +92,7 @@
       list.innerHTML=state.order.map(key=>{
         const m=metricMap.get(key);if(!m)return '';
         const checked=state.selected.includes(key)?' checked':'';
-        return `<label class="match-stats-selector__item" draggable="true" data-key="${key}"><span class="match-stats-selector__drag" aria-hidden="true">⋮⋮</span><input type="checkbox" value="${key}"${checked}><span class="match-stats-selector__name">${m.label}</span><span class="match-stats-selector__badge match-stats-selector__badge--${m.kind}">${m.kind==='team'?'TEAM':'EVENT'}</span></label>`;
+        return `<label class="match-stats-selector__item" draggable="true" data-key="${key}"><span class="match-stats-selector__drag" aria-hidden="true">⋮⋮</span><input type="checkbox" value="${key}"${checked}><span class="match-stats-selector__name">${m.label}</span><span class="match-stats-selector__badge match-stats-selector__badge--${m.kind}">${m.kind==='team'?'TEAM':m.kind==='composite'?'COMPOSITE':'EVENT'}</span></label>`;
       }).join('');updateCount();
     }
 
