@@ -60,6 +60,7 @@
       ['Shots - Right Foot','shots_right'],['Shots - Left Foot','shots_left'],['Shots - Head','shots_head'],['Shots - Other','shots_other'],['Shots - Head from set-pieces','shots_head_setpiece'],
       ['Big Chances','big_chances'],['Big Chances Created','big_chances_created'],['Chances Created','chances_created'],['Assists','assists'],['Headed Clearances','headed_clearances'],
       ['Total Passes','allpasses'],['Successful Passes','successful'],['Unsuccessful Passes','unsuccessful'],['Progressive Passes','progressive'],['Final Third Passes','final_third_passes'],['Successful Final Third Passes','final_third_passes_success'],['Final Third Entries','final_third_entries'],
+      ['Free-Kicks','free_kicks'],['Free-Kick Passes','free_kick_passes'],['Accurate Free-Kick Passes','free_kicks_accurate'],['Free-Kick Passes In the Final Third','free_kicks_final_third'],
       ['Ball Recoveries','recoveries'],
       ['Tackles','tackles'],['Tackles Won','tackles_won'],['Tackles Lost','tackles_lost'],
       ['Total Take-Ons','takeons'],['Successful Take-Ons','takeons_success'],['Unsuccessful Take-Ons','takeons_unsuccess'],
@@ -92,7 +93,7 @@
     }
     lastBible=bible;lastSource=source;lastSourceLength=source.length;lastHome=home;lastAway=away;lastFrom=fromValue;lastTo=toValue;lastTeam=teamValue;lastBodyFirst=body.firstElementChild;
   }
-  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
+  setInterval(patch,450);document.addEventListener('pitchlab:metric-bible-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-passing-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:progressive-pass-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-simple-event-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:free-kick-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:gold-recovery-duels-family-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:final-third-entries-gold-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:action-outcome-definition-ready',()=>setTimeout(()=>patch(true),0));document.addEventListener('pitchlab:combined-outcome-surfaces-ready',()=>setTimeout(()=>patch(true),0));
   ['fromRange','toRange','team'].forEach(id=>document.getElementById(id)?.addEventListener('input',patch));
   setTimeout(patch,0);
 })();
