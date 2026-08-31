@@ -15,7 +15,7 @@
   const bible=()=>window.PitchLabMetricBible;
   const teams=()=>{const r=rawData();return [r?.home?.name||'Home',r?.away?.name||'Away']};
   const allMeta=()=>{const r=rawData();if(!r)return [];return [...(r.home?.players||[]).map(p=>({...p,team:r.home?.name||'Home'})),...(r.away?.players||[]).map(p=>({...p,team:r.away?.name||'Away'}))]};
-  const matchEnd=()=>{const r=rawData();const explicit=num(r?.expandedMaxMinute||r?.maxMinute);if(explicit>0)return explicit;const ev=eventData();return Math.max(90,...ev.map(e=>num(e?.expandedMinute??e?.minute)))};
+  const eventType=e=>String(typeof type==='function'?type(e):(e?.type?.displayName??e?.type?.name??e?.type??'')).replace(/[\s_-]/g,'').toLowerCase();
 
   function rolePosition(player,byId){
     let pos=String(player?.position||'').toUpperCase();
@@ -30,12 +30,17 @@
     if(p.startsWith('F')||p.startsWith('A')||p.startsWith('S')||p.includes('W'))return 'FW';
     return 'Other';
   }
+  function substitutionMinute(playerId,kind){
+    const target=kind==='on'?'substitutionon':'substitutionoff',id=String(playerId);
+    const event=eventData().find(e=>String(e?.playerId??'')===id&&eventType(e)===target);
+    return event?Math.min(90,Math.max(0,num(event.minute))):null;
+  }
   function minutesPlayed(player){
-    const end=matchEnd();
-    const start=player?.isFirstEleven?0:num(player?.subbedInExpandedMinute);
-    const finish=player?.subbedOutExpandedMinute!=null?num(player.subbedOutExpandedMinute):end;
-    if(!player?.isFirstEleven&&player?.subbedInExpandedMinute==null)return 0;
-    return Math.max(0,finish-start);
+    const start=player?.isFirstEleven?0:substitutionMinute(player?.playerId,'on');
+    if(start==null)return 0;
+    const off=substitutionMinute(player?.playerId,'off');
+    const finish=off==null?90:off;
+    return Math.max(0,Math.min(90,finish)-Math.min(90,start));
   }
 
   function carrySummaryMap(){
