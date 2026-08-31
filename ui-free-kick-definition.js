@@ -7,18 +7,47 @@
   const hq=(e,...q)=>typeof hasQ==='function'&&hasQ(e,...q);
   const surfaces=Object.freeze(['pitch','leaders','matchStats']);
 
-  // GOLD CORRECTION 2026-08-31: "Free-Kicks" is the award metric, not the
-  // subsequent restart action. In WhoScored/Opta event data the team awarded
-  // the free kick owns the Successful Foul event. Leeds-Brentford (1983559)
-  // independently controls this at 13-5.
+  // GOLD CORRECTION 2026-08-31: "Free-Kicks" is the award metric, not merely
+  // one restart subtype. In WhoScored/Opta event data the team awarded the
+  // free kick owns the Successful Foul event. Leeds-Brentford controls 13-5.
   const isFreeKickAward=e=>et(e)==='foul'&&oc(e)==='successful';
 
-  // The previously locked reconstruction remains valid, but its correct metric
-  // identity is Free-Kick Passes: Pass + FreekickTaken, excluding explicit
-  // indirect/offside restarts and other restart families.
+  // Narrow restart-pass family retained from the earlier forensic definition.
   const isFreeKickPass=e=>et(e)==='pass'&&hq(e,'FreekickTaken')&&!hq(e,'IndirectFreekickTaken','CornerTaken','ThrowIn','GoalKick','GoalKickTaken','PenaltyTaken');
   const isAccuratePass=e=>isFreeKickPass(e)&&oc(e)==='successful';
   const isFinalThirdPass=e=>isFreeKickPass(e)&&Number(e?.x)>=200/3;
+
+  // Pitch Events visualisation is award-led but restart-rendered. A counted
+  // award is paired with the real same-team restart action, which may be a
+  // normal/indirect free-kick pass or a direct free-kick shot. This preserves
+  // 13-5 while giving every represented free kick its genuine trajectory.
+  const isAnyFreeKickPass=e=>et(e)==='pass'&&hq(e,'FreekickTaken')&&!hq(e,'CornerTaken','ThrowIn','GoalKick','GoalKickTaken','PenaltyTaken');
+  const shotTypes=new Set(['goal','savedshot','missedshots','shotonpost']);
+  const isDirectFreeKickShot=e=>shotTypes.has(et(e))&&hq(e,'DirectFreekick');
+  const isFreeKickRestart=e=>isAnyFreeKickPass(e)||isDirectFreeKickShot(e);
+  const periodOf=e=>String(dn(e?.period)||'');
+  const fallbackSecond=e=>Number(e?.expandedMinute??e?.minute??0)*60+Number(e?.second??0);
+  const eventSecond=e=>window.PitchLabCanonicalTime?.timelineSecond?.(e)??fallbackSecond(e);
+  let cacheSource=null,cacheLength=-1,cacheMap=new Map();
+  function buildAwardRestartMap(source){
+    if(source===cacheSource&&source?.length===cacheLength)return cacheMap;
+    const list=Array.isArray(source)?source:[],map=new Map();
+    for(let i=0;i<list.length;i++){
+      const award=list[i];if(!isFreeKickAward(award))continue;
+      const team=String(award?.teamId??''),period=periodOf(award),start=eventSecond(award);
+      for(let j=i+1;j<list.length;j++){
+        const next=list[j];
+        if(periodOf(next)!==period)break;
+        const elapsed=eventSecond(next)-start;if(Number.isFinite(elapsed)&&elapsed>120)break;
+        if(j>i+1&&isFreeKickAward(next))break;
+        if(String(next?.teamId??'')!==team)continue;
+        if(isFreeKickRestart(next)){map.set(award,next);break;}
+      }
+    }
+    cacheSource=source;cacheLength=list.length;cacheMap=map;return map;
+  }
+  const restartForAward=(award,source)=>buildAwardRestartMap(source).get(award)||null;
+
   const gold=(label,controls,test)=>Object.freeze({label,kind:'event',surfaces,status:'GOLD_LOCKED',controls:Object.freeze(controls),test});
   const defs=Object.freeze({
     free_kicks:gold('Free-Kicks',{leedsBrentford:Object.freeze([13,5])},isFreeKickAward),
@@ -44,22 +73,21 @@
   ensureOption('free_kicks_final_third','Free-Kick Passes In the Final Third');
 
   window.PitchLabFreeKickDefinition=Object.freeze({
-    version:'FREE_KICK_GOLD_V4_2026-08-31',
-    status:'GOLD_LOCKED',
-    defs,
+    version:'FREE_KICK_GOLD_V5_2026-08-31',
+    status:'GOLD_LOCKED',defs,isFreeKickAward,isFreeKickRestart,isDirectFreeKickShot,restartForAward,buildAwardRestartMap,
     fixtures:Object.freeze(['whoscored:1983552','whoscored:1903384','whoscored:1983559']),
     controls:Object.freeze({
       forestLeeds:Object.freeze({freeKickPasses:Object.freeze([13,13]),accurateFreeKickPasses:Object.freeze([8,6]),finalThirdFreeKickPasses:Object.freeze([2,1]),directFreeKickShots:Object.freeze([1,2])}),
       bournemouthLeeds:Object.freeze({freeKickPasses:Object.freeze([10,6]),accurateFreeKickPasses:Object.freeze([6,1]),finalThirdFreeKickPasses:Object.freeze([1,1])}),
-      leedsBrentford:Object.freeze({freeKicksAwarded:Object.freeze([13,5]),freeKickPasses:Object.freeze([11,5]),directFreeKickShots:Object.freeze([1,0])})
+      leedsBrentford:Object.freeze({freeKicksAwarded:Object.freeze([13,5]),awardLinkedRestarts:Object.freeze([13,5]),restartPasses:Object.freeze([12,5]),directFreeKickShots:Object.freeze([1,0]),narrowFreeKickPasses:Object.freeze([11,5])})
     }),
     authoritativeDefinitions:Object.freeze({
-      freeKicks:'Successful Foul event owned by the team awarded the free kick.',
+      freeKicks:'Successful Foul event owned by the team awarded the free kick. Pitch Events pairs each counted award to its real subsequent same-team free-kick restart for trajectory rendering.',
       freeKickPasses:'Pass + FreekickTaken, excluding IndirectFreekickTaken (plus standard restart-family exclusions).',
       directFreeKickShots:'Canonical shot family + DirectFreekick qualifier.'
     }),
-    evidence:'Leeds-Brentford independently separates 13-5 free kicks awarded from 11-5 free-kick restart passes and 1-0 direct free-kick shots. Earlier restart-pass controls remain valid under their corrected metric identity.',
-    guardrail:'Never add direct free-kick shots to Free-Kicks awarded; the shot is a way of taking an already-awarded free kick. Never collapse Free-Kicks and Free-Kick Passes into one metric.'
+    evidence:'Leeds-Brentford: 13-5 awards pair to 13-5 genuine restart trajectories: Leeds 12 passes + 1 direct free-kick shot; Brentford 5 passes. Unpaired indirect/offside restarts are not promoted into the award metric.',
+    guardrail:'Count Free-Kicks from awards, never from restart actions alone. Render the paired restart action, never fabricate end coordinates on the Foul event.'
   });
   document.dispatchEvent(new CustomEvent('pitchlab:free-kick-definition-ready',{detail:{version:window.PitchLabFreeKickDefinition.version,status:window.PitchLabFreeKickDefinition.status}}));
 })();

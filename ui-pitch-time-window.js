@@ -2,6 +2,18 @@
   const originalRender=typeof render==='function'?render:null;
   const markerDefs='<defs><marker id="passArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#43ece0"/></marker><marker id="missArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#8e96a3"/></marker><marker id="eventArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#43ede1"/></marker><marker id="assistArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#FCDD2D"/></marker><marker id="bigChanceArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#FF620D"/></marker><marker id="onTargetArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#25ACF5"/></marker><marker id="shotGreyArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#D5D9DB"/></marker></defs>';
 
+  function renderFreeKickAwards(root,awards){
+    const family=window.PitchLabFreeKickDefinition;
+    if(!family?.restartForAward){for(const award of awards)drawPoint(root,award);return}
+    for(const award of awards){
+      const restart=family.restartForAward(award,events);
+      if(!restart){drawPoint(root,award);continue}
+      if(family.isDirectFreeKickShot?.(restart)){
+        const s=shotStyleForEvent(restart,'shots_dfk');drawShotArrow(root,restart,s.colour,s.marker);
+      }else drawPass(root,restart);
+    }
+  }
+
   function canonicalRender(){
     if(typeof raw==='undefined'||!raw)return;
     const clock=window.PitchLabCanonicalTime;
@@ -15,7 +27,10 @@
     list.sort((a,b)=>eventPriority(a)-eventPriority(b));
 
     const root=document.getElementById('eventSvg');if(!root)return;root.innerHTML=markerDefs;
-    if(lineMetric(metric.value)){
+    if(metric.value==='free_kicks'){
+      renderFreeKickAwards(root,list);
+      document.getElementById('plotLegend').innerHTML='<span class="legend-item"><i class="legend-arrow"></i>Successful Pass</span><span class="legend-item"><i class="legend-arrow unsuccess"></i>Unsuccessful Pass</span><span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:#25ACF5"></i>Direct Free-Kick Shot</span><span class="legend-item"><i class="legend-circle"></i>Restart Location</span>';
+    }else if(lineMetric(metric.value)){
       for(const e of list)drawPass(root,e);
       document.getElementById('plotLegend').innerHTML='<span class="legend-item"><i class="legend-arrow"></i>Successful</span><span class="legend-item"><i class="legend-arrow unsuccess"></i>Unsuccessful</span><span class="legend-item"><i class="legend-circle"></i>Event Start</span>';
     }else if(shotArrowMetric(metric.value)){
@@ -44,7 +59,7 @@
     document.getElementById('plotTeam').textContent=team.value;
     document.getElementById('plotWindow').textContent=`${fromLabel} - ${toLabel}`;
     const sumTeam=document.getElementById('sumTeam'),sumMetric=document.getElementById('sumMetric');if(sumTeam)sumTeam.textContent=team.value;if(sumMetric)sumMetric.textContent=metric.options[metric.selectedIndex].text;
-    const info=document.getElementById('infoText');if(info)info.textContent=`Showing ${list.length} locked-definition ${metric.options[metric.selectedIndex].text.toLowerCase()} events · canonical provider-period timing applied.`;
+    const info=document.getElementById('infoText');if(info)info.textContent=metric.value==='free_kicks'?`Showing ${list.length} Gold free kicks awarded · each counted award is rendered from its paired real restart pass/shot trajectory · canonical provider-period timing applied.`:`Showing ${list.length} locked-definition ${metric.options[metric.selectedIndex].text.toLowerCase()} events · canonical provider-period timing applied.`;
   }
 
   let renderFrame=0;
@@ -53,6 +68,7 @@
   from.oninput=to.oninput=scheduleRender;metric.onchange=scheduleRender;team.onchange=()=>{populatePlayers();scheduleRender()};player.onchange=scheduleRender;
   document.addEventListener('pitchlab:match-loaded',scheduleRender);
   document.addEventListener('pitchlab:metric-bible-ready',scheduleRender);
-  window.PitchLabPitchTimeWindow=Object.freeze({version:'PITCH_TIME_WINDOW_V1_2026-08-28',render:canonicalRender});
+  document.addEventListener('pitchlab:free-kick-definition-ready',scheduleRender);
+  window.PitchLabPitchTimeWindow=Object.freeze({version:'PITCH_TIME_WINDOW_V2_2026-08-31',render:canonicalRender});
   scheduleRender();
 })();
