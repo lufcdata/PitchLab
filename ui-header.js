@@ -41,7 +41,7 @@
     const hasAny=(e,...qs)=>typeof hasQ==='function'&&hasQ(e,...qs);
     const isOwnGoal=e=>hasAny(e,'OwnGoal')||eventType(e)==='owngoal';
     const isScoreGoal=e=>eventType(e)==='goal'||eventType(e)==='owngoal'||hasAny(e,'OwnGoal');
-    const crestFor=name=>name==='Leeds'?'assets/club-logos/leeds%20png.png':name==='Bournemouth'?'assets/club-logos/Bournemouth.png':name==='Brighton'?'assets/Brighton.png':name==='Brighton & Hove Albion'?'assets/Brighton.png':'';
+    const crestFor=name=>name==='Leeds'?'assets/club-logos/leeds%20png.png':name==='Bournemouth'?'assets/club-logos/Bournemouth.png':name==='Brighton'?'assets/club-logos/Brighton.png':name==='Brighton & Hove Albion'?'assets/club-logos/Brighton.png':'';
 
     const syncScore=()=>{
       try{
