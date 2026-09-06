@@ -25,12 +25,7 @@ function load(label,code){
 }
 function rounded(engine){
   const map=new Map();
-  for(const [id,s] of engine.playerSummaries(events))map.set(String(id),{
-    carries:s.carries,
-    distance:Number(s.carryingDistanceM.toFixed(1)),
-    progressive:s.progressiveCarries,
-    net:Number(s.progressiveCarryingDistanceM.toFixed(1))
-  });
+  for(const [id,s] of engine.playerSummaries(events))map.set(String(id),{carries:s.carries,distance:Number(s.carryingDistanceM.toFixed(1)),progressive:s.progressiveCarries,net:Number(s.progressiveCarryingDistanceM.toFixed(1))});
   return map;
 }
 function compare(label,engine,baseline){
@@ -50,12 +45,13 @@ console.log(JSON.stringify({label:'baseline',engine:baselineEngine.version,event
 
 const blanket="if(endType==='foul'&&kind==='acquisition'&&['ballrecovery','interception','tackle','blockedpass'].includes(startType))continue;";
 if(!source.includes(blanket))throw new Error('Expected defensive-foul suppression not found');
-
-const allowAll=source.replace(blanket,'');
-compare('allow-all-defensive-acquisition-fouls',load('allow-all',allowAll),baseline);
-
 const elapsedTwo=source.replace(blanket,"if(endType==='foul'&&kind==='acquisition'&&['ballrecovery','interception','tackle','blockedpass'].includes(startType)){const defensiveFoulGap=exactGap(start,end);if(defensiveFoulGap===null||defensiveFoulGap<2)continue;}");
-compare('allow-defensive-acquisition-fouls-after-2s',load('after-2s',elapsedTwo),baseline);
+compare('safe-foul-after-2s',load('safe-foul',elapsedTwo),baseline);
 
-const elapsedThree=source.replace(blanket,"if(endType==='foul'&&kind==='acquisition'&&['ballrecovery','interception','tackle','blockedpass'].includes(startType)){const defensiveFoulGap=exactGap(start,end);if(defensiveFoulGap===null||defensiveFoulGap<3)continue;}");
-compare('allow-defensive-acquisition-fouls-after-3s',load('after-3s',elapsedThree),baseline);
+for(const threshold of [4.5,4.0,3.5]){
+  const code=elapsedTwo.replace('const MIN_CARRY_M=5;',`const MIN_CARRY_M=${threshold};`);
+  compare(`global-min-${threshold}m`,load(`min-${threshold}`,code),baseline);
+}
+
+const receptionTolerance=elapsedTwo.replace('if(metres<MIN_CARRY_M)return null;',"const minMovement=kind==='reception'?4.0:MIN_CARRY_M;if(metres<minMovement)return null;");
+compare('reception-only-4m-tolerance',load('reception-4m',receptionTolerance),baseline);
