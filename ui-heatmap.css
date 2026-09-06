@@ -1,12 +1,11 @@
 /* PitchLab heat-map view — scoped to the Pitch Events pitch only. */
 .pitch-stage{isolation:isolate}
-.pitch-heatmap-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0;transition:opacity .2s ease;border-radius:2px;filter:saturate(1.08) contrast(1.03)}
-.pitch-heatmap-lines{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;opacity:0;transition:opacity .2s ease;overflow:visible;filter:drop-shadow(0 0 1px rgba(0,0,0,.35))}
-.pitch-stage .pitch-img{transition:filter .2s ease,opacity .2s ease}
-.pitch-stage.is-heatmap .pitch-img{filter:brightness(.62) saturate(.72) contrast(1.08);opacity:.96}
-.pitch-stage.is-heatmap .pitch-heatmap-canvas,.pitch-stage.is-heatmap .pitch-heatmap-lines{opacity:1}
+.pitch-heatmap-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0;transition:opacity .22s ease;border-radius:2px;filter:blur(1.2px) saturate(1.08) contrast(1.015);clip-path:inset(0)}
+.pitch-stage .pitch-img{transition:filter .22s ease,opacity .22s ease}
+.pitch-stage.is-heatmap .pitch-img{filter:brightness(.72) saturate(.68) contrast(1.04);opacity:.98}
+.pitch-stage.is-heatmap .pitch-heatmap-canvas{opacity:1}
 .pitch-stage.is-heatmap .event-svg{opacity:0}
-.pitch-stage.is-heatmap{box-shadow:0 14px 35px rgba(0,0,0,.20),0 0 0 1px rgba(255,255,255,.025)}
+.pitch-stage.is-heatmap{box-shadow:0 14px 35px rgba(0,0,0,.18),0 0 0 1px rgba(255,255,255,.02)}
 .pitch-map-mode{display:flex;justify-content:center;align-items:center;margin:-4px 0 12px}
 .pitch-map-mode__rail{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,#11151d,#0e1118);border-radius:7px;box-shadow:0 5px 14px rgba(0,0,0,.12)}
 .pitch-map-mode__button{height:29px;padding:0 13px;border:0;border-radius:5px;background:transparent;color:#687080;font-family:Urbanist,sans-serif;font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
@@ -15,6 +14,6 @@
 .pitch-map-mode__button.is-active{background:#29484b;color:#f4faf8;box-shadow:inset 0 0 0 1px rgba(78,240,206,.16),0 0 12px rgba(78,240,206,.045)}
 .pitch-heatmap-key{display:none;justify-content:center;align-items:center;gap:9px;margin-top:11px;color:#747b8b;font-size:8px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
 .pitch-stage.is-heatmap~.pitch-heatmap-key{display:flex}
-.pitch-heatmap-key__ramp{width:118px;height:7px;border-radius:99px;background:linear-gradient(90deg,rgba(42,0,7,.12) 0%,#5c0009 16%,#aa0800 34%,#f42000 54%,#ff6c00 73%,#ffba1f 88%,#fff79a 100%);box-shadow:0 0 12px rgba(255,92,0,.20),inset 0 0 0 1px rgba(255,255,255,.06)}
+.pitch-heatmap-key__ramp{width:118px;height:7px;border-radius:99px;background:linear-gradient(90deg,rgba(30,3,5,.10) 0%,#3e0708 12%,#740c0c 28%,#c21914 46%,#ff3725 62%,#ff7e37 78%,#ffc04b 91%,#ffeb6f 100%);box-shadow:0 0 13px rgba(255,82,24,.19),inset 0 0 0 1px rgba(255,255,255,.05)}
 .pitch-panel.has-heatmap-active .count-row{color:#7d8493}
 @media(max-width:620px){.pitch-map-mode__button{padding:0 9px;font-size:7px}.pitch-heatmap-key__ramp{width:92px}}
