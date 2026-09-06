@@ -18,28 +18,6 @@
   canvas.setAttribute('aria-hidden','true');
   stage.appendChild(canvas);
 
-  const lines=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  lines.setAttribute('class','pitch-heatmap-lines');
-  lines.setAttribute('viewBox','0 0 68 105');
-  lines.setAttribute('preserveAspectRatio','none');
-  lines.setAttribute('aria-hidden','true');
-  lines.innerHTML=`
-    <g fill="none" stroke="rgba(255,255,255,.68)" stroke-width=".22" vector-effect="non-scaling-stroke">
-      <rect x=".12" y=".12" width="67.76" height="104.76"/>
-      <line x1=".12" y1="52.5" x2="67.88" y2="52.5"/>
-      <circle cx="34" cy="52.5" r="9.15"/>
-      <rect x="13.85" y=".12" width="40.3" height="16.5"/>
-      <rect x="24.84" y=".12" width="18.32" height="5.5"/>
-      <rect x="13.85" y="88.38" width="40.3" height="16.5"/>
-      <rect x="24.84" y="99.38" width="18.32" height="5.5"/>
-      <path d="M25.7 16.62 A9.15 9.15 0 0 0 42.3 16.62"/>
-      <path d="M25.7 88.38 A9.15 9.15 0 0 1 42.3 88.38"/>
-    </g>
-    <g fill="rgba(255,255,255,.78)">
-      <circle cx="34" cy="52.5" r=".28"/><circle cx="34" cy="11" r=".28"/><circle cx="34" cy="94" r=".28"/>
-    </g>`;
-  stage.appendChild(lines);
-
   const key=document.createElement('div');
   key.className='pitch-heatmap-key';
   key.innerHTML='<span>Low density</span><i class="pitch-heatmap-key__ramp"></i><span>High density</span>';
@@ -50,14 +28,16 @@
   let active=false;
   let raf=0;
 
+  /* Reference-inspired luminous ramp: near-black crimson halo into scarlet, orange and warm yellow. */
   const stops=[
-    [0.00,[42,0,7]],
-    [0.16,[92,0,9]],
-    [0.34,[170,8,0]],
-    [0.54,[244,32,0]],
-    [0.73,[255,108,0]],
-    [0.88,[255,186,31]],
-    [1.00,[255,247,154]]
+    [0.00,[30,3,5]],
+    [0.10,[62,7,8]],
+    [0.24,[116,12,12]],
+    [0.43,[194,25,20]],
+    [0.61,[255,55,37]],
+    [0.78,[255,126,55]],
+    [0.91,[255,192,75]],
+    [1.00,[255,235,111]]
   ];
 
   function mix(a,b,t){return Math.round(a+(b-a)*t)}
@@ -96,15 +76,16 @@
     const w=Math.max(220,Math.round(rect.width*ratio));
     const h=Math.max(340,Math.round(rect.height*ratio));
     if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
-    return{w,h,ratio};
+    return{w,h};
   }
 
+  /* Wider KDE-like bandwidth than the event map: individual points dissolve into one continuous field. */
   function densityProfile(count,size){
-    if(count<15)return{radius:size*.125,alpha:.42,threshold:.024,gamma:.61};
-    if(count<40)return{radius:size*.108,alpha:.29,threshold:.032,gamma:.62};
-    if(count<100)return{radius:size*.092,alpha:.20,threshold:.041,gamma:.63};
-    if(count<220)return{radius:size*.080,alpha:.155,threshold:.050,gamma:.64};
-    return{radius:size*.072,alpha:.125,threshold:.058,gamma:.65};
+    if(count<15)return{radius:size*.225,alpha:.30,threshold:.006,gamma:.46};
+    if(count<40)return{radius:size*.195,alpha:.20,threshold:.008,gamma:.47};
+    if(count<100)return{radius:size*.170,alpha:.135,threshold:.010,gamma:.48};
+    if(count<220)return{radius:size*.148,alpha:.092,threshold:.012,gamma:.49};
+    return{radius:size*.128,alpha:.067,threshold:.014,gamma:.50};
   }
 
   function renderHeat(){
@@ -123,17 +104,18 @@
     d.globalCompositeOperation='lighter';
 
     const profile=densityProfile(list.length,Math.min(w,h));
-    const radius=Math.max(22,profile.radius);
+    const radius=Math.max(30,profile.radius);
     for(const e of list){
       const px=(1-Number(e.y)/100)*w;
       const py=(1-Number(e.x)/100)*h;
       const a=profile.alpha;
       const g=d.createRadialGradient(px,py,0,px,py,radius);
       g.addColorStop(0,`rgba(255,255,255,${a})`);
-      g.addColorStop(.16,`rgba(255,255,255,${a*.96})`);
-      g.addColorStop(.36,`rgba(255,255,255,${a*.72})`);
-      g.addColorStop(.60,`rgba(255,255,255,${a*.40})`);
-      g.addColorStop(.82,`rgba(255,255,255,${a*.13})`);
+      g.addColorStop(.12,`rgba(255,255,255,${a*.985})`);
+      g.addColorStop(.30,`rgba(255,255,255,${a*.88})`);
+      g.addColorStop(.52,`rgba(255,255,255,${a*.62})`);
+      g.addColorStop(.72,`rgba(255,255,255,${a*.34})`);
+      g.addColorStop(.88,`rgba(255,255,255,${a*.12})`);
       g.addColorStop(1,'rgba(255,255,255,0)');
       d.fillStyle=g;
       d.fillRect(px-radius,py-radius,radius*2,radius*2);
@@ -143,6 +125,7 @@
     let max=0;
     for(let i=3;i<src.data.length;i+=4)if(src.data[i]>max)max=src.data[i];
     if(!max)return;
+
     for(let i=0;i<src.data.length;i+=4){
       let t=src.data[i+3]/max;
       if(t<=profile.threshold)continue;
@@ -152,7 +135,8 @@
       out.data[i]=c[0];
       out.data[i+1]=c[1];
       out.data[i+2]=c[2];
-      out.data[i+3]=Math.round(255*Math.min(.96,.12+t*.86));
+      /* Preserve the charcoal pitch at the fringe while allowing the hot core to glow strongly. */
+      out.data[i+3]=Math.round(255*Math.min(.89,.035+t*.855));
     }
     ctx.putImageData(out,0,0);
   }
@@ -178,5 +162,5 @@
   if(count)new MutationObserver(schedule).observe(count,{subtree:true,childList:true,characterData:true});
   window.addEventListener('resize',schedule,{passive:true});
 
-  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V2_2026-09-06',render:schedule,setMode});
+  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V3_2026-09-06',render:schedule,setMode});
 })();
