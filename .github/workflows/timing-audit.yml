@@ -7,4 +7,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node scripts/timing-audit.js
+      - name: Probe timing reconstruction
+        run: node scripts/timing-audit.js
