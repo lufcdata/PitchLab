@@ -2,7 +2,15 @@ const fs=require('fs');
 const zlib=require('zlib');
 const vm=require('vm');
 
-const packed=fs.readFileSync('WS_1983552_compact.b64','utf8').trim();
+const parts=[
+  'data/ws1983552_00.part','data/ws1983552_01.part','data/ws1983552_02.part',
+  'data/ws1983552_03.part','data/ws1983552_04.part',
+  'data/ws1983552_05a.part','data/ws1983552_05b.part',
+  'data/ws1983552_06a.part','data/ws1983552_06b.part',
+  'data/ws1983552_07a.part','data/ws1983552_07b.part',
+  'data/ws1983552_08a.part','data/ws1983552_08b.part'
+];
+const packed=parts.map(p=>fs.readFileSync(p,'utf8').trim()).join('');
 const decoded=JSON.parse(zlib.gunzipSync(Buffer.from(packed,'base64')).toString('utf8'));
 const events=Array.isArray(decoded)?decoded:(decoded.events||[]);
 const names=decoded.playerIdNameDictionary||decoded.names||{};
