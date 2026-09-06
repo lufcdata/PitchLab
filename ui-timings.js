@@ -11,7 +11,8 @@
   const isAdmin=e=>['card','substitutionoff','substitutionon','formationchange','formationset','start','end'].includes(typeName(e));
   const restartType=e=>{const q=qualifiers(e);if(q.has(107))return'throw';if(q.has(5))return'free';if(q.has(124))return'goalKick';if(q.has(6))return'corner';return null};
   const fmt=seconds=>{if(!Number.isFinite(seconds))return'—';const s=Math.max(0,Math.round(seconds));return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
-  const pct=(part,total)=>total>0?`${(part/total*100).toFixed(1)}%`:'—';
+  const pct=(part,total)=>Number.isFinite(part)&&total>0?`${(part/total*100).toFixed(1)}%`:'—';
+  const displayNumber=value=>Number.isFinite(value)?String(value):'—';
 
   function sortedPlayable(source){
     return [...(Array.isArray(source)?source:[])]
@@ -26,11 +27,14 @@
     return candidates.length?Math.max(floor,...candidates):floor;
   }
 
+  function hasRestartDetail(source){
+    return (Array.isArray(source)?source:[]).some(e=>{const q=qualifiers(e);return q.has(107)||q.has(5)||q.has(124)||q.has(6)});
+  }
+
   function deadBallEstimate(source){
     const ordered=sortedPlayable(source);
     const restarts=ordered.filter(restartType);
     let restartDead=0;
-    const byKind={throw:0,free:0,goalKick:0,corner:0};
     for(const restart of restarts){
       const i=ordered.indexOf(restart);
       let previous=null;
@@ -39,10 +43,7 @@
         if(periodKey(e)!==periodKey(restart))break;
         if(!isAdmin(e)){previous=e;break}
       }
-      if(!previous)continue;
-      const gap=Math.max(0,eventSeconds(restart)-eventSeconds(previous));
-      restartDead+=gap;
-      byKind[restartType(restart)]+=gap;
+      if(previous)restartDead+=Math.max(0,eventSeconds(restart)-eventSeconds(previous));
     }
 
     const goals=ordered.filter(e=>typeName(e)==='goal');
@@ -57,7 +58,7 @@
         break;
       }
     }
-    return{restartDead,postGoal,total:restartDead+postGoal,byKind};
+    return{restartDead,postGoal,total:restartDead+postGoal};
   }
 
   function derive(source){
@@ -71,6 +72,7 @@
     const secondHalfAdded=Math.max(0,secondHalfDuration-HALF);
     const matchDuration=firstHalfDuration+secondHalfDuration;
     const addedTime=firstHalfAdded+secondHalfAdded;
+    const restartDetailAvailable=hasRestartDetail(list);
 
     let throws=0,freeKicks=0,goalKicks=0,corners=0,goals=0,offsides=0;
     for(const e of list){
@@ -82,18 +84,26 @@
       if(t==='goal')goals++;
       if(t==='offsidegiven')offsides++;
     }
-    const gameStops=throws+freeKicks+goalKicks+corners+goals+offsides;
     const dead=deadBallEstimate(list);
-    const ballOut=Math.min(matchDuration,Math.max(0,dead.total));
-    const ballIn=Math.max(0,matchDuration-ballOut);
+    const gameStops=restartDetailAvailable?throws+freeKicks+goalKicks+corners+goals+offsides:null;
+    const ballOut=restartDetailAvailable?Math.min(matchDuration,Math.max(0,dead.total)):null;
+    const ballIn=Number.isFinite(ballOut)?Math.max(0,matchDuration-ballOut):null;
 
     return{
       version:'MATCH_TIMINGS_DYNAMIC_V1_2026-09-06',
       firstHalfEnd,fullTime,firstHalfDuration,secondHalfDuration,firstHalfAdded,secondHalfAdded,
       matchDuration,allocatedTime:fullTime,addedTime,
-      ballIn,ballOut,ballInPct:matchDuration?ballIn/matchDuration*100:0,ballOutPct:matchDuration?ballOut/matchDuration*100:0,
-      gameStops,throws,freeKicks,goalKicks,corners,goals,offsides,postGoalTime:dead.postGoal,
-      ballStatusMethod:'event-restart-estimate'
+      ballIn,ballOut,ballInPct:Number.isFinite(ballIn)&&matchDuration?ballIn/matchDuration*100:null,ballOutPct:Number.isFinite(ballOut)&&matchDuration?ballOut/matchDuration*100:null,
+      gameStops,
+      throws:restartDetailAvailable?throws:null,
+      freeKicks:restartDetailAvailable?freeKicks:null,
+      goalKicks:restartDetailAvailable?goalKicks:null,
+      corners:restartDetailAvailable?corners:null,
+      goals:restartDetailAvailable?goals:null,
+      offsides:restartDetailAvailable?offsides:null,
+      postGoalTime:goals?dead.postGoal:null,
+      restartDetailAvailable,
+      ballStatusMethod:restartDetailAvailable?'event-restart-estimate':'unavailable'
     };
   }
 
@@ -112,14 +122,14 @@
       ['BALL STATUS','Ball In Play % (est.)',t?pct(t.ballIn,t.matchDuration):'—'],
       ['BALL STATUS','Ball Out of Play (est.)',fmt(t?.ballOut)],
       ['BALL STATUS','Ball Out of Play % (est.)',t?pct(t.ballOut,t.matchDuration):'—'],
-      ['STOPPAGES','Game Stops',Number.isFinite(t?.gameStops)?String(t.gameStops):'—'],
-      ['STOPPAGES','Throw-in Stops',Number.isFinite(t?.throws)?String(t.throws):'—'],
-      ['STOPPAGES','Free-kick Restarts',Number.isFinite(t?.freeKicks)?String(t.freeKicks):'—'],
-      ['STOPPAGES','Goal-kick Stops',Number.isFinite(t?.goalKicks)?String(t.goalKicks):'—'],
-      ['STOPPAGES','Corner Stops',Number.isFinite(t?.corners)?String(t.corners):'—'],
-      ['STOPPAGES','Goal Stops',Number.isFinite(t?.goals)?String(t.goals):'—'],
-      ['STOPPAGES','Offside Stops',Number.isFinite(t?.offsides)?String(t.offsides):'—'],
-      ['STOPPAGES','Post-goal / Other Time',fmt(t?.postGoalTime)]
+      ['STOPPAGES','Game Stops',displayNumber(t?.gameStops)],
+      ['STOPPAGES','Throw-in Stops',displayNumber(t?.throws)],
+      ['STOPPAGES','Free-kick Restarts',displayNumber(t?.freeKicks)],
+      ['STOPPAGES','Goal-kick Stops',displayNumber(t?.goalKicks)],
+      ['STOPPAGES','Corner Stops',displayNumber(t?.corners)],
+      ['STOPPAGES','Goal Stops',displayNumber(t?.goals)],
+      ['STOPPAGES','Offside Stops',displayNumber(t?.offsides)],
+      ['STOPPAGES','Post-goal Time',fmt(t?.postGoalTime)]
     ]
   }}
 
