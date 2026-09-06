@@ -55,3 +55,36 @@ for(const threshold of [4.5,4.0,3.5]){
 
 const receptionTolerance=elapsedTwo.replace('if(metres<MIN_CARRY_M)return null;',"const minMovement=kind==='reception'?4.0:MIN_CARRY_M;if(metres<minMovement)return null;");
 compare('reception-only-4m-tolerance',load('reception-4m',receptionTolerance),baseline);
+
+const looseHelper=`function looseFoulOrigin(ordered,i){
+    const end=ordered[i];
+    if(eventType(end)!=='foul'||!successful(end))return null;
+    const teamId=end.teamId,playerId=end.playerId;
+    let recoveryIndex=-1;
+    for(let k=i-1;k>=0;k--){
+      const e=ordered[k];
+      if(!samePeriod(e,end))break;
+      const g=exactGap(e,end);
+      if(g!==null&&g>2)break;
+      if(String(e.teamId)===String(teamId)&&String(e.playerId)===String(playerId)&&eventType(e)==='ballrecovery'&&successful(e)){recoveryIndex=k;break;}
+      if(usable(e)&&String(e.teamId)===String(teamId)&&String(e.playerId)!==String(playerId))return null;
+    }
+    if(recoveryIndex<0)return null;
+    for(let j=recoveryIndex-1;j>=0;j--){
+      const e=ordered[j];
+      if(!samePeriod(e,end))break;
+      const g=exactGap(e,end);
+      if(g!==null&&g>4)break;
+      if(String(e.teamId)!==String(teamId)&&eventType(e)==='balltouch'&&outcome(e)==='unsuccessful'&&finite(e.x)&&finite(e.y)){
+        return {...e,x:100-Number(e.x),y:100-Number(e.y),teamId,playerId};
+      }
+      if(opponentEstablishesControl(e,teamId))return null;
+      if(usable(e)&&String(e.teamId)===String(teamId)&&String(e.playerId)!==String(playerId))return null;
+    }
+    return null;
+  }\n  `;
+let looseFoul=elapsedTwo.replace('function reconstruct(source){',looseHelper+'function reconstruct(source){');
+const startNeedle="let start=explicitOrigin(ordered,i),kind='acquisition';";
+if(!looseFoul.includes(startNeedle))throw new Error('Expected reconstruct start not found');
+looseFoul=looseFoul.replace(startNeedle,"let start=looseFoulOrigin(ordered,i),kind=start?'loose-acquisition':'acquisition';if(!start)start=explicitOrigin(ordered,i);");
+compare('loose-touch-before-recovery-foul',load('loose-foul',looseFoul),baseline);
