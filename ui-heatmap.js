@@ -79,13 +79,13 @@
     return{w,h};
   }
 
-  /* Wider KDE-like bandwidth than the event map: individual points dissolve into one continuous field. */
+  /* Broad KDE-style field, tightened slightly from V3 while preserving the soft luminous look. */
   function densityProfile(count,size){
-    if(count<15)return{radius:size*.225,alpha:.30,threshold:.006,gamma:.46};
-    if(count<40)return{radius:size*.195,alpha:.20,threshold:.008,gamma:.47};
-    if(count<100)return{radius:size*.170,alpha:.135,threshold:.010,gamma:.48};
-    if(count<220)return{radius:size*.148,alpha:.092,threshold:.012,gamma:.49};
-    return{radius:size*.128,alpha:.067,threshold:.014,gamma:.50};
+    if(count<15)return{radius:size*.205,alpha:.30,threshold:.006,gamma:.46};
+    if(count<40)return{radius:size*.178,alpha:.20,threshold:.008,gamma:.47};
+    if(count<100)return{radius:size*.155,alpha:.135,threshold:.010,gamma:.48};
+    if(count<220)return{radius:size*.135,alpha:.092,threshold:.012,gamma:.49};
+    return{radius:size*.118,alpha:.067,threshold:.014,gamma:.50};
   }
 
   function renderHeat(){
@@ -135,7 +135,7 @@
       out.data[i]=c[0];
       out.data[i+1]=c[1];
       out.data[i+2]=c[2];
-      /* Preserve the charcoal pitch at the fringe while allowing the hot core to glow strongly. */
+      /* Preserve the pitch at the fringe while allowing the hot core to glow strongly. */
       out.data[i+3]=Math.round(255*Math.min(.89,.035+t*.855));
     }
     ctx.putImageData(out,0,0);
@@ -162,5 +162,5 @@
   if(count)new MutationObserver(schedule).observe(count,{subtree:true,childList:true,characterData:true});
   window.addEventListener('resize',schedule,{passive:true});
 
-  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V3_2026-09-06',render:schedule,setMode});
+  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V4_2026-09-06',render:schedule,setMode});
 })();
