@@ -57,6 +57,7 @@ jobs:
           git fetch --no-tags origin "$SOURCE_REF"
           mkdir -p .season-source
           LOCAL_SOURCE=".season-source/$(basename "$RAW_PATH")"
+          export LOCAL_SOURCE
           git show "FETCH_HEAD:$RAW_PATH" > "$LOCAL_SOURCE" || { echo "::error::Raw JSON not found on source_ref"; exit 1; }
           python3 - <<'PY'
           import gzip,json,os,pathlib
