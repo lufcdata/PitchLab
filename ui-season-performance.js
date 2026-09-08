@@ -84,14 +84,8 @@
       || state.manifest.matches.find(m=>m.date===date);
     if(match)return match;
     const matchId=Number(data.matchId||data.id)||(Number(String(date).replace(/-/g,''))*100+index);
-    match={
-      matchId,date,home:data.home?.name||'Home',away:data.away?.name||'Away',
-      score:String(data.ftScore||data.score||'').replace(/\s*:\s*/g,'–'),competition:state.manifest.competition,pack:null,
-      homeCrest:inferCrest(data.home?.name||'Home'),awayCrest:inferCrest(data.away?.name||'Away'),local:true
-    };
-    state.manifest.matches.push(match);
-    state.manifest.matches.sort((a,b)=>a.date.localeCompare(b.date)||Number(a.matchId)-Number(b.matchId));
-    return match;
+    match={matchId,date,home:data.home?.name||'Home',away:data.away?.name||'Away',score:String(data.ftScore||data.score||'').replace(/\s*:\s*/g,'–'),competition:state.manifest.competition,pack:null,homeCrest:inferCrest(data.home?.name||'Home'),awayCrest:inferCrest(data.away?.name||'Away'),local:true};
+    state.manifest.matches.push(match);state.manifest.matches.sort((a,b)=>a.date.localeCompare(b.date)||Number(a.matchId)-Number(b.matchId));return match;
   }
 
   async function importLocalFiles(){
@@ -101,163 +95,81 @@
     for(let fileIndex=0;fileIndex<files.length;fileIndex++){
       const file=files[fileIndex];
       try{
-        const data=JSON.parse(await file.text());
-        if(!Array.isArray(data?.events)||!data.events.length)continue;
+        const data=JSON.parse(await file.text());if(!Array.isArray(data?.events)||!data.events.length)continue;
         const date=String(data.startDate||data.startTime||'').slice(0,10);if(!date)continue;
         const match=ensureManifestMatch(data,date,fileIndex);
         const pack={matchId:match.matchId,startDate:data.startDate,startTime:data.startTime,home:{teamId:data.home?.teamId,name:data.home?.name},away:{teamId:data.away?.teamId,name:data.away?.name},ftScore:data.ftScore||data.score,htScore:data.htScore,playerIdNameDictionary:data.playerIdNameDictionary||Object.fromEntries([...(data.home?.players||[]),...(data.away?.players||[])].map(p=>[p.playerId,p.name])),events:data.events};
-        for(const e of pack.events){e.__matchId=pack.matchId;e.__matchDate=match.date}
-        state.packs.set(pack.matchId,pack);imported++;
+        for(const e of pack.events){e.__matchId=pack.matchId;e.__matchDate=match.date}state.packs.set(pack.matchId,pack);imported++;
       }catch(err){console.warn('[PitchLab Season] skipped invalid JSON',file.name,err)}
     }
-    state.selected=state.manifest.matches.filter(matchInRange).filter(m=>state.packs.has(m.matchId));
-    applyAggregate();
-    if(status)status.textContent=`${imported} JSON${imported===1?'':'s'} imported · ${state.selected.length} matches in range`;
-    if(input)input.value='';
+    state.selected=state.manifest.matches.filter(matchInRange).filter(m=>state.packs.has(m.matchId));applyAggregate();
+    if(status)status.textContent=`${imported} JSON${imported===1?'':'s'} imported · ${state.selected.length} matches in range`;if(input)input.value='';
   }
 
   function applyAggregate(){
-    const packs=state.selected.map(m=>state.packs.get(m.matchId)).filter(Boolean),combined=[];
-    teamIds={};players={};
-    for(const pack of packs){
-      teamIds[pack.home.teamId]=pack.home.name;teamIds[pack.away.teamId]=pack.away.name;
-      for(const [id,name] of Object.entries(pack.playerIdNameDictionary||{}))players[id]={name};
-      combined.push(...(pack.events||[]));
-    }
-    events=combined;
-    raw={home:{name:CLUB},away:{name:'Season'},season:state.manifest.season,startDate:$('dateFrom')?.value,ftScore:''};
-    const p=$('player'),old=p?.value||'all';
-    if(typeof populatePlayers==='function')populatePlayers();
-    if(p&&[...p.options].some(o=>o.value===old))p.value=old;
+    const packs=state.selected.map(m=>state.packs.get(m.matchId)).filter(Boolean),combined=[];teamIds={};players={};
+    for(const pack of packs){teamIds[pack.home.teamId]=pack.home.name;teamIds[pack.away.teamId]=pack.away.name;for(const [id,name] of Object.entries(pack.playerIdNameDictionary||{}))players[id]={name};combined.push(...(pack.events||[]));}
+    events=combined;raw={home:{name:CLUB},away:{name:'Season'},season:state.manifest.season,startDate:$('dateFrom')?.value,ftScore:''};
+    const p=$('player'),old=p?.value||'all';if(typeof populatePlayers==='function')populatePlayers();if(p&&[...p.options].some(o=>o.value===old))p.value=old;
     updateCarries();syncUi();seasonRender();
   }
 
-  function validateCarryBoundaries(){
-    const failures=[];
-    for(const c of state.allCarries){
-      const pack=state.packs.get(c.__matchId),ids=new Set((pack?.events||[]).map(e=>String(e.eventId)));
-      if(!pack||!ids.has(String(c.startEventId))||!ids.has(String(c.endEventId)))failures.push(c);
+  function validateCarryBoundaries(perMatchLists){
+    const failures=[],expectedByMatch={},actualByMatch={};
+    for(const m of state.selected){
+      const id=String(m.matchId),pack=state.packs.get(m.matchId),ids=new Set((pack?.events||[]).map(e=>String(e.eventId)));
+      const expected=perMatchLists.get(id)||[];expectedByMatch[id]=expected.length;
+      const actual=state.allCarries.filter(c=>String(c.__matchId)===id);actualByMatch[id]=actual.length;
+      if(actual.length!==expected.length)failures.push({matchId:m.matchId,reason:'per-match carry parity',expected:expected.length,actual:actual.length});
+      for(const c of actual){if(!pack||!ids.has(String(c.startEventId))||!ids.has(String(c.endEventId)))failures.push({matchId:m.matchId,reason:'cross-match carry endpoint',carry:c});}
     }
-    const perMatch=Object.fromEntries(state.selected.map(m=>[m.matchId,state.allCarries.filter(c=>String(c.__matchId)===String(m.matchId)).length]));
-    state.validation={carryBoundaryFailures:failures.length,perMatchCarries:perMatch,totalCarries:state.allCarries.length,passed:failures.length===0};
-    if(failures.length)throw new Error(`Season carry boundary validation failed (${failures.length})`);
-    return state.validation;
+    const expectedTotal=Object.values(expectedByMatch).reduce((a,b)=>a+b,0),actualTotal=state.allCarries.length;
+    if(actualTotal!==expectedTotal)failures.push({reason:'aggregate carry parity',expected:expectedTotal,actual:actualTotal});
+    state.validation={carryBoundaryFailures:failures.filter(f=>f.reason==='cross-match carry endpoint').length,carryParityFailures:failures.filter(f=>f.reason.includes('parity')).length,expectedByMatch,actualByMatch,expectedTotal,actualTotal,passed:failures.length===0,failures};
+    if(failures.length)throw new Error(`Season carry validation failed (${failures.length})`);return state.validation;
   }
 
   function updateCarries(){
-    state.allCarries=[];
-    if(!window.PitchLabCarry)return;
+    state.allCarries=[];if(!window.PitchLabCarry)return;
+    const perMatchLists=new Map();
     for(const m of state.selected){
       const pack=state.packs.get(m.matchId);if(!pack)continue;
-      const list=window.PitchLabCarry.reconstruct(pack.events||[]).map(c=>({...c,__matchId:m.matchId,__matchDate:m.date}));
-      state.allCarries.push(...list);
+      const rawList=window.PitchLabCarry.reconstruct(pack.events||[]);perMatchLists.set(String(m.matchId),rawList);
+      state.allCarries.push(...rawList.map(c=>({...c,__matchId:m.matchId,__matchDate:m.date})));
     }
-    validateCarryBoundaries();
+    validateCarryBoundaries(perMatchLists);
   }
 
   function carryInWindow(c,pack){
     const clock=window.PitchLabCanonicalTime;if(!clock)return true;
     const end=(pack.events||[]).find(e=>String(e.eventId)===String(c.endEventId));if(!end)return false;
-    if(clock.activePreset==='full')return true;
-    if(clock.activePreset==='first')return isFirst(end);
-    if(clock.activePreset==='second')return isSecond(end);
-    clock.derive(pack.events||[]);
-    const {lo,hi}=clock.bounds(),t=clock.timelineSecond(end);
-    return Number.isFinite(t)&&t>=lo&&t<=hi;
+    if(clock.activePreset==='full')return true;if(clock.activePreset==='first')return isFirst(end);if(clock.activePreset==='second')return isSecond(end);
+    clock.derive(pack.events||[]);const {lo,hi}=clock.bounds(),t=clock.timelineSecond(end);return Number.isFinite(t)&&t>=lo&&t<=hi;
   }
 
   function renderCarriesSeason(){
-    const metricEl=$('metric'),root=$('eventSvg');if(!metricEl||!root)return;
-    let list=[];
-    for(const m of state.selected){
-      const pack=state.packs.get(m.matchId);if(!pack)continue;
-      list.push(...state.allCarries.filter(c=>String(c.__matchId)===String(m.matchId)&&carryInWindow(c,pack)));
-    }
-    const p=$('player');if(p&&p.value!=='all')list=list.filter(c=>String(c.playerId)===String(p.value));
-    if(window.PitchLabCarry.metricMap?.[metricEl.value]?.progressiveOnly)list=list.filter(c=>c.progressive);
+    const metricEl=$('metric'),root=$('eventSvg');if(!metricEl||!root)return;let list=[];
+    for(const m of state.selected){const pack=state.packs.get(m.matchId);if(!pack)continue;list.push(...state.allCarries.filter(c=>String(c.__matchId)===String(m.matchId)&&carryInWindow(c,pack)));}
+    const p=$('player');if(p&&p.value!=='all')list=list.filter(c=>String(c.playerId)===String(p.value));if(window.PitchLabCarry.metricMap?.[metricEl.value]?.progressiveOnly)list=list.filter(c=>c.progressive);
     root.innerHTML='<defs><marker id="seasonCarryArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#3BEAED"/></marker></defs>';
-    for(const c of list){
-      const before=root.children.length;drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#3BEAED','url(#seasonCarryArrow)');
-      const added=[...root.children].slice(before),line=added.find(el=>el.tagName?.toLowerCase()==='line');
-      if(line){line.setAttribute('stroke','#3BEAED');line.setAttribute('stroke-dasharray','2.4 2.4');line.setAttribute('stroke-linecap','round')}
-    }
-    $('eventCount').textContent=String(list.length);
-    $('plotLegend').innerHTML='<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:#3BEAED;background:repeating-linear-gradient(90deg,#3BEAED 0 4px,transparent 4px 7px)"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#3BEAED"></i>Carry start</span>';
+    for(const c of list){const before=root.children.length;drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#3BEAED','url(#seasonCarryArrow)');const added=[...root.children].slice(before),line=added.find(el=>el.tagName?.toLowerCase()==='line');if(line){line.setAttribute('stroke','#3BEAED');line.setAttribute('stroke-dasharray','2.4 2.4');line.setAttribute('stroke-linecap','round')}}
+    $('eventCount').textContent=String(list.length);$('plotLegend').innerHTML='<span class="legend-item"><i class="legend-arrow metric" style="--metric-colour:#3BEAED;background:repeating-linear-gradient(90deg,#3BEAED 0 4px,transparent 4px 7px)"></i>Carry trajectory</span><span class="legend-item"><i class="legend-circle metric" style="--metric-colour:#3BEAED"></i>Carry start</span>';
   }
 
-  function seasonRender(){
-    const key=$('metric')?.value,carryMetric=window.PitchLabCarry?.isCarryMetric?.(key);
-    if(carryMetric&&document.querySelector('.pitch-stage.is-heatmap'))window.PitchLabHeatMap?.setMode?.(false);
-    if(carryMetric)renderCarriesSeason();else window.PitchLabPitchTimeWindow?.render?.();
-    syncUi();window.PitchLabHeatMap?.render?.();
-  }
-
-  function syncUi(){
-    const n=state.selected.length,count=$('seasonMatchCount');if(count)count.textContent=String(n);
-    const a=$('dateFrom')?.value||'',b=$('dateTo')?.value||'';
-    const rl=$('seasonRangeLabel');if(rl)rl.textContent=n===1?singleFixtureLabel(state.selected[0]):`${fmtDate(a)} — ${fmtDate(b)}`;
-    const el=$('seasonEventsLoaded');if(el)el.textContent=`${events.length.toLocaleString()} events`;
-    const pl=$('seasonPlayerLine');if(pl)pl.textContent=`${selectedPlayerName()} · ${n} match${n===1?'':'es'}`;
-    const title=$('plotTitle');if(title)title.textContent=selectedMetricName();
-    const t=$('plotTeam');if(t)t.textContent=selectedPlayerName();
-    const info=$('infoText');if(info)info.textContent=`Season Performance · ${n} match${n===1?'':'es'} · ${state.manifest.competition} · derived sequences are reconstructed match-by-match before aggregation.`;
-  }
-
+  function seasonRender(){const key=$('metric')?.value,carryMetric=window.PitchLabCarry?.isCarryMetric?.(key);if(carryMetric&&document.querySelector('.pitch-stage.is-heatmap'))window.PitchLabHeatMap?.setMode?.(false);if(carryMetric)renderCarriesSeason();else window.PitchLabPitchTimeWindow?.render?.();syncUi();window.PitchLabHeatMap?.render?.();}
+  function syncUi(){const n=state.selected.length,count=$('seasonMatchCount');if(count)count.textContent=String(n);const a=$('dateFrom')?.value||'',b=$('dateTo')?.value||'';const rl=$('seasonRangeLabel');if(rl)rl.textContent=n===1?singleFixtureLabel(state.selected[0]):`${fmtDate(a)} — ${fmtDate(b)}`;const el=$('seasonEventsLoaded');if(el)el.textContent=`${events.length.toLocaleString()} events`;const pl=$('seasonPlayerLine');if(pl)pl.textContent=`${selectedPlayerName()} · ${n} match${n===1?'':'es'}`;const title=$('plotTitle');if(title)title.textContent=selectedMetricName();const t=$('plotTeam');if(t)t.textContent=selectedPlayerName();const info=$('infoText');if(info)info.textContent=`Season Performance · ${n} match${n===1?'':'es'} · ${state.manifest.competition} · derived sequences are reconstructed match-by-match before aggregation.`;}
   function singleFixtureLabel(m){return m?`${m.home} ${m.score} ${m.away}`:'No matches'}
-
-  function bind(){
-    for(const id of ['dateFrom','dateTo']){const el=$(id);if(el)el.addEventListener('change',loadSelected)}
-    for(const id of ['metric','player','fromRange','toRange']){const el=$(id);if(el){el.onchange=seasonRender;el.oninput=seasonRender}}
-    document.querySelectorAll('.period-buttons button').forEach(b=>b.addEventListener('click',()=>setTimeout(seasonRender,0)));
-  }
+  function bind(){for(const id of ['dateFrom','dateTo']){const el=$(id);if(el)el.addEventListener('change',loadSelected)}for(const id of ['metric','player','fromRange','toRange']){const el=$(id);if(el){el.onchange=seasonRender;el.oninput=seasonRender}}document.querySelectorAll('.period-buttons button').forEach(b=>b.addEventListener('click',()=>setTimeout(seasonRender,0)));}
 
   function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error(`Could not load ${src}`));img.src=src})}
   async function drawCrest(ctx,src,x,y,size){try{const img=await loadImage(src),r=Math.min(size/img.width,size/img.height),w=img.width*r,h=img.height*r;ctx.drawImage(img,x+(size-w)/2,y+(size-h)/2,w,h)}catch(_){}}
-  async function drawSvgOverlay(ctx,x,y,w,h){
-    const svg=$('eventSvg');if(!svg)return;
-    const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w));clone.setAttribute('height',String(h));
-    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
-    try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
-  }
+  async function drawSvgOverlay(ctx,x,y,w,h){const svg=$('eventSvg');if(!svg)return;const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w));clone.setAttribute('height',String(h));const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}}
 
   async function exportPng(){
     const btn=$('seasonExport'),old=btn.textContent;btn.textContent='Rendering…';btn.disabled=true;
-    try{
-      const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');
-      ctx.fillStyle='#0d0e19';ctx.fillRect(0,0,c.width,c.height);
-      ctx.fillStyle='#4ef0ce';ctx.font='800 22px Urbanist, Arial';ctx.fillText('PITCHLAB · SEASON PERFORMANCE',70,76);
-      ctx.fillStyle='#f5f6fa';ctx.font='700 44px Space Grotesk, Arial';ctx.fillText(selectedMetricName(),70,138);
-      ctx.fillStyle='#8a91a0';ctx.font='700 23px Urbanist, Arial';ctx.fillText(selectedPlayerName(),70,176);
-      const matches=state.selected,a=$('dateFrom').value,b=$('dateTo').value;
-      if(matches.length===1){
-        const m=matches[0];await drawCrest(ctx,m.homeCrest,70,206,72);await drawCrest(ctx,m.awayCrest,938,206,72);
-        ctx.fillStyle='#f5f6fa';ctx.textAlign='center';ctx.font='700 26px Space Grotesk, Arial';ctx.fillText(`${m.home}   ${m.score}   ${m.away}`,540,246);
-        ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(m.date)} · ${m.competition}`,540,278);
-      }else{
-        await drawCrest(ctx,'assets/club-logos/leeds png.png',70,206,74);ctx.textAlign='left';ctx.fillStyle='#f5f6fa';ctx.font='700 28px Space Grotesk, Arial';ctx.fillText(`Leeds United · ${matches.length} Matches`,164,238);
-        ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(a)} — ${fmtDate(b)} · ${state.manifest.competition}`,164,272);
-      }
-      ctx.textAlign='left';
-      const px=251,py=318,pw=578,ph=Math.round(pw*105/68),pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');
-      ctx.drawImage(pitch,px,py,pw,ph);
-      const heatActive=!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);
-      if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,px,py,pw,ph)}else await drawSvgOverlay(ctx,px,py,pw,ph);
-      ctx.fillStyle='#697181';ctx.font='800 17px Urbanist, Arial';ctx.fillText(`${$('eventCount').textContent} EVENTS · ${matches.length} MATCH${matches.length===1?'':'ES'} · ${$('plotWindow')?.textContent||'FULL MATCH'}`,70,1260);
-      ctx.fillStyle='#f5f6fa';ctx.font='800 24px Space Grotesk, Arial';ctx.textAlign='center';ctx.fillText('LUFCDATA.LAB',540,1310);
-      ctx.globalAlpha=.32;await drawCrest(ctx,'assets/club-logos/leeds png.png',70,1275,44);ctx.globalAlpha=1;
-      const link=document.createElement('a');link.download=`${safeName(selectedMetricName())}-${safeName(selectedPlayerName())}-${a}-${b}.png`;link.href=c.toDataURL('image/png');link.click();
-    }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{btn.textContent=old;btn.disabled=false}
+    try{const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');ctx.fillStyle='#0d0e19';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#4ef0ce';ctx.font='800 22px Urbanist, Arial';ctx.fillText('PITCHLAB · SEASON PERFORMANCE',70,76);ctx.fillStyle='#f5f6fa';ctx.font='700 44px Space Grotesk, Arial';ctx.fillText(selectedMetricName(),70,138);ctx.fillStyle='#8a91a0';ctx.font='700 23px Urbanist, Arial';ctx.fillText(selectedPlayerName(),70,176);const matches=state.selected,a=$('dateFrom').value,b=$('dateTo').value;if(matches.length===1){const m=matches[0];await drawCrest(ctx,m.homeCrest,70,206,72);await drawCrest(ctx,m.awayCrest,938,206,72);ctx.fillStyle='#f5f6fa';ctx.textAlign='center';ctx.font='700 26px Space Grotesk, Arial';ctx.fillText(`${m.home}   ${m.score}   ${m.away}`,540,246);ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(m.date)} · ${m.competition}`,540,278)}else{await drawCrest(ctx,'assets/club-logos/leeds png.png',70,206,74);ctx.textAlign='left';ctx.fillStyle='#f5f6fa';ctx.font='700 28px Space Grotesk, Arial';ctx.fillText(`Leeds United · ${matches.length} Matches`,164,238);ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(a)} — ${fmtDate(b)} · ${state.manifest.competition}`,164,272)}ctx.textAlign='left';const px=251,py=318,pw=578,ph=Math.round(pw*105/68),pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');ctx.drawImage(pitch,px,py,pw,ph);const heatActive=!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,px,py,pw,ph)}else await drawSvgOverlay(ctx,px,py,pw,ph);ctx.fillStyle='#697181';ctx.font='800 17px Urbanist, Arial';ctx.fillText(`${$('eventCount').textContent} EVENTS · ${matches.length} MATCH${matches.length===1?'':'ES'} · ${$('plotWindow')?.textContent||'FULL MATCH'}`,70,1260);ctx.fillStyle='#f5f6fa';ctx.font='800 24px Space Grotesk, Arial';ctx.textAlign='center';ctx.fillText('LUFCDATA.LAB',540,1310);ctx.globalAlpha=.32;await drawCrest(ctx,'assets/club-logos/leeds png.png',70,1275,44);ctx.globalAlpha=1;const link=document.createElement('a');link.download=`${safeName(selectedMetricName())}-${safeName(selectedPlayerName())}-${a}-${b}.png`;link.href=c.toDataURL('image/png');link.click();}catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{btn.textContent=old;btn.disabled=false}
   }
 
-  async function init(){
-    installShell();
-    try{
-      const r=await fetch(MANIFEST_URL,{cache:'no-store'});if(!r.ok)throw new Error('Season manifest unavailable');
-      state.manifest=await r.json();$('dateFrom').value=state.manifest.defaultFrom;$('dateTo').value=state.manifest.defaultTo;
-      bind();await loadSelected();
-      window.PitchLabSeasonPerformance=Object.freeze({version:'SEASON_PERFORMANCE_V1_1_2026-09-08',reload:loadSelected,render:seasonRender,exportPng,validateCarryBoundaries,state});
-    }catch(err){console.error(err);const s=$('seasonStatus');if(s){s.textContent=err.message;s.classList.add('season-error')}}
-  }
-
+  async function init(){installShell();try{const r=await fetch(MANIFEST_URL,{cache:'no-store'});if(!r.ok)throw new Error('Season manifest unavailable');state.manifest=await r.json();$('dateFrom').value=state.manifest.defaultFrom;$('dateTo').value=state.manifest.defaultTo;bind();await loadSelected();window.PitchLabSeasonPerformance=Object.freeze({version:'SEASON_PERFORMANCE_V1_2_2026-09-08',reload:loadSelected,render:seasonRender,exportPng,validateCarryBoundaries,state});}catch(err){console.error(err);const s=$('seasonStatus');if(s){s.textContent=err.message;s.classList.add('season-error')}}}
   init();
 })();
