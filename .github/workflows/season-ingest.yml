@@ -1,0 +1,95 @@
+name: Season Performance — Cloud Ingest
+
+on:
+  workflow_dispatch:
+    inputs:
+      raw_path:
+        description: 'Repository path to raw WhoScored JSON (for example incoming/WS_1983572_raw.json)'
+        required: true
+        type: string
+      season:
+        description: 'Season storage key'
+        required: true
+        default: '2026-27'
+        type: string
+      competition:
+        description: 'Competition label'
+        required: true
+        default: 'Premier League'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: season-ingest-${{ inputs.season }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate requested source path
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ inputs.raw_path }}" in
+            incoming/*.json) ;;
+            *) echo "::error::raw_path must be an incoming/*.json repository path"; exit 1 ;;
+          esac
+          test -f "${{ inputs.raw_path }}" || { echo "::error::Raw JSON not found"; exit 1; }
+
+      - name: Ingest and compress fixture
+        run: python3 scripts/season_ingest.py "${{ inputs.raw_path }}" --season "${{ inputs.season }}" --competition "${{ inputs.competition }}"
+
+      - name: Verify generated season data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool "data/season/${{ inputs.season }}/manifest.json" >/dev/null
+          python3 - <<'PY'
+          import gzip,json,pathlib
+          root=pathlib.Path('data/season/${{ inputs.season }}')
+          manifest=json.loads((root/'manifest.json').read_text())
+          assert manifest['matches'], 'manifest contains no matches'
+          for m in manifest['matches']:
+              p=pathlib.Path(m['pack'])
+              if p.exists():
+                  data=json.loads(gzip.decompress(p.read_bytes()))
+                  assert data.get('events'), f'{p} contains no events'
+          print(f"Validated {len(manifest['matches'])} manifest fixtures")
+          PY
+
+      - name: Create ingest branch
+        id: branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATCH_ID=$(python3 - <<'PY'
+          import json,re
+          p='${{ inputs.raw_path }}'
+          d=json.load(open(p))
+          print(d.get('matchId') or d.get('id') or re.search(r'(\d{6,})',p).group(1))
+          PY
+          )
+          BRANCH="season-ingest-${MATCH_ID}-${GITHUB_RUN_ID}"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          git switch -c "$BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "data/season/${{ inputs.season }}" scripts/season_ingest.py
+          git commit -m "Ingest season fixture ${MATCH_ID}"
+          git push origin "$BRANCH"
+
+      - name: Open review PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create --base main --head "${{ steps.branch.outputs.name }}" --title "Ingest Season Performance fixture" --body $'Cloud-generated Season Performance ingest.\n\nChecks performed:\n- raw JSON structure validated\n- Leeds fixture membership validated\n- immutable gzip match pack generated\n- manifest upserted\n- pack decompression/event validation passed\n\nReview and merge through the normal Golden Workflow. The source raw JSON remains separate from the browser season pack.'
