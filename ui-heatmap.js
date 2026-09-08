@@ -1,17 +1,28 @@
 (()=>{
   const stage=document.querySelector('.pitch-stage');
   const panel=document.querySelector('.pitch-panel');
+  const controls=document.querySelector('.controls-panel');
   const metric=document.getElementById('metric');
   const team=document.getElementById('team');
   const player=document.getElementById('player');
   const from=document.getElementById('fromRange');
   const to=document.getElementById('toRange');
-  if(!stage||!panel||!metric||!team||!player)return;
+  if(!stage||!panel||!controls||!metric||!team||!player)return;
 
   const mode=document.createElement('div');
-  mode.className='pitch-map-mode';
-  mode.innerHTML='<div class="pitch-map-mode__rail" role="group" aria-label="Pitch visualisation mode"><button class="pitch-map-mode__button is-active" type="button" id="eventMapMode" aria-pressed="true">Event Map</button><button class="pitch-map-mode__button" type="button" id="heatMapMode" aria-pressed="false">Heat Map</button></div>';
-  stage.before(mode);
+  mode.className='field pitch-map-mode';
+  mode.innerHTML='<label>Map View</label><div class="pitch-map-mode__rail" role="group" aria-label="Pitch visualisation mode"><button class="pitch-map-mode__button is-active" type="button" id="eventMapMode" aria-pressed="true">Event Map</button><button class="pitch-map-mode__button" type="button" id="heatMapMode" aria-pressed="false">Heat Map</button></div>';
+  const filters=controls.querySelector('.filters');
+  function placeMode(){
+    const matchField=document.getElementById('pitchlabMatch')?.closest('.field');
+    if(matchField){matchField.insertAdjacentElement('afterend',mode);return true;}
+    if(filters&&mode.parentNode!==filters)filters.prepend(mode);
+    else if(!filters&&!mode.parentNode)stage.before(mode);
+    return false;
+  }
+  if(!placeMode()){
+    let tries=0;const timer=setInterval(()=>{tries++;if(placeMode()||tries>30)clearInterval(timer)},100);
+  }
 
   const canvas=document.createElement('canvas');
   canvas.className='pitch-heatmap-canvas';
@@ -28,16 +39,9 @@
   let active=false;
   let raf=0;
 
-  /* Reference-inspired luminous ramp: near-black crimson halo into scarlet, orange and warm yellow. */
   const stops=[
-    [0.00,[30,3,5]],
-    [0.10,[62,7,8]],
-    [0.24,[116,12,12]],
-    [0.43,[194,25,20]],
-    [0.61,[255,55,37]],
-    [0.78,[255,126,55]],
-    [0.91,[255,192,75]],
-    [1.00,[255,235,111]]
+    [0.00,[30,3,5]],[0.10,[62,7,8]],[0.24,[116,12,12]],[0.43,[194,25,20]],
+    [0.61,[255,55,37]],[0.78,[255,126,55]],[0.91,[255,192,75]],[1.00,[255,235,111]]
   ];
 
   function mix(a,b,t){return Math.round(a+(b-a)*t)}
@@ -79,7 +83,6 @@
     return{w,h};
   }
 
-  /* Broad KDE-style field, tightened slightly from V3 while preserving the soft luminous look. */
   function densityProfile(count,size){
     if(count<15)return{radius:size*.205,alpha:.30,threshold:.006,gamma:.46};
     if(count<40)return{radius:size*.178,alpha:.20,threshold:.008,gamma:.47};
@@ -132,10 +135,7 @@
       t=(t-profile.threshold)/(1-profile.threshold);
       t=Math.pow(Math.max(0,Math.min(1,t)),profile.gamma);
       const c=colourAt(t);
-      out.data[i]=c[0];
-      out.data[i+1]=c[1];
-      out.data[i+2]=c[2];
-      /* Preserve the pitch at the fringe while allowing the hot core to glow strongly. */
+      out.data[i]=c[0];out.data[i+1]=c[1];out.data[i+2]=c[2];
       out.data[i+3]=Math.round(255*Math.min(.89,.035+t*.855));
     }
     ctx.putImageData(out,0,0);
@@ -157,10 +157,10 @@
   heatButton.addEventListener('click',()=>setMode(true));
   [metric,team,player,from,to].forEach(el=>{el?.addEventListener('input',schedule);el?.addEventListener('change',schedule)});
   document.addEventListener('pitchlab:canonical-time-ready',schedule);
-  document.addEventListener('pitchlab:match-loaded',schedule);
+  document.addEventListener('pitchlab:match-loaded',()=>{placeMode();schedule()});
   const count=document.getElementById('eventCount');
   if(count)new MutationObserver(schedule).observe(count,{subtree:true,childList:true,characterData:true});
   window.addEventListener('resize',schedule,{passive:true});
 
-  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V4_2026-09-06',render:schedule,setMode});
+  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V5_1_2026-09-09',render:schedule,setMode});
 })();
