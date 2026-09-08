@@ -1,5 +1,5 @@
 (()=>{
-  const TEMPLATE='assets/export/season-performance-full-canvas.png';
+  const TEMPLATE='assets/export/Full Canvas.png';
   const WIDTH=1080,HEIGHT=1350,BRANDING_TOP=1230,BG='#191b2a';
   const $=id=>document.getElementById(id);
   const fmtDate=s=>{const d=new Date(`${s}T12:00:00`);return Number.isNaN(d.getTime())?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})};
@@ -48,5 +48,5 @@
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_1_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_2_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
 })();
