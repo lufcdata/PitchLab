@@ -1,11 +1,14 @@
 (()=>{
   const CLUB='Leeds', MANIFEST_URL='data/season/2026-27/manifest.json';
-  const state={manifest:null,packs:new Map(),selected:[],allCarries:[],loading:false};
+  const state={manifest:null,packs:new Map(),selected:[],allCarries:[],loading:false,validation:null};
   const $=id=>document.getElementById(id);
   const fmtDate=s=>{const d=new Date(`${s}T12:00:00`);return Number.isNaN(d.getTime())?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})};
   const selectedPlayerName=()=>{const p=$('player');return p?.value==='all'?'Whole Team':(p?.options[p.selectedIndex]?.text||'Whole Team')};
   const selectedMetricName=()=>{const m=$('metric');return m?.options[m.selectedIndex]?.text||'Metric'};
   const safeName=s=>String(s||'season-performance').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const periodName=e=>String(e?.period?.displayName??e?.period?.name??e?.period??'').toLowerCase().replace(/[\s_-]/g,'');
+  const isFirst=e=>{const p=periodName(e);return p.includes('first')||p==='1'||p==='firsthalf'};
+  const isSecond=e=>{const p=periodName(e);return p.includes('second')||p==='2'||p==='secondhalf'};
 
   async function fetchGzipJson(url){
     const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`Could not load ${url}`);
@@ -54,14 +57,12 @@
     try{
       const matches=state.manifest.matches.filter(matchInRange);
       for(const m of matches){
-        if(state.packs.has(m.matchId))continue;
+        if(state.packs.has(m.matchId)||!m.pack)continue;
         try{
           const pack=await fetchGzipJson(m.pack);
           for(const e of pack.events||[]){e.__matchId=pack.matchId;e.__matchDate=m.date}
           state.packs.set(m.matchId,pack);
-        }catch(err){
-          console.warn('[PitchLab Season] hosted pack unavailable',m.matchId,err);
-        }
+        }catch(err){console.warn('[PitchLab Season] hosted pack unavailable',m.matchId,err)}
       }
       state.selected=matches.filter(m=>state.packs.has(m.matchId));
       applyAggregate();
@@ -72,18 +73,38 @@
     }finally{state.loading=false}
   }
 
+  function inferCrest(name){
+    if(name==='Leeds')return'assets/club-logos/leeds png.png';
+    const known={'Brighton':'assets/club-logos/Brighton.png','Brighton & Hove Albion':'assets/club-logos/Brighton.png','Nottingham Forest':'assets/club-logos/Nottingham Forest.png','Brentford':'assets/club-logos/Brentford.png'};
+    return known[name]||`assets/club-logos/${encodeURIComponent(name)}.png`;
+  }
+
+  function ensureManifestMatch(data,date,index){
+    let match=state.manifest.matches.find(m=>m.date===date&&m.home===data.home?.name&&m.away===data.away?.name)
+      || state.manifest.matches.find(m=>m.date===date);
+    if(match)return match;
+    const matchId=Number(data.matchId||data.id)||(Number(String(date).replace(/-/g,''))*100+index);
+    match={
+      matchId,date,home:data.home?.name||'Home',away:data.away?.name||'Away',
+      score:String(data.ftScore||data.score||'').replace(/\s*:\s*/g,'–'),competition:state.manifest.competition,pack:null,
+      homeCrest:inferCrest(data.home?.name||'Home'),awayCrest:inferCrest(data.away?.name||'Away'),local:true
+    };
+    state.manifest.matches.push(match);
+    state.manifest.matches.sort((a,b)=>a.date.localeCompare(b.date)||Number(a.matchId)-Number(b.matchId));
+    return match;
+  }
+
   async function importLocalFiles(){
     const input=$('seasonImportFiles'),files=[...(input?.files||[])];if(!files.length)return;
     const status=$('seasonStatus');if(status)status.textContent=`Reading ${files.length} JSON file${files.length===1?'':'s'}…`;
     let imported=0;
-    for(const file of files){
+    for(let fileIndex=0;fileIndex<files.length;fileIndex++){
+      const file=files[fileIndex];
       try{
         const data=JSON.parse(await file.text());
         if(!Array.isArray(data?.events)||!data.events.length)continue;
-        const date=String(data.startDate||data.startTime||'').slice(0,10);
-        const match=state.manifest.matches.find(m=>m.date===date&&m.home===data.home?.name&&m.away===data.away?.name)
-          || state.manifest.matches.find(m=>m.date===date)
-          || {matchId:Number(data.matchId||data.id||Date.now()+imported),date,home:data.home?.name||'Home',away:data.away?.name||'Away',score:String(data.ftScore||data.score||'').replace(/\s*:\s*/g,'–'),competition:state.manifest.competition,homeCrest:'',awayCrest:''};
+        const date=String(data.startDate||data.startTime||'').slice(0,10);if(!date)continue;
+        const match=ensureManifestMatch(data,date,fileIndex);
         const pack={matchId:match.matchId,startDate:data.startDate,startTime:data.startTime,home:{teamId:data.home?.teamId,name:data.home?.name},away:{teamId:data.away?.teamId,name:data.away?.name},ftScore:data.ftScore||data.score,htScore:data.htScore,playerIdNameDictionary:data.playerIdNameDictionary||Object.fromEntries([...(data.home?.players||[]),...(data.away?.players||[])].map(p=>[p.playerId,p.name])),events:data.events};
         for(const e of pack.events){e.__matchId=pack.matchId;e.__matchDate=match.date}
         state.packs.set(pack.matchId,pack);imported++;
@@ -96,8 +117,7 @@
   }
 
   function applyAggregate(){
-    const packs=state.selected.map(m=>state.packs.get(m.matchId)).filter(Boolean);
-    const combined=[];
+    const packs=state.selected.map(m=>state.packs.get(m.matchId)).filter(Boolean),combined=[];
     teamIds={};players={};
     for(const pack of packs){
       teamIds[pack.home.teamId]=pack.home.name;teamIds[pack.away.teamId]=pack.away.name;
@@ -109,9 +129,19 @@
     const p=$('player'),old=p?.value||'all';
     if(typeof populatePlayers==='function')populatePlayers();
     if(p&&[...p.options].some(o=>o.value===old))p.value=old;
-    updateCarries();
-    syncUi();
-    seasonRender();
+    updateCarries();syncUi();seasonRender();
+  }
+
+  function validateCarryBoundaries(){
+    const failures=[];
+    for(const c of state.allCarries){
+      const pack=state.packs.get(c.__matchId),ids=new Set((pack?.events||[]).map(e=>String(e.eventId)));
+      if(!pack||!ids.has(String(c.startEventId))||!ids.has(String(c.endEventId)))failures.push(c);
+    }
+    const perMatch=Object.fromEntries(state.selected.map(m=>[m.matchId,state.allCarries.filter(c=>String(c.__matchId)===String(m.matchId)).length]));
+    state.validation={carryBoundaryFailures:failures.length,perMatchCarries:perMatch,totalCarries:state.allCarries.length,passed:failures.length===0};
+    if(failures.length)throw new Error(`Season carry boundary validation failed (${failures.length})`);
+    return state.validation;
   }
 
   function updateCarries(){
@@ -122,14 +152,17 @@
       const list=window.PitchLabCarry.reconstruct(pack.events||[]).map(c=>({...c,__matchId:m.matchId,__matchDate:m.date}));
       state.allCarries.push(...list);
     }
+    validateCarryBoundaries();
   }
 
   function carryInWindow(c,pack){
     const clock=window.PitchLabCanonicalTime;if(!clock)return true;
+    const end=(pack.events||[]).find(e=>String(e.eventId)===String(c.endEventId));if(!end)return false;
+    if(clock.activePreset==='full')return true;
+    if(clock.activePreset==='first')return isFirst(end);
+    if(clock.activePreset==='second')return isSecond(end);
     clock.derive(pack.events||[]);
-    const {lo,hi}=clock.bounds();
-    const end=(pack.events||[]).find(e=>String(e.eventId)===String(c.endEventId));
-    const t=end?clock.timelineSecond(end):NaN;
+    const {lo,hi}=clock.bounds(),t=clock.timelineSecond(end);
     return Number.isFinite(t)&&t>=lo&&t<=hi;
   }
 
@@ -142,11 +175,9 @@
     }
     const p=$('player');if(p&&p.value!=='all')list=list.filter(c=>String(c.playerId)===String(p.value));
     if(window.PitchLabCarry.metricMap?.[metricEl.value]?.progressiveOnly)list=list.filter(c=>c.progressive);
-
     root.innerHTML='<defs><marker id="seasonCarryArrow" markerWidth="1.08" markerHeight="0.78" refX="1.0" refY="0.39" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L1.04,0.39 L0,0.78 Z" fill="#3BEAED"/></marker></defs>';
     for(const c of list){
-      const before=root.children.length;
-      drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#3BEAED','url(#seasonCarryArrow)');
+      const before=root.children.length;drawAttackArrow(root,{x:c.startX,y:c.startY,endX:c.endX,endY:c.endY},'#3BEAED','url(#seasonCarryArrow)');
       const added=[...root.children].slice(before),line=added.find(el=>el.tagName?.toLowerCase()==='line');
       if(line){line.setAttribute('stroke','#3BEAED');line.setAttribute('stroke-dasharray','2.4 2.4');line.setAttribute('stroke-linecap','round')}
     }
@@ -155,11 +186,10 @@
   }
 
   function seasonRender(){
-    const key=$('metric')?.value;
-    if(window.PitchLabCarry?.isCarryMetric?.(key))renderCarriesSeason();
-    else window.PitchLabPitchTimeWindow?.render?.();
-    syncUi();
-    window.PitchLabHeatMap?.render?.();
+    const key=$('metric')?.value,carryMetric=window.PitchLabCarry?.isCarryMetric?.(key);
+    if(carryMetric&&document.querySelector('.pitch-stage.is-heatmap'))window.PitchLabHeatMap?.setMode?.(false);
+    if(carryMetric)renderCarriesSeason();else window.PitchLabPitchTimeWindow?.render?.();
+    syncUi();window.PitchLabHeatMap?.render?.();
   }
 
   function syncUi(){
@@ -176,27 +206,17 @@
   function singleFixtureLabel(m){return m?`${m.home} ${m.score} ${m.away}`:'No matches'}
 
   function bind(){
-    for(const id of ['dateFrom','dateTo']){const el=$(id);if(el){el.addEventListener('change',loadSelected)}}
+    for(const id of ['dateFrom','dateTo']){const el=$(id);if(el)el.addEventListener('change',loadSelected)}
     for(const id of ['metric','player','fromRange','toRange']){const el=$(id);if(el){el.onchange=seasonRender;el.oninput=seasonRender}}
     document.querySelectorAll('.period-buttons button').forEach(b=>b.addEventListener('click',()=>setTimeout(seasonRender,0)));
   }
 
-  function loadImage(src){
-    return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error(`Could not load ${src}`));img.src=src});
-  }
-
-  async function drawCrest(ctx,src,x,y,size){
-    try{
-      const img=await loadImage(src),r=Math.min(size/img.width,size/img.height),w=img.width*r,h=img.height*r;
-      ctx.drawImage(img,x+(size-w)/2,y+(size-h)/2,w,h);
-    }catch(_){}
-  }
-
+  function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error(`Could not load ${src}`));img.src=src})}
+  async function drawCrest(ctx,src,x,y,size){try{const img=await loadImage(src),r=Math.min(size/img.width,size/img.height),w=img.width*r,h=img.height*r;ctx.drawImage(img,x+(size-w)/2,y+(size-h)/2,w,h)}catch(_){}}
   async function drawSvgOverlay(ctx,x,y,w,h){
     const svg=$('eventSvg');if(!svg)return;
     const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w));clone.setAttribute('height',String(h));
-    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
+    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
     try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
   }
 
@@ -208,49 +228,35 @@
       ctx.fillStyle='#4ef0ce';ctx.font='800 22px Urbanist, Arial';ctx.fillText('PITCHLAB · SEASON PERFORMANCE',70,76);
       ctx.fillStyle='#f5f6fa';ctx.font='700 44px Space Grotesk, Arial';ctx.fillText(selectedMetricName(),70,138);
       ctx.fillStyle='#8a91a0';ctx.font='700 23px Urbanist, Arial';ctx.fillText(selectedPlayerName(),70,176);
-
       const matches=state.selected,a=$('dateFrom').value,b=$('dateTo').value;
       if(matches.length===1){
-        const m=matches[0];
-        await drawCrest(ctx,m.homeCrest,70,206,72);await drawCrest(ctx,m.awayCrest,938,206,72);
+        const m=matches[0];await drawCrest(ctx,m.homeCrest,70,206,72);await drawCrest(ctx,m.awayCrest,938,206,72);
         ctx.fillStyle='#f5f6fa';ctx.textAlign='center';ctx.font='700 26px Space Grotesk, Arial';ctx.fillText(`${m.home}   ${m.score}   ${m.away}`,540,246);
         ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(m.date)} · ${m.competition}`,540,278);
       }else{
-        await drawCrest(ctx,'assets/club-logos/leeds png.png',70,206,74);
-        ctx.textAlign='left';ctx.fillStyle='#f5f6fa';ctx.font='700 28px Space Grotesk, Arial';ctx.fillText(`Leeds United · ${matches.length} Matches`,164,238);
+        await drawCrest(ctx,'assets/club-logos/leeds png.png',70,206,74);ctx.textAlign='left';ctx.fillStyle='#f5f6fa';ctx.font='700 28px Space Grotesk, Arial';ctx.fillText(`Leeds United · ${matches.length} Matches`,164,238);
         ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(a)} — ${fmtDate(b)} · ${state.manifest.competition}`,164,272);
       }
       ctx.textAlign='left';
-
-      const px=251,py=318,pw=578,ph=Math.round(pw*105/68);
-      const pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');
+      const px=251,py=318,pw=578,ph=Math.round(pw*105/68),pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');
       ctx.drawImage(pitch,px,py,pw,ph);
-      const heat=document.querySelector('.pitch-stage.is-heatmap .pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,px,py,pw,ph);
-      await drawSvgOverlay(ctx,px,py,pw,ph);
-
+      const heatActive=!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);
+      if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,px,py,pw,ph)}else await drawSvgOverlay(ctx,px,py,pw,ph);
       ctx.fillStyle='#697181';ctx.font='800 17px Urbanist, Arial';ctx.fillText(`${$('eventCount').textContent} EVENTS · ${matches.length} MATCH${matches.length===1?'':'ES'} · ${$('plotWindow')?.textContent||'FULL MATCH'}`,70,1260);
       ctx.fillStyle='#f5f6fa';ctx.font='800 24px Space Grotesk, Arial';ctx.textAlign='center';ctx.fillText('LUFCDATA.LAB',540,1310);
       ctx.globalAlpha=.32;await drawCrest(ctx,'assets/club-logos/leeds png.png',70,1275,44);ctx.globalAlpha=1;
-
-      const link=document.createElement('a');
-      link.download=`${safeName(selectedMetricName())}-${safeName(selectedPlayerName())}-${a}-${b}.png`;
-      link.href=c.toDataURL('image/png');link.click();
-    }catch(err){
-      console.error(err);alert(`Export failed: ${err.message}`);
-    }finally{btn.textContent=old;btn.disabled=false}
+      const link=document.createElement('a');link.download=`${safeName(selectedMetricName())}-${safeName(selectedPlayerName())}-${a}-${b}.png`;link.href=c.toDataURL('image/png');link.click();
+    }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{btn.textContent=old;btn.disabled=false}
   }
 
   async function init(){
     installShell();
     try{
       const r=await fetch(MANIFEST_URL,{cache:'no-store'});if(!r.ok)throw new Error('Season manifest unavailable');
-      state.manifest=await r.json();
-      $('dateFrom').value=state.manifest.defaultFrom;$('dateTo').value=state.manifest.defaultTo;
+      state.manifest=await r.json();$('dateFrom').value=state.manifest.defaultFrom;$('dateTo').value=state.manifest.defaultTo;
       bind();await loadSelected();
-      window.PitchLabSeasonPerformance=Object.freeze({version:'SEASON_PERFORMANCE_V1_2026-09-08',reload:loadSelected,render:seasonRender,exportPng,state});
-    }catch(err){
-      console.error(err);const s=$('seasonStatus');if(s){s.textContent=err.message;s.classList.add('season-error')}
-    }
+      window.PitchLabSeasonPerformance=Object.freeze({version:'SEASON_PERFORMANCE_V1_1_2026-09-08',reload:loadSelected,render:seasonRender,exportPng,validateCarryBoundaries,state});
+    }catch(err){console.error(err);const s=$('seasonStatus');if(s){s.textContent=err.message;s.classList.add('season-error')}}
   }
 
   init();
