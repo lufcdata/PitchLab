@@ -13,11 +13,16 @@
   mode.className='field pitch-map-mode';
   mode.innerHTML='<label>Map View</label><div class="pitch-map-mode__rail" role="group" aria-label="Pitch visualisation mode"><button class="pitch-map-mode__button is-active" type="button" id="eventMapMode" aria-pressed="true">Event Map</button><button class="pitch-map-mode__button" type="button" id="heatMapMode" aria-pressed="false">Heat Map</button></div>';
   const filters=controls.querySelector('.filters');
-  const matchField=document.getElementById('pitchlabMatch')?.closest('.field');
-  if(filters){
-    if(matchField)matchField.insertAdjacentElement('afterend',mode);
-    else filters.prepend(mode);
-  }else stage.before(mode);
+  function placeMode(){
+    const matchField=document.getElementById('pitchlabMatch')?.closest('.field');
+    if(matchField){matchField.insertAdjacentElement('afterend',mode);return true;}
+    if(filters&&mode.parentNode!==filters)filters.prepend(mode);
+    else if(!filters&&!mode.parentNode)stage.before(mode);
+    return false;
+  }
+  if(!placeMode()){
+    let tries=0;const timer=setInterval(()=>{tries++;if(placeMode()||tries>30)clearInterval(timer)},100);
+  }
 
   const canvas=document.createElement('canvas');
   canvas.className='pitch-heatmap-canvas';
@@ -152,10 +157,10 @@
   heatButton.addEventListener('click',()=>setMode(true));
   [metric,team,player,from,to].forEach(el=>{el?.addEventListener('input',schedule);el?.addEventListener('change',schedule)});
   document.addEventListener('pitchlab:canonical-time-ready',schedule);
-  document.addEventListener('pitchlab:match-loaded',schedule);
+  document.addEventListener('pitchlab:match-loaded',()=>{placeMode();schedule()});
   const count=document.getElementById('eventCount');
   if(count)new MutationObserver(schedule).observe(count,{subtree:true,childList:true,characterData:true});
   window.addEventListener('resize',schedule,{passive:true});
 
-  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V5_2026-09-09',render:schedule,setMode});
+  window.PitchLabHeatMap=Object.freeze({version:'HEATMAP_GLOW_V5_1_2026-09-09',render:schedule,setMode});
 })();
