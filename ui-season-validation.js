@@ -3,6 +3,27 @@
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const type=e=>String(dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
   const median=values=>{const a=[...values].sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2};
+  const sorted=a=>[...a].map(String).sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+
+  function validatePlayerPopulation(selected,state,subjectId,failures){
+    const expected=new Set();
+    const expectedByMatch={};
+    for(const m of selected){
+      const pack=state.packs.get(m.matchId),ids=new Set();
+      for(const e of pack?.events||[]){
+        if(String(e.teamId)!==subjectId||e.playerId===null||e.playerId===undefined)continue;
+        ids.add(String(e.playerId));expected.add(String(e.playerId));
+      }
+      expectedByMatch[String(m.matchId)]=sorted(ids);
+    }
+    const select=document.getElementById('player');
+    const actual=new Set(select?[...select.options].map(o=>String(o.value)).filter(v=>v!=='all'):[]);
+    const missing=sorted([...expected].filter(id=>!actual.has(id))),unexpected=sorted([...actual].filter(id=>!expected.has(id)));
+    if(missing.length||unexpected.length)failures.push({reason:'player population parity',missing,unexpected});
+    const chosen=select?.value&&select.value!=='all'?String(select.value):null;
+    if(chosen&&!expected.has(chosen))failures.push({reason:'selected player outside Leeds season population',playerId:chosen});
+    return {expectedCount:expected.size,actualCount:actual.size,missing,unexpected,expectedByMatch,passed:missing.length===0&&unexpected.length===0};
+  }
 
   function validate(){
     const api=window.PitchLabSeasonPerformance,state=api?.state;
@@ -29,9 +50,10 @@
       if(evaluable&&!consistent)failures.push({matchId:m.matchId,reason:'subject spatial orientation inconsistent',medianShotX:med,shotCount:shots.length});
     }
 
+    const playerPopulation=validatePlayerPopulation(selected,state,subjectId,failures);
     const carry=state.validation||null;
     if(carry&&carry.passed===false)failures.push({reason:'carry validation failed',details:carry});
-    const result={version:'SEASON_VALIDATION_V1_1_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),orientation,carry,failures,passed:failures.length===0};
+    const result={version:'SEASON_VALIDATION_V1_2_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),playerPopulation,orientation,carry,failures,passed:failures.length===0};
     window.PitchLabSeasonValidationResult=result;
     if(!result.passed)console.error('[PitchLab Season Validation] FAILED',result);else console.info('[PitchLab Season Validation] PASSED',result);
     return result;
@@ -48,6 +70,6 @@
     if(state?.manifest){schedule();return}
     if(attempts<20)setTimeout(waitForSeason,250);
   };
-  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_1_2026-09-08',validate});
+  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_2_2026-09-08',validate});
   waitForSeason();
 })();
