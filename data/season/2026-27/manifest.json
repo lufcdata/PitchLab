@@ -18,7 +18,9 @@
       "competition": "Premier League",
       "pack": "data/season/2026-27/1983552.json.gz",
       "homeCrest": "assets/club-logos/Nottingham Forest.png",
-      "awayCrest": "assets/club-logos/leeds png.png"
+      "awayCrest": "assets/club-logos/leeds png.png",
+      "eventCount": 1419,
+      "sha256": "4f381e8c808cdab3fbe6e5e21165d0fc40d2bda857168a083c69fc7d3f2275a2"
     },
     {
       "matchId": 1983559,
@@ -31,7 +33,9 @@
       "competition": "Premier League",
       "pack": "data/season/2026-27/1983559.json.gz",
       "homeCrest": "assets/club-logos/leeds png.png",
-      "awayCrest": "assets/club-logos/Brentford.png"
+      "awayCrest": "assets/club-logos/Brentford.png",
+      "eventCount": 1542,
+      "sha256": "98bfc4480c9c992b5ba4c846476a4c696014c7a5eda90abb672b22bb321cf94a"
     },
     {
       "matchId": 1983572,
@@ -44,7 +48,9 @@
       "competition": "Premier League",
       "pack": "data/season/2026-27/1983572.json.gz",
       "homeCrest": "assets/club-logos/Brighton.png",
-      "awayCrest": "assets/club-logos/leeds png.png"
+      "awayCrest": "assets/club-logos/leeds png.png",
+      "eventCount": 1442,
+      "sha256": "b6986d9c7ffc050f281e08a1fcccc9677f5d000deab4cf78ecfdb2d2efd05436"
     }
   ]
 }
