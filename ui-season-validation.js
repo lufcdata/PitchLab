@@ -26,7 +26,7 @@
   }
 
   function validateFixtureBoundaries(selected,state,failures){
-    const manifestIds=new Set(),packPaths=new Set(),duplicateMatchIds=[],duplicatePackPaths=[],tagFailures=[];
+    const manifestIds=new Set(),packPaths=new Set(),duplicateMatchIds=[],duplicatePackPaths=[],tagFailures=[],eventCountFailures=[];
     for(const m of state.manifest.matches||[]){
       const id=String(m.matchId??'');
       if(manifestIds.has(id))duplicateMatchIds.push(id);else manifestIds.add(id);
@@ -37,13 +37,14 @@
     for(const m of selected){
       const pack=state.packs.get(m.matchId);if(!pack)continue;
       if(String(pack.matchId)!==String(m.matchId))tagFailures.push({matchId:m.matchId,reason:'pack matchId mismatch',packMatchId:pack.matchId});
+      if(Number.isFinite(Number(m.eventCount))&&Number(m.eventCount)!==(pack.events||[]).length)eventCountFailures.push({matchId:m.matchId,reason:'manifest eventCount mismatch',manifest:Number(m.eventCount),actual:(pack.events||[]).length});
       for(const e of pack.events||[]){
         if(String(e.__matchId)!==String(m.matchId)){tagFailures.push({matchId:m.matchId,reason:'event match tag mismatch',eventId:e.eventId,tag:e.__matchId});break}
         if(String(e.__matchDate)!==String(m.date)){tagFailures.push({matchId:m.matchId,reason:'event date tag mismatch',eventId:e.eventId,tag:e.__matchDate,expected:m.date});break}
       }
     }
-    failures.push(...tagFailures);
-    return {duplicateMatchIds:sorted(new Set(duplicateMatchIds)),duplicatePackPaths:sorted(new Set(duplicatePackPaths)),tagFailures,passed:duplicateMatchIds.length===0&&duplicatePackPaths.length===0&&tagFailures.length===0};
+    failures.push(...tagFailures,...eventCountFailures);
+    return {duplicateMatchIds:sorted(new Set(duplicateMatchIds)),duplicatePackPaths:sorted(new Set(duplicatePackPaths)),tagFailures,eventCountFailures,passed:duplicateMatchIds.length===0&&duplicatePackPaths.length===0&&tagFailures.length===0&&eventCountFailures.length===0};
   }
 
   function validate(){
@@ -75,7 +76,7 @@
     const playerPopulation=validatePlayerPopulation(selected,state,subjectId,failures);
     const carry=state.validation||null;
     if(carry&&carry.passed===false)failures.push({reason:'carry validation failed',details:carry});
-    const result={version:'SEASON_VALIDATION_V1_3_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),fixtureBoundaries,playerPopulation,orientation,carry,failures,passed:failures.length===0};
+    const result={version:'SEASON_VALIDATION_V1_4_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),fixtureBoundaries,playerPopulation,orientation,carry,failures,passed:failures.length===0};
     window.PitchLabSeasonValidationResult=result;
     if(!result.passed)console.error('[PitchLab Season Validation] FAILED',result);else console.info('[PitchLab Season Validation] PASSED',result);
     return result;
@@ -92,6 +93,6 @@
     if(state?.manifest){schedule();return}
     if(attempts<20)setTimeout(waitForSeason,250);
   };
-  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_3_2026-09-08',validate});
+  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_4_2026-09-08',validate});
   waitForSeason();
 })();
