@@ -4,9 +4,9 @@
 .pitch-stage.is-heatmap .pitch-heatmap-canvas{opacity:1}
 .pitch-stage.is-heatmap .event-svg{opacity:0}
 .pitch-stage.is-heatmap{box-shadow:0 14px 35px rgba(0,0,0,.18),0 0 0 1px rgba(255,255,255,.02)}
-.pitch-map-mode{display:flex;justify-content:center;align-items:center;margin:-4px 0 12px}
-.pitch-map-mode__rail{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,#11151d,#0e1118);border-radius:7px;box-shadow:0 5px 14px rgba(0,0,0,.12)}
-.pitch-map-mode__button{height:29px;padding:0 13px;border:0;border-radius:5px;background:transparent;color:#687080;font-family:Urbanist,sans-serif;font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
+.pitch-map-mode{min-width:0}
+.pitch-map-mode__rail{display:flex;align-items:center;width:100%;height:38px;gap:3px;padding:3px;border:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,#11151d,#0e1118);border-radius:5px;box-shadow:0 5px 14px rgba(0,0,0,.12)}
+.pitch-map-mode__button{flex:1;height:30px;padding:0 9px;border:0;border-radius:4px;background:transparent;color:#687080;font-family:Urbanist,sans-serif;font-size:8px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;cursor:pointer;transition:background .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease;white-space:nowrap}
 .pitch-map-mode__button:hover{color:#d6dbe4}
 .pitch-map-mode__button:active{transform:translateY(1px)}
 .pitch-map-mode__button.is-active{background:#29484b;color:#f4faf8;box-shadow:inset 0 0 0 1px rgba(78,240,206,.16),0 0 12px rgba(78,240,206,.045)}
@@ -14,4 +14,4 @@
 .pitch-stage.is-heatmap~.pitch-heatmap-key{display:flex}
 .pitch-heatmap-key__ramp{width:118px;height:7px;border-radius:99px;background:linear-gradient(90deg,rgba(30,3,5,.10) 0%,#3e0708 12%,#740c0c 28%,#c21914 46%,#ff3725 62%,#ff7e37 78%,#ffc04b 91%,#ffeb6f 100%);box-shadow:0 0 13px rgba(255,82,24,.19),inset 0 0 0 1px rgba(255,255,255,.05)}
 .pitch-panel.has-heatmap-active .count-row{color:#7d8493}
-@media(max-width:620px){.pitch-map-mode__button{padding:0 9px;font-size:7px}.pitch-heatmap-key__ramp{width:92px}}
+@media(max-width:620px){.pitch-map-mode__button{padding:0 7px;font-size:7px}.pitch-heatmap-key__ramp{width:92px}}
