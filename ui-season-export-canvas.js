@@ -15,8 +15,10 @@
     try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
   }
   async function drawFoundation(ctx){
-    ctx.fillStyle=BG;ctx.fillRect(0,0,WIDTH,HEIGHT);
-    try{const template=await loadImage(TEMPLATE);if(template.width!==WIDTH||template.height!==HEIGHT)throw new Error(`Export template must be ${WIDTH}×${HEIGHT}`);ctx.drawImage(template,0,0,WIDTH,HEIGHT);return true}catch(err){console.warn('[PitchLab Season Export] template unavailable; using locked background fallback',err);return false}
+    const template=await loadImage(TEMPLATE);
+    if(template.width!==WIDTH||template.height!==HEIGHT)throw new Error(`Export template must be exactly ${WIDTH}×${HEIGHT}`);
+    ctx.drawImage(template,0,0,WIDTH,HEIGHT);
+    return true;
   }
   async function exportPng(){
     const api=window.PitchLabSeasonPerformance,state=api?.state;if(!state)return;
@@ -46,5 +48,5 @@
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_1_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
 })();
