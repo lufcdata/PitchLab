@@ -1,0 +1,43 @@
+{
+  "version": "SEASON_2026_27_V1_2026-09-08",
+  "season": "2026/27",
+  "club": "Leeds",
+  "competition": "Premier League",
+  "defaultFrom": "2026-08-08",
+  "defaultTo": "2026-09-08",
+  "matches": [
+    {
+      "matchId": 1983552,
+      "date": "2026-08-22",
+      "home": "Nottingham Forest",
+      "away": "Leeds",
+      "score": "0–1",
+      "competition": "Premier League",
+      "pack": "data/season/2026-27/1983552.json.gz",
+      "homeCrest": "assets/club-logos/Nottingham Forest.png",
+      "awayCrest": "assets/club-logos/leeds png.png"
+    },
+    {
+      "matchId": 1983559,
+      "date": "2026-08-30",
+      "home": "Leeds",
+      "away": "Brentford",
+      "score": "1–1",
+      "competition": "Premier League",
+      "pack": "data/season/2026-27/1983559.json.gz",
+      "homeCrest": "assets/club-logos/leeds png.png",
+      "awayCrest": "assets/club-logos/Brentford.png"
+    },
+    {
+      "matchId": 1983572,
+      "date": "2026-09-05",
+      "home": "Brighton",
+      "away": "Leeds",
+      "score": "1–1",
+      "competition": "Premier League",
+      "pack": "data/season/2026-27/1983572.json.gz",
+      "homeCrest": "assets/club-logos/Brighton.png",
+      "awayCrest": "assets/club-logos/leeds png.png"
+    }
+  ]
+}
