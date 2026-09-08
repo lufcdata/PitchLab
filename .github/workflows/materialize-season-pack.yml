@@ -1,0 +1,46 @@
+name: Materialize Season Pack
+
+on:
+  push:
+    branches: [season-pack-materializer]
+    paths:
+      - 'staging-b64/**'
+      - '.github/workflows/materialize-season-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: season-pack-materializer
+      - name: Materialize complete Forest pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/season/2026-27
+          cat staging-b64/1983552.part00 staging-b64/1983552.part01 staging-b64/1983552.part02 staging-b64/1983552.part03 staging-b64/1983552.part04 staging-b64/1983552.part05 | base64 -d > data/season/2026-27/1983552.json.gz
+          test "$(wc -c < data/season/2026-27/1983552.json.gz)" -eq 67612
+          python3 - <<'PY'
+          import gzip,json
+          p='data/season/2026-27/1983552.json.gz'
+          with gzip.open(p,'rt',encoding='utf-8') as f: d=json.load(f)
+          assert d['matchId']==1983552
+          assert d['club']['teamId']==19
+          assert len(d['events'])==1419
+          print('Forest pack verified:',len(d['events']))
+          PY
+      - name: Commit verified binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/season/2026-27/1983552.json.gz
+          git diff --cached --quiet && exit 0
+          git commit -m 'Materialize verified Forest season pack'
+          git push origin HEAD:season-pack-materializer
