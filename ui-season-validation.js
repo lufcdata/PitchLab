@@ -31,7 +31,7 @@
 
     const carry=state.validation||null;
     if(carry&&carry.passed===false)failures.push({reason:'carry validation failed',details:carry});
-    const result={version:'SEASON_VALIDATION_V1_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),orientation,carry,failures,passed:failures.length===0};
+    const result={version:'SEASON_VALIDATION_V1_1_2026-09-08',selectedMatches:selected.length,expectedEvents,actualEvents,eventParity:expectedEvents===actualEvents,subjectTeamId:Number(state.manifest.clubTeamId),orientation,carry,failures,passed:failures.length===0};
     window.PitchLabSeasonValidationResult=result;
     if(!result.passed)console.error('[PitchLab Season Validation] FAILED',result);else console.info('[PitchLab Season Validation] PASSED',result);
     return result;
@@ -41,6 +41,13 @@
   document.addEventListener('change',schedule,true);
   document.addEventListener('input',schedule,true);
   window.addEventListener('pitchlab:timings-ready',schedule);
-  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_2026-09-08',validate});
-  schedule();
+  let attempts=0;
+  const waitForSeason=()=>{
+    attempts++;
+    const state=window.PitchLabSeasonPerformance?.state;
+    if(state?.manifest){schedule();return}
+    if(attempts<20)setTimeout(waitForSeason,250);
+  };
+  window.PitchLabSeasonValidation=Object.freeze({version:'SEASON_VALIDATION_V1_1_2026-09-08',validate});
+  waitForSeason();
 })();
