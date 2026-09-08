@@ -9,7 +9,7 @@ on:
         default: 'season-incoming'
         type: string
       raw_path:
-        description: 'Path on source_ref (for example incoming/WS_1983572_raw.json)'
+        description: 'Path on source_ref (incoming/*.json or incoming/*.json.gz)'
         required: true
         type: string
       season:
@@ -50,15 +50,21 @@ jobs:
         run: |
           set -euo pipefail
           case "$RAW_PATH" in
-            incoming/*.json) ;;
-            *) echo "::error::raw_path must be an incoming/*.json repository path"; exit 1 ;;
+            incoming/*.json|incoming/*.json.gz) ;;
+            *) echo "::error::raw_path must be incoming/*.json or incoming/*.json.gz"; exit 1 ;;
           esac
           test -n "$SOURCE_REF" || { echo "::error::source_ref is required"; exit 1; }
           git fetch --no-tags origin "$SOURCE_REF"
           mkdir -p .season-source
           LOCAL_SOURCE=".season-source/$(basename "$RAW_PATH")"
           git show "FETCH_HEAD:$RAW_PATH" > "$LOCAL_SOURCE" || { echo "::error::Raw JSON not found on source_ref"; exit 1; }
-          python3 -m json.tool "$LOCAL_SOURCE" >/dev/null
+          python3 - <<'PY'
+          import gzip,json,os,pathlib
+          p=pathlib.Path(os.environ['LOCAL_SOURCE'])
+          raw=gzip.decompress(p.read_bytes()) if p.name.endswith('.gz') else p.read_bytes()
+          json.loads(raw.decode('utf-8'))
+          print('Raw season source JSON validated')
+          PY
           echo "path=$LOCAL_SOURCE" >> "$GITHUB_OUTPUT"
 
       - name: Ingest and compress fixture
@@ -91,10 +97,11 @@ jobs:
         run: |
           set -euo pipefail
           MATCH_ID=$(python3 - <<'PY'
-          import json,re,os
-          p=os.environ['LOCAL_SOURCE']
-          d=json.load(open(p))
-          m=re.search(r'(\d{6,})',p)
+          import gzip,json,re,os,pathlib
+          p=pathlib.Path(os.environ['LOCAL_SOURCE'])
+          raw=gzip.decompress(p.read_bytes()) if p.name.endswith('.gz') else p.read_bytes()
+          d=json.loads(raw.decode('utf-8'))
+          m=re.search(r'(\d{6,})',p.name)
           value=d.get('matchId') or d.get('id') or (m.group(1) if m else None)
           if not value: raise SystemExit('Could not determine match ID')
           print(value)
