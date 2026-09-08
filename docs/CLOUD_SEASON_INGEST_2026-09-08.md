@@ -30,4 +30,4 @@ GitHub Actions cannot receive an arbitrary local file through `workflow_dispatch
 This deliberately keeps the raw upload separate from production history while preserving the review gate. A later PitchLab Admin upload surface can replace the staging-branch upload without changing the manifest/pack architecture.
 
 ## Bootstrap note
-The workflow and `scripts/season_ingest.py` must exist on the default branch before the first production dispatch. Until the Season Performance foundation PR is merged, this workflow is therefore architecture-under-test rather than a live production ingestion endpoint.
+The workflow and `scripts/season_ingest.py` must exist on the default branch before the first production dispatch. This isolated foundation PR supplies that bootstrap without including the unfinished Season Performance browser UI.
