@@ -13,6 +13,12 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 def fail(msg):
     print(f"::error::{msg}", file=sys.stderr); raise SystemExit(1)
 
+def read_json(path):
+    try:
+        raw=gzip.decompress(path.read_bytes()) if path.name.endswith('.gz') else path.read_bytes()
+        return json.loads(raw.decode('utf-8'))
+    except Exception as e:fail(f'Invalid JSON source: {e}')
+
 def score(data):
     value=str(data.get('ftScore') or data.get('score') or '').strip()
     return re.sub(r'\s*:\s*','–',value) or '–'
@@ -28,9 +34,7 @@ def player_dict(data):
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('raw_json'); ap.add_argument('--season',default='2026-27'); ap.add_argument('--competition',default='Premier League'); ap.add_argument('--club',default='Leeds'); args=ap.parse_args()
-    src=pathlib.Path(args.raw_json)
-    try:data=json.loads(src.read_text(encoding='utf-8'))
-    except Exception as e:fail(f'Invalid JSON: {e}')
+    src=pathlib.Path(args.raw_json); data=read_json(src)
     events=data.get('events'); home=data.get('home') or {}; away=data.get('away') or {}
     if not isinstance(events,list) or not events:fail('Fixture contains no events')
     if not home.get('name') or not away.get('name'):fail('Fixture is missing home/away team metadata')
@@ -53,8 +57,7 @@ def main():
     with pack_path.open('wb') as fh:
         with gzip.GzipFile(filename='',mode='wb',fileobj=fh,mtime=0,compresslevel=9) as gz:gz.write(payload)
     digest=hashlib.sha256(payload).hexdigest()
-    manifest_path=outdir/'manifest.json'
-    manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+    manifest_path=outdir/'manifest.json'; manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
     existing_team_id=manifest.get('clubTeamId')
     if existing_team_id is not None and str(existing_team_id)!=str(club_team_id):fail(f'Club teamId mismatch: manifest={existing_team_id}, fixture={club_team_id}')
     manifest['club']=args.club; manifest['clubTeamId']=club_team_id
@@ -64,7 +67,7 @@ def main():
     entry={'matchId':int(match_id) if match_id.isdigit() else match_id,'date':date,'home':home['name'],'away':away['name'],'clubSide':club_side,'clubTeamId':club_team_id,'score':score(data),'competition':args.competition,'pack':f'data/season/{args.season}/{match_id}.json.gz','homeCrest':crest(home['name']),'awayCrest':crest(away['name']),'eventCount':len(events),'sha256':digest}
     matches=[m for m in manifest.get('matches',[]) if str(m.get('matchId'))!=match_id]; matches.append(entry); matches.sort(key=lambda m:(m.get('date',''),str(m.get('matchId','')))); manifest['matches']=matches
     manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-    check=gzip.decompress(pack_path.read_bytes()); decoded=json.loads(check)
+    decoded=json.loads(gzip.decompress(pack_path.read_bytes()))
     if len(decoded.get('events',[]))!=len(events):fail('Compressed pack verification failed')
     if str((decoded.get('club') or {}).get('teamId'))!=str(club_team_id):fail('Compressed pack club identity verification failed')
     print(json.dumps({'matchId':match_id,'date':date,'fixture':f"{home['name']} {entry['score']} {away['name']}",'clubSide':club_side,'clubTeamId':club_team_id,'events':len(events),'pack':str(pack_path.relative_to(ROOT)),'sha256':digest},indent=2))
