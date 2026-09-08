@@ -1,0 +1,50 @@
+(()=>{
+  const TEMPLATE='assets/export/season-performance-full-canvas.png';
+  const WIDTH=1080,HEIGHT=1350,BRANDING_TOP=1230,BG='#191b2a';
+  const $=id=>document.getElementById(id);
+  const fmtDate=s=>{const d=new Date(`${s}T12:00:00`);return Number.isNaN(d.getTime())?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})};
+  const safeName=s=>String(s||'season-performance').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const playerName=()=>{const p=$('player');return p?.value==='all'?'Whole Team':(p?.options[p.selectedIndex]?.text||'Whole Team')};
+  const metricName=()=>{const m=$('metric');return m?.options[m.selectedIndex]?.text||'Metric'};
+  const loadImage=src=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error(`Could not load ${src}`));img.src=src});
+  async function drawCrest(ctx,src,x,y,size){try{const img=await loadImage(src),r=Math.min(size/img.width,size/img.height),w=img.width*r,h=img.height*r;ctx.drawImage(img,x+(size-w)/2,y+(size-h)/2,w,h)}catch(_){}}
+  async function drawSvgOverlay(ctx,x,y,w,h){
+    const svg=$('eventSvg');if(!svg)return;
+    const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w));clone.setAttribute('height',String(h));
+    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+    try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
+  }
+  async function drawFoundation(ctx){
+    ctx.fillStyle=BG;ctx.fillRect(0,0,WIDTH,HEIGHT);
+    try{const template=await loadImage(TEMPLATE);if(template.width!==WIDTH||template.height!==HEIGHT)throw new Error(`Export template must be ${WIDTH}×${HEIGHT}`);ctx.drawImage(template,0,0,WIDTH,HEIGHT);return true}catch(err){console.warn('[PitchLab Season Export] template unavailable; using locked background fallback',err);return false}
+  }
+  async function exportPng(){
+    const api=window.PitchLabSeasonPerformance,state=api?.state;if(!state)return;
+    const btn=$('seasonExport'),old=btn?.textContent;if(btn){btn.textContent='Rendering…';btn.disabled=true}
+    try{
+      const c=document.createElement('canvas');c.width=WIDTH;c.height=HEIGHT;const ctx=c.getContext('2d');
+      await drawFoundation(ctx);
+      ctx.fillStyle='#4ef0ce';ctx.font='800 22px Urbanist, Arial';ctx.fillText('PITCHLAB · SEASON PERFORMANCE',70,76);
+      ctx.fillStyle='#f5f6fa';ctx.font='700 44px Space Grotesk, Arial';ctx.fillText(metricName(),70,138);
+      ctx.fillStyle='#8a91a0';ctx.font='700 23px Urbanist, Arial';ctx.fillText(playerName(),70,176);
+      const matches=state.selected||[],a=$('dateFrom')?.value||'',b=$('dateTo')?.value||'';
+      if(matches.length===1){
+        const m=matches[0];await drawCrest(ctx,m.homeCrest,70,206,72);await drawCrest(ctx,m.awayCrest,938,206,72);
+        ctx.fillStyle='#f5f6fa';ctx.textAlign='center';ctx.font='700 26px Space Grotesk, Arial';ctx.fillText(`${m.home}   ${m.score}   ${m.away}`,540,246);
+        ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(m.date)} · ${m.competition}`,540,278);
+      }else{
+        await drawCrest(ctx,'assets/club-logos/leeds png.png',70,206,74);ctx.textAlign='left';ctx.fillStyle='#f5f6fa';ctx.font='700 28px Space Grotesk, Arial';ctx.fillText(`Leeds United · ${matches.length} Matches`,164,238);
+        ctx.fillStyle='#777f8e';ctx.font='700 18px Urbanist, Arial';ctx.fillText(`${fmtDate(a)} — ${fmtDate(b)} · ${state.manifest?.competition||'Premier League'}`,164,272);
+      }
+      ctx.textAlign='left';
+      const px=251,py=318,pw=578,ph=Math.round(pw*105/68);if(py+ph>BRANDING_TOP-70)throw new Error('Pitch export overlaps protected branding area');
+      const pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');ctx.drawImage(pitch,px,py,pw,ph);
+      const heatActive=!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);
+      if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,px,py,pw,ph)}else await drawSvgOverlay(ctx,px,py,pw,ph);
+      ctx.fillStyle='#697181';ctx.font='800 17px Urbanist, Arial';ctx.fillText(`${$('eventCount')?.textContent||'0'} EVENTS · ${matches.length} MATCH${matches.length===1?'':'ES'} · ${$('plotWindow')?.textContent||'FULL MATCH'}`,70,1190);
+      const link=document.createElement('a');link.download=`${safeName(metricName())}-${safeName(playerName())}-${a}-${b}.png`;link.href=c.toDataURL('image/png');link.click();
+    }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
+  }
+  document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
+})();
