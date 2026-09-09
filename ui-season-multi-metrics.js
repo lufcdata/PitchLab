@@ -33,6 +33,12 @@
   function install(){
     const metric=$('metric');if(!metric||$('seasonMetricChecks'))return false;
     const field=metric.closest('.field');if(!field)return false;
+    field.classList.add('season-metric-field');
+    const playerField=$('player')?.closest('.field');
+    if(playerField){
+      playerField.classList.add('season-player-field');
+      if(playerField.parentElement===field.parentElement)playerField.insertAdjacentElement('afterend',field);
+    }
     const groups=[];
     for(const g of metric.querySelectorAll('optgroup'))groups.push({label:g.label,options:[...g.querySelectorAll('option')].map(o=>({value:o.value,text:o.text}))});
     const throwGroup=groups.find(g=>g.label==='Throw-Ins');
@@ -84,6 +90,6 @@
   }
 
   function boot(){if(!install())setTimeout(boot,80)}
-  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_2_2026-09-09',label,labels,selected:()=>[...selected],expanded:()=>expanded(),render:renderComposite});
+  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_3_2026-09-09',label,labels,selected:()=>[...selected],expanded:()=>expanded(),render:renderComposite});
   boot();
 })();
