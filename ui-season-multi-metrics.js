@@ -23,6 +23,7 @@
   function shotColour(key){return isGoalMetric(key)?GOAL_COLOUR:key==='shots_on'?ON_TARGET_COLOUR:SHOT_COLOUR}
   function layerPriority(key){return isGoalMetric(key)?300:key==='shots_on'?200:isShotMetric(key)?100:0}
   function shotLegend(key){return `<span class="legend-item season-shot-legend"><i class="legend-arrow metric" style="--metric-colour:${shotColour(key)}"></i>${metricLabel(key)}</span>`}
+  function mappedLegend(key){return window.PitchLabSeasonEventMarkerSymbols?.legendHtml?.(key)||''}
   function syncToolbar(){
     const count=$('seasonMetricSelectedCount');if(count)count.textContent=`${selected.length} selected`;
     const clear=$('seasonMetricClear');if(clear)clear.disabled=selected.length===0;
@@ -114,7 +115,7 @@
       const legend=$('plotLegend');
       if(legend){
         const legendOrder=[...layers].sort((a,b)=>layerPriority(b.key)-layerPriority(a.key)||a.i-b.i);
-        legend.innerHTML=legendOrder.map(x=>isShotMetric(x.key)?shotLegend(x.key):`<span class="season-metric-legend-label">${metricLabel(x.key)}</span>${x.part.legend}`).join('');
+        legend.innerHTML=legendOrder.map(x=>mappedLegend(x.key)|| (isShotMetric(x.key)?shotLegend(x.key):`<span class="season-metric-legend-label">${metricLabel(x.key)}</span>${x.part.legend}`)).join('');
       }
       const title=$('plotTitle');if(title)title.textContent=label();
       const info=$('infoText');if(info)info.textContent=`Season Performance · ${selected.length} selected metric${selected.length===1?'':'s'} · derived sequences remain reconstructed match-by-match before aggregation.`;
@@ -122,6 +123,6 @@
   }
 
   function boot(){if(!install())setTimeout(boot,80)}
-  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_6_2026-09-09',label,labels,metricLabel,selected:()=>[...selected],expanded:()=>expanded(),countForPlayer,render:renderComposite,shotLayerPriority:layerPriority});
+  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_7_2026-09-09',label,labels,metricLabel,selected:()=>[...selected],expanded:()=>expanded(),countForPlayer,render:renderComposite,shotLayerPriority:layerPriority});
   boot();
 })();
