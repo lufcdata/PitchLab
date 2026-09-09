@@ -1,6 +1,7 @@
 (()=>{
   const $=id=>document.getElementById(id);
   const VIRTUAL_TOTAL={key:'throwins_total',label:'Total Throw-Ins',members:['throwins_success','throwins_unsuccess']};
+  const GOAL_COLOUR='#BDA060',ON_TARGET_COLOUR='#25ACF5',SHOT_COLOUR='#D5D9DB';
   let selected=['successful'],rendering=false;
 
   function metricLabel(key){
@@ -17,6 +18,11 @@
     }
     return out;
   }
+  function isGoalMetric(key){return key==='own_goals'||key==='goals'||key.startsWith('goals_')}
+  function isShotMetric(key){return key==='shots'||key==='woodwork'||key.startsWith('shots_')||isGoalMetric(key)}
+  function shotColour(key){return isGoalMetric(key)?GOAL_COLOUR:key==='shots_on'?ON_TARGET_COLOUR:SHOT_COLOUR}
+  function layerPriority(key){return isGoalMetric(key)?300:key==='shots_on'?200:isShotMetric(key)?100:0}
+  function shotLegend(key){return `<span class="legend-item season-shot-legend"><i class="legend-arrow metric" style="--metric-colour:${shotColour(key)}"></i>${metricLabel(key)}</span>`}
   function syncToolbar(){
     const count=$('seasonMetricSelectedCount');if(count)count.textContent=`${selected.length} selected`;
     const clear=$('seasonMetricClear');if(clear)clear.disabled=selected.length===0;
@@ -101,15 +107,21 @@
     try{
       if(keys.length>1)window.PitchLabHeatMap?.setMode?.(false);
       const parts=keys.map(renderOne),total=parts.reduce((n,p)=>n+p.count,0);
-      root.innerHTML=parts.map((p,i)=>`<g data-season-metric-layer="${keys[i]}">${p.svg}</g>`).join('');
+      const layers=parts.map((part,i)=>({part,key:keys[i],i}));
+      const drawOrder=[...layers].sort((a,b)=>layerPriority(a.key)-layerPriority(b.key)||a.i-b.i);
+      root.innerHTML=drawOrder.map(x=>`<g data-season-metric-layer="${x.key}" data-season-layer-priority="${layerPriority(x.key)}">${x.part.svg}</g>`).join('');
       $('eventCount').textContent=String(total);
-      const legend=$('plotLegend');if(legend)legend.innerHTML=parts.map((p,i)=>`<span class="season-metric-legend-label">${metricLabel(keys[i])}</span>${p.legend}`).join('');
+      const legend=$('plotLegend');
+      if(legend){
+        const legendOrder=[...layers].sort((a,b)=>layerPriority(b.key)-layerPriority(a.key)||a.i-b.i);
+        legend.innerHTML=legendOrder.map(x=>isShotMetric(x.key)?shotLegend(x.key):`<span class="season-metric-legend-label">${metricLabel(x.key)}</span>${x.part.legend}`).join('');
+      }
       const title=$('plotTitle');if(title)title.textContent=label();
       const info=$('infoText');if(info)info.textContent=`Season Performance · ${selected.length} selected metric${selected.length===1?'':'s'} · derived sequences remain reconstructed match-by-match before aggregation.`;
     }finally{rendering=false}
   }
 
   function boot(){if(!install())setTimeout(boot,80)}
-  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_5_2026-09-09',label,labels,metricLabel,selected:()=>[...selected],expanded:()=>expanded(),countForPlayer,render:renderComposite});
+  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_6_2026-09-09',label,labels,metricLabel,selected:()=>[...selected],expanded:()=>expanded(),countForPlayer,render:renderComposite,shotLayerPriority:layerPriority});
   boot();
 })();
