@@ -11,6 +11,7 @@
   async function drawSvgOverlay(ctx,x,y,w,h){
     const svg=$('eventSvg');if(!svg)return;
     const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w));clone.setAttribute('height',String(h));
+    clone.querySelectorAll('line[marker-end]').forEach(line=>{const sw=Number(line.getAttribute('stroke-width'));if(Number.isFinite(sw))line.setAttribute('stroke-width',String(sw*1.15))});
     const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
     try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
   }
@@ -48,5 +49,5 @@
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_2_2026-09-08',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FULL_CANVAS_V1_3_2026-09-09',template:TEMPLATE,width:WIDTH,height:HEIGHT,brandingTop:BRANDING_TOP,background:BG,exportPng});
 })();
