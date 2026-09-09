@@ -78,6 +78,20 @@
     return{svg:root?.innerHTML||'',count:Number($('eventCount')?.textContent||0),legend:$('plotLegend')?.innerHTML||''};
   }
 
+  function countForPlayer(key,playerId){
+    const player=$('player'),metric=$('metric');if(!player||!metric)return 0;
+    const oldPlayer=player.value,oldMetric=metric.value;
+    let total=0;
+    try{
+      player.value=String(playerId);
+      const keys=key===VIRTUAL_TOTAL.key?VIRTUAL_TOTAL.members:[key];
+      total=keys.reduce((n,k)=>n+renderOne(k).count,0);
+    }finally{
+      player.value=oldPlayer;metric.value=oldMetric;
+    }
+    return total;
+  }
+
   function renderComposite(){
     if(rendering)return;
     const metric=$('metric'),root=$('eventSvg');if(!metric||!root)return;
@@ -96,6 +110,6 @@
   }
 
   function boot(){if(!install())setTimeout(boot,80)}
-  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_4_2026-09-09',label,labels,selected:()=>[...selected],expanded:()=>expanded(),render:renderComposite});
+  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_5_2026-09-09',label,labels,metricLabel,selected:()=>[...selected],expanded:()=>expanded(),countForPlayer,render:renderComposite});
   boot();
 })();
