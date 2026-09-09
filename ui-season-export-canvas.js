@@ -16,7 +16,23 @@
   async function drawIdentityIcon(ctx){const x=255,y=25,s=82;if(isTeam()){await drawImageContain(ctx,'assets/club-logos/leeds png.png',x,y,s,s,false);return}for(const src of playerImageCandidates()){const remote=/^https?:/i.test(src);if(await drawImageContain(ctx,src,x,y,s,s,true,remote)){ctx.strokeStyle='#eef1f5';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x+s/2,y+s/2,s/2,0,Math.PI*2);ctx.stroke();return}}drawPlayerFallback(ctx,x,y,s)}
   function contextLine(state,matches){const period=($('plotWindow')?.textContent||'0:00 - FT').replace(/FULL MATCH/i,'0:00 - FT');const competition=state.manifest?.competition||matches[0]?.competition||'Premier League';return `${competition}   |   Leeds   |   ${period}`}
   function rangeLine(matches){return `Whole ${matches.length} match${matches.length===1?'':'es'}`}
-  async function drawSvgOverlay(ctx,x,y,w,h){const svg=$('eventSvg');if(!svg)return;const clone=svg.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.setAttribute('width',String(w*EXPORT_SCALE));clone.setAttribute('height',String(h*EXPORT_SCALE));for(const el of clone.querySelectorAll('[stroke]')){const raw=el.getAttribute('stroke-width');const n=parseFloat(raw||'1');if(Number.isFinite(n))el.setAttribute('stroke-width',String(n*1.15))}const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}}
+  async function drawSvgOverlay(ctx,x,y,w,h){
+    const svg=$('eventSvg');if(!svg)return;
+    const clone=svg.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    clone.setAttribute('width',String(w*EXPORT_SCALE));
+    clone.setAttribute('height',String(h*EXPORT_SCALE));
+    const liveLines=[...svg.querySelectorAll('line')],exportLines=[...clone.querySelectorAll('line')];
+    exportLines.forEach((line,i)=>{
+      const source=liveLines[i];
+      const liveStroke=parseFloat(source?getComputedStyle(source).strokeWidth:'');
+      const fallback=parseFloat(line.getAttribute('stroke-width')||'1.5');
+      const stroke=Number.isFinite(liveStroke)&&liveStroke>0?liveStroke:fallback;
+      if(Number.isFinite(stroke))line.setAttribute('stroke-width',String(stroke*EXPORT_SCALE));
+    });
+    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+    try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
+  }
   async function drawFoundation(ctx){const template=await loadImage(TEMPLATE);if(template.width!==WIDTH||template.height!==HEIGHT)throw new Error(`Export template must be exactly ${WIDTH}×${HEIGHT}`);ctx.drawImage(template,0,0,WIDTH,HEIGHT)}
   function drawHeader(ctx,state,matches){const title=playerName();ctx.textAlign='center';ctx.fillStyle='#f5f6fa';fitText(ctx,title,430,25,18,800);ctx.fillText(title,540,48);ctx.fillStyle='#aab0c1';ctx.font=font(700,15);ctx.fillText(contextLine(state,matches),540,73);ctx.fillStyle='#8990a0';ctx.font=font(700,12);ctx.fillText(rangeLine(matches),540,99);ctx.textAlign='right';ctx.fillStyle='#f5f6fa';ctx.font=font(800,22,'Space Grotesk');ctx.fillText($('eventCount')?.textContent||'0',829,124);ctx.fillStyle='#7e8494';ctx.font=font(800,10);ctx.fillText('EVENTS',882,124);ctx.textAlign='left'}
   function drawAttackingDirection(ctx){ctx.save();ctx.translate(PITCH.x-14,PITCH.y+PITCH.h/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f5f6fa';ctx.font=font(800,14);ctx.fillText('Attacking Direction',0,0);ctx.strokeStyle='#52eecf';ctx.fillStyle='#52eecf';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(86,0);ctx.lineTo(110,0);ctx.stroke();ctx.beginPath();ctx.moveTo(110,0);ctx.lineTo(102,-5);ctx.lineTo(102,5);ctx.closePath();ctx.fill();ctx.restore()}
@@ -31,5 +47,5 @@
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_FINAL_POLISH_V1_2026-09-09',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_STROKE_PARITY_V1_2026-09-09',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
 })();
