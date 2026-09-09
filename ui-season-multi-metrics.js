@@ -35,8 +35,14 @@
     const field=metric.closest('.field');if(!field)return false;
     field.classList.add('season-metric-field');
     const playerField=$('player')?.closest('.field');
+    const filters=field.parentElement;
+    const periodCard=document.querySelector('.period-card');
     if(playerField){
       playerField.classList.add('season-player-field');
+      if(periodCard&&filters&&playerField.parentElement===filters){
+        periodCard.classList.add('season-period-field');
+        filters.insertBefore(periodCard,playerField);
+      }
       if(playerField.parentElement===field.parentElement)playerField.insertAdjacentElement('afterend',field);
     }
     const groups=[];
@@ -90,6 +96,6 @@
   }
 
   function boot(){if(!install())setTimeout(boot,80)}
-  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_3_2026-09-09',label,labels,selected:()=>[...selected],expanded:()=>expanded(),render:renderComposite});
+  window.PitchLabSeasonMultiMetrics=Object.freeze({version:'SEASON_MULTI_METRICS_V1_4_2026-09-09',label,labels,selected:()=>[...selected],expanded:()=>expanded(),render:renderComposite});
   boot();
 })();
