@@ -7,14 +7,14 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="pitchlab-compared" src="base.html?v=matches-compared-1" title="PitchLab Matches Compared"></iframe>
+<iframe id="pitchlab-compared" src="base.html?v=matches-compared-2" title="PitchLab Matches Compared"></iframe>
 <script>
 const frame=document.getElementById('pitchlab-compared');
 frame.addEventListener('load',()=>{
   const doc=frame.contentDocument;if(!doc)return;
   const addCss=(href,key)=>{const el=doc.createElement('link');el.rel='stylesheet';el.href=href;el.dataset[key]='1';doc.head.appendChild(el)};
   const addJs=(src,key)=>new Promise((resolve,reject)=>{const el=doc.createElement('script');el.src=src;el.async=false;el.dataset[key]='1';el.onload=resolve;el.onerror=reject;doc.body.appendChild(el)});
-  const V='matches-compared-1';
+  const V='matches-compared-2';
   ['ui-integration.css','ui-polish.css','ui-v31-fixes.css','ui-matches-compared.css'].forEach((s,i)=>addCss(`${s}?v=${V}`,`mcc${i}`));
   const scripts=['ui-carry-metrics.js','ui-extra-metrics.js','ui-golden-metrics-v2.js','ui-possession-golden.js','ui-touch-metrics-fix.js','ui-passing-metrics-golden.js','ui-metric-bible-sync.js','ui-gold-passing-family.js','ui-forward-pass-definition.js','ui-long-pass-definition.js','ui-progressive-pass-definition.js','ui-penalty-box-pass-definition.js','ui-penalty-area-entries-gold.js','ui-gold-simple-event-family.js','ui-open-play-cross-definition.js','ui-throw-in-touch-territory-definition.js','ui-takeon-corner-definition.js','ui-goal-family-definition.js','ui-defensive-residual-definition.js','ui-gold-recovery-duels-family.js','ui-gold-attacking-family.js','ui-final-third-entries-gold.js','ui-action-outcome-definition.js','ui-team-metric-bible.js','ui-season-nav.js','ui-matches-compared.js'];
   (async()=>{for(let i=0;i<scripts.length;i++)await addJs(`${scripts[i]}?v=${V}`,`mcj${i}`)})().catch(err=>console.error('[PitchLab Matches Compared]',err));
