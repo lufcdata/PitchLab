@@ -1,8 +1,14 @@
 body.season-performance-mode .match-pill{display:none}
+body.season-performance-mode .workspace{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
 body.season-performance-mode .controls-title{display:flex;justify-content:space-between;align-items:center}
 body.season-performance-mode .season-count{font-family:'Space Grotesk';font-size:12px;color:#f5f6fa;letter-spacing:0;text-transform:none}
 body.season-performance-mode .season-count b{color:var(--mint);font-size:16px}
 body.season-performance-mode .season-hidden{display:none!important}
+body.season-performance-mode .filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.season-performance-mode .season-period-field{grid-column:1/-1;margin-top:0;padding-top:0;border-top:0}
+body.season-performance-mode .season-player-field{grid-column:1/-1}
+body.season-performance-mode .season-metric-field{grid-column:1/-1}
+body.season-performance-mode .summary-card{display:none!important}
 body.season-performance-mode .season-actions{display:flex;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid var(--soft);flex-wrap:wrap}
 body.season-performance-mode .season-export{height:38px;border:1px solid rgba(78,240,206,.28);background:#17352f;color:#eafffa;border-radius:6px;padding:0 14px;font:800 9px Urbanist,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 body.season-performance-mode .season-export:hover{background:#1d443c}
@@ -15,3 +21,5 @@ body.season-performance-mode .season-error{color:#ffb3b3}
 body.season-performance-mode .plot-heading .season-player-line{margin-top:5px;color:#8a91a0;font-size:10px;font-weight:700;letter-spacing:.08em}
 body.season-performance-mode .nav button[data-season-nav="1"]{background:var(--mint);color:#11141a}
 body.season-performance-mode .nav button:not([data-season-nav="1"]){background:transparent;color:#7c8191}
+@media(max-width:980px){body.season-performance-mode .workspace{grid-template-columns:1fr}}
+@media(max-width:620px){body.season-performance-mode .filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
