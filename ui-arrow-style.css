@@ -1,6 +1,6 @@
 /* Pitch event arrow polish: slightly heavier trajectories, no start dots on arrows. */
 #eventSvg > line{
-  stroke-width:1.5!important;
+  stroke-width:1.7!important;
 }
 
 /* Arrow renderers append their event-start circle immediately after the line.
