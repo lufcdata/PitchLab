@@ -23,6 +23,21 @@
       "sha256": "4f381e8c808cdab3fbe6e5e21165d0fc40d2bda857168a083c69fc7d3f2275a2"
     },
     {
+      "matchId": 2020316,
+      "date": "2026-08-25",
+      "home": "Nottingham Forest",
+      "away": "Leeds",
+      "clubSide": "away",
+      "clubTeamId": 19,
+      "score": "0–2",
+      "competition": "League Cup",
+      "pack": "data/season/2026-27/2020316.json.gz",
+      "homeCrest": "assets/club-logos/Nottingham Forest.png",
+      "awayCrest": "assets/club-logos/leeds png.png",
+      "eventCount": 1586,
+      "sha256": "dbafe3fa0016e6a3deb88e689125f35dfb6b18b0e94a592688902f0d6bfbd90e"
+    },
+    {
       "matchId": 1983559,
       "date": "2026-08-30",
       "home": "Leeds",
