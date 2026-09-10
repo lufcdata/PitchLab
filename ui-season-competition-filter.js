@@ -13,6 +13,7 @@
     const field=document.createElement('div');field.className='field season-competition-filter';field.innerHTML=`<label>Competition</label><select id="seasonCompetition" class="selectlike">${optionHtml(optionsFor(allMatches))}</select>`;
     const dateTo=document.getElementById('dateTo')?.closest('.field');(dateTo||filters.lastElementChild)?.insertAdjacentElement('afterend',field);
     const select=field.querySelector('select'),status=document.getElementById('seasonStatus'),importBtn=document.getElementById('seasonImport'),input=document.getElementById('seasonImportFiles');
+    if(importBtn){importBtn.textContent='Load Match JSON…';importBtn.title='Validate and preview a WhoScored match JSON before protected library ingest.'}
     let selected='all';
     const mergeLocal=()=>{for(const m of state.manifest.matches){const i=allMatches.findIndex(x=>String(x.matchId)===String(m.matchId));if(i>=0)allMatches[i]=m;else allMatches.push(m)}};
     const apply=()=>{
@@ -26,7 +27,7 @@
     if(status){new MutationObserver(()=>{if(/imported/i.test(status.textContent||'')){mergeLocal();const current=select.value;select.innerHTML=optionHtml(optionsFor(allMatches));select.value=current;}}).observe(status,{childList:true,subtree:true,characterData:true})}
     if(input)input.title='Choose a Competition first. Loaded JSON is validated for local preview; permanent storage still uses the protected Season Performance Cloud Ingest workflow.';
     const compLabel=document.getElementById('seasonCompetitionLabel');if(compLabel)compLabel.textContent=`All Competitions · ${state.manifest.season||'2026/27'}`;
-    window.PitchLabSeasonCompetition=Object.freeze({version:'SEASON_COMPETITION_FILTER_V1_2026-09-10',allMatches,apply});
+    window.PitchLabSeasonCompetition=Object.freeze({version:'SEASON_COMPETITION_FILTER_V1_1_2026-09-10',allMatches,apply});
   }
 
   function installCompared(api){
@@ -45,7 +46,7 @@
       if(state.selectedId!==null){matchSelect.value=state.selectedId;matchSelect.dispatchEvent(new Event('change',{bubbles:true}))}
     };
     select.addEventListener('change',apply);
-    window.PitchLabMatchesCompetition=Object.freeze({version:'MATCHES_COMPETITION_FILTER_V1_2026-09-10',allMatches,apply});
+    window.PitchLabMatchesCompetition=Object.freeze({version:'MATCHES_COMPETITION_FILTER_V1_1_2026-09-10',allMatches,apply});
   }
 
   let tries=0;const timer=setInterval(()=>{
