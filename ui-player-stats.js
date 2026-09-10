@@ -1,6 +1,7 @@
 (()=>{
   const MANIFEST='data/season/2026-27/manifest.json',CLUB='Leeds';
-  const S={manifest:null,packs:new Map(),colour:'#FAD119',per90:false,eligible:[],selected:[],loading:false};
+  const FULL_CANVAS='assets/export/Full Canvas.png',LEEDS_CREST='assets/leeds png.png';
+  const S={manifest:null,packs:new Map(),colour:'#FAD119',per90:false,eligible:[],selected:[],loading:false,images:new Map()};
   const $=id=>document.getElementById(id);
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const et=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').replace(/[\s_-]/g,'').toLowerCase();
@@ -10,7 +11,23 @@
   const niceDate=s=>{if(!s)return'';const [y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})};
   const fmt=v=>Number.isInteger(v)?v.toLocaleString('en-GB'):v.toLocaleString('en-GB',{maximumFractionDigits:2});
   const slug=s=>String(s||'player-stats').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const imageUrl=name=>`assets/players-images/${encodeURIComponent(name)}.png`;
 
+  function imageAsset(url,redraw=true){
+    if(S.images.has(url))return S.images.get(url);
+    const img=new Image(),entry={img,loaded:false,failed:false,promise:null};
+    entry.promise=new Promise(resolve=>{img.onload=()=>{entry.loaded=true;resolve(entry);if(redraw)draw()};img.onerror=()=>{entry.failed=true;resolve(entry)};});
+    img.src=url;S.images.set(url,entry);return entry;
+  }
+  function playerAsset(name){
+    const primary=imageAsset(imageUrl(name));
+    if(primary.failed&&!/ Icon$/i.test(name))return imageAsset(imageUrl(`${name} Icon`));
+    return primary;
+  }
+  async function preloadForExport(data){
+    const assets=[imageAsset(FULL_CANVAS,false),imageAsset(LEEDS_CREST,false),...data.map(r=>playerAsset(r.name))];
+    await Promise.all(assets.map(a=>a.promise));
+  }
   async function gzipJson(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`Could not load ${url}`);if(typeof DecompressionStream==='undefined'||!r.body)throw new Error('Compressed season packs are not supported by this browser.');return JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text())}
 
   function metricOptions(){
@@ -35,6 +52,7 @@
     </div><div class="ps-actions"><button id="psExport" class="ps-export" type="button">EXPORT 1080 × 1350 PNG</button></div><div id="psStatus" class="ps-status">Loading season data…</div></aside>
     <section class="ps-preview-wrap"><div class="ps-canvas-shell"><canvas id="playerStatsCanvas" width="1080" height="1350" aria-label="Player statistics ranked bar chart"></canvas><div class="ps-canvas-badge">1080 × 1350 EXPORT</div></div></section>`;
     shell.appendChild(page);
+    imageAsset(FULL_CANVAS);imageAsset(LEEDS_CREST);
     const opts=metricOptions(),sel=$('psMetric');for(const m of opts){const o=document.createElement('option');o.value=m.key;o.textContent=m.label;sel.appendChild(o)}
     const preferred=['progressive_passes','touches','shots','chances_created','successful'];const p=preferred.find(k=>opts.some(x=>x.key===k));if(p)sel.value=p;
     ['psMetric','psFrom','psTo','psCompetition'].forEach(id=>$(id)?.addEventListener('change',refresh));
@@ -65,26 +83,35 @@
 
   function roundedRect(ctx,x,y,w,h,r){const rr=Math.min(r,h/2,w/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath()}
   function fitText(ctx,text,maxWidth){if(ctx.measureText(text).width<=maxWidth)return text;let t=text;while(t.length>1&&ctx.measureText(`${t}…`).width>maxWidth)t=t.slice(0,-1);return `${t}…`}
+  function drawCircleImage(ctx,img,cx,cy,size){
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,size/2,0,Math.PI*2);ctx.clip();ctx.drawImage(img,cx-size/2,cy-size/2,size,size);ctx.restore();
+    ctx.beginPath();ctx.arc(cx,cy,size/2,0,Math.PI*2);ctx.strokeStyle='rgba(248,248,251,.92)';ctx.lineWidth=1.5;ctx.stroke();
+  }
   function draw(){
     const c=$('playerStatsCanvas');if(!c)return;const ctx=c.getContext('2d'),metric=chosenMetric(),data=rows(),W=1080,H=1350;
     const bg='#171928',heading='#f8f8fb',label='#d7dae4',meta='#a7abbd',muted='#777c91',accent='#48f0ca',rowBorder='rgba(255,255,255,.07)',rowA='rgba(255,255,255,.045)',track='rgba(255,255,255,.06)';
-    ctx.clearRect(0,0,W,H);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);
+    const canvasArt=imageAsset(FULL_CANVAS,false);if(canvasArt.loaded)ctx.drawImage(canvasArt.img,0,0,W,H);else{ctx.fillStyle=bg;ctx.fillRect(0,0,W,H)}
     ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,273);ctx.lineTo(W,273);ctx.stroke();
-    ctx.textAlign='center';ctx.fillStyle=heading;ctx.font='700 32.5px Urbanist, sans-serif';ctx.fillText(`${CLUB} — ${metric.label}${S.per90?' per 90':''}`,W/2,112);
+    const title=`${metric.label}${S.per90?' per 90':''}`;ctx.font='700 32.5px Urbanist, sans-serif';const titleWidth=ctx.measureText(title).width,crest=imageAsset(LEEDS_CREST,false),headerGap=16,crestSize=48,totalWidth=titleWidth+(crest.loaded?crestSize+headerGap:0),titleStart=(W-totalWidth)/2+(crest.loaded?crestSize+headerGap:0);
+    if(crest.loaded)ctx.drawImage(crest.img,(W-totalWidth)/2,78,crestSize,crestSize);
+    ctx.textAlign='left';ctx.fillStyle=heading;ctx.fillText(title,titleStart,112);
     const comp=$('psCompetition')?.selectedOptions[0]?.textContent||'All Competitions',dateText=S.selected.length?`${niceDate(S.selected[0].date)} — ${niceDate(S.selected[S.selected.length-1].date)}`:'No matches';
-    ctx.fillStyle=meta;ctx.font='600 22px Urbanist, sans-serif';ctx.fillText(`2026/27`,W/2-185,164);ctx.fillStyle=accent;ctx.fillText('|',W/2-82,164);ctx.fillStyle=meta;ctx.fillText(comp,W/2+18,164);ctx.fillStyle=accent;ctx.fillText('|',W/2+142,164);ctx.fillStyle=meta;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(dateText,W/2,207);
-    const left=70,right=70,rowX=88,rowW=W-176,rowH=54,gap=7,startY=304,max=Math.max(1,...data.map(r=>r.display));
+    ctx.textAlign='center';ctx.fillStyle=meta;ctx.font='600 22px Urbanist, sans-serif';ctx.fillText(`2026/27`,W/2-185,164);ctx.fillStyle=accent;ctx.fillText('|',W/2-82,164);ctx.fillStyle=meta;ctx.fillText(comp,W/2+18,164);ctx.fillStyle=accent;ctx.fillText('|',W/2+142,164);ctx.fillStyle=meta;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(dateText,W/2,207);
+    const rowX=88,rowW=W-176,rowH=54,gap=7,startY=304,max=Math.max(1,...data.map(r=>r.display));
     data.forEach((r,i)=>{
       const y=startY+i*(rowH+gap);ctx.fillStyle=rowA;ctx.strokeStyle=rowBorder;ctx.lineWidth=1;roundedRect(ctx,rowX,y,rowW,rowH,10);ctx.fill();ctx.stroke();
-      ctx.textAlign='center';ctx.fillStyle=accent;ctx.font='700 14px Urbanist, sans-serif';ctx.fillText(`#${i+1}`,rowX+28,y+34);
-      ctx.textAlign='left';ctx.fillStyle=label;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(fitText(ctx,r.name,260),rowX+58,y+34);
+      const portrait=playerAsset(r.name);if(portrait.loaded)drawCircleImage(ctx,portrait.img,rowX+29,y+27,36);else{ctx.textAlign='center';ctx.fillStyle=accent;ctx.font='700 13px Urbanist, sans-serif';ctx.fillText(`#${i+1}`,rowX+29,y+33)}
+      ctx.textAlign='left';ctx.fillStyle=label;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(fitText(ctx,r.name,250),rowX+58,y+34);
       ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='700 19px Urbanist, sans-serif';ctx.fillText(fmt(S.per90?Math.round(r.display*100)/100:r.display),rowX+475,y+34);
       const tx=rowX+560,tw=208,ty=y+25;ctx.fillStyle=track;roundedRect(ctx,tx,ty,tw,5,3);ctx.fill();ctx.fillStyle=S.colour;roundedRect(ctx,tx,ty,Math.max(4,tw*(r.display/max)),5,3);ctx.fill();
       const bx=rowX+805,by=y+10,bw=78,bh=34;ctx.fillStyle='rgba(255,255,255,.10)';roundedRect(ctx,bx,by,bw,bh,6);ctx.fill();ctx.fillStyle='#f7f8fc';ctx.font='800 12px Urbanist, sans-serif';ctx.textAlign='center';ctx.fillText(`${r.matches} app${r.matches===1?'':'s'}`,bx+bw/2,by+22);
     });
     if(!data.length){ctx.textAlign='center';ctx.fillStyle=muted;ctx.font='600 24px Urbanist, sans-serif';ctx.fillText('No player events match the current filters.',W/2,520)}
-    ctx.textAlign='left';ctx.fillStyle=muted;ctx.font='800 13px Urbanist, sans-serif';ctx.fillText('PITCHLAB',76,1311);ctx.textAlign='center';ctx.fillStyle='#f7f8fc';ctx.font='600 italic 24px Georgia, serif';ctx.fillText('lufcdata',W/2,1310);ctx.textAlign='right';ctx.fillStyle=muted;ctx.font='800 13px Urbanist, sans-serif';ctx.fillText('LUFCDATA.LAB',W-76,1311);ctx.textAlign='left';
   }
-  function exportPng(){const c=$('playerStatsCanvas');if(!c)return;c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a'),metric=chosenMetric();a.href=URL.createObjectURL(blob);a.download=`${slug(CLUB)}-${slug(metric.label)}${S.per90?'-per-90':''}-1080x1350.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)},'image/png')}
+  async function exportPng(){
+    const c=$('playerStatsCanvas');if(!c)return;const data=rows();$('psStatus').textContent='Preparing high-resolution PNG…';await preloadForExport(data);draw();
+    c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a'),metric=chosenMetric();a.href=URL.createObjectURL(blob);a.download=`${slug(CLUB)}-${slug(metric.label)}${S.per90?'-per-90':''}-1080x1350.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);$('psStatus').textContent=`Exported native 1080 × 1350 PNG · ${S.selected.length} match${S.selected.length===1?'':'es'}`},'image/png');
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
 })();
