@@ -66,6 +66,21 @@
       "awayCrest": "assets/club-logos/leeds png.png",
       "eventCount": 1442,
       "sha256": "b6986d9c7ffc050f281e08a1fcccc9677f5d000deab4cf78ecfdb2d2efd05436"
+    },
+    {
+      "matchId": 2029484,
+      "date": "2026-09-09",
+      "home": "Chelsea",
+      "away": "Leeds",
+      "clubSide": "away",
+      "clubTeamId": 19,
+      "score": "6–3",
+      "competition": "League Cup",
+      "pack": "data/season/2026-27/2029484.json.gz",
+      "homeCrest": "assets/club-logos/Chelsea.png",
+      "awayCrest": "assets/club-logos/leeds png.png",
+      "eventCount": 1659,
+      "sha256": "b9c3ef912f5c496d66b4189079f04c0791a5444c949a902a0d072bea0c6d86d0"
     }
   ]
 }
