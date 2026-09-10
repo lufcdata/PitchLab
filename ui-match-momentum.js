@@ -32,7 +32,7 @@
     if(['savedshot','shotonpost'].includes(t))return 4.5;
     if(['missedshots','shot'].includes(t))return 3.2;
     if(t==='takeon'&&ok)return 1.5;
-    if(t==='pass'&&ok){let w=endX>=83?1.35:endX>=67?.7:0;if(hasAny(e,'KeyPass','Assist'))w+=2.2;return w;}
+    if(t==='pass'&&ok){let w=endX>=83?1.35:(endX>=67?0.7:0);if(hasAny(e,'KeyPass','Assist'))w+=2.2;return w;}
     if(t==='ballrecovery'&&x>=60)return .65;
     if(['tackle','interception'].includes(t)&&x>=60)return .55;
     return 0;
