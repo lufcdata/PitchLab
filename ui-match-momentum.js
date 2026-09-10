@@ -2,6 +2,7 @@
   const LOCK='pitchlabMatchMomentumBooted';
   if(document.documentElement.dataset[LOCK]==='1')return;
   document.documentElement.dataset[LOCK]='1';
+
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const eventType=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').toLowerCase().replace(/[\s_-]/g,'');
   const outcome=e=>String(dn(e?.outcomeType)||'').toLowerCase();
@@ -13,27 +14,111 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtMinute=e=>{const m=Number(e?.minute||0),ex=Number(e?.expandedMinute||m);return ex>m&&m>=45?`${m}+${ex-m}’`:`${m}’`};
   const playerName=e=>dn(e?.player)||e?.playerName||e?.name||'Unknown player';
-  const teamFor=(e,home,away)=>{
+  const colour=side=>getComputedStyle(document.documentElement).getPropertyValue(side==='home'?'--home-team-colour':'--away-team-colour').trim()||(side==='home'?'#4ef0ce':'#5d79d8');
+
+  function teamFor(e,home,away){
     const id=Number(e?.teamId??e?.team?.teamId??e?.team?.id);
-    if(Number.isFinite(id)){if(id===Number(raw?.home?.teamId))return home;if(id===Number(raw?.away?.teamId))return away;}
+    if(Number.isFinite(id)){
+      if(id===Number(raw?.home?.teamId))return home;
+      if(id===Number(raw?.away?.teamId))return away;
+    }
     const named=window.PitchLabMetricBible?.teamOf?.(e)||dn(e?.team)||e?.teamName||'';
-    if(named===home||named===away)return named;
-    return '';
+    return named===home||named===away?named:'';
+  }
+
+  function eventWeight(e){
+    const t=eventType(e),ok=outcome(e)!=='unsuccessful',x=Number(e?.x||0),endX=Number(e?.endX||x);
+    if(isGoal(e))return 6;
+    if(['savedshot','shotonpost'].includes(t))return 4.5;
+    if(['missedshots','shot'].includes(t))return 3.2;
+    if(t==='takeon'&&ok)return 1.5;
+    if(t==='pass'&&ok){let w=endX>=83?1.35:endX>=67?.7:0;if(hasAny(e,'KeyPass','Assist'))w+=2.2;return w;}
+    if(t==='ballrecovery'&&x>=60)return .65;
+    if(['tackle','interception'].includes(t)&&x>=60)return .55;
+    return 0;
+  }
+
+  function buildSeries(list,home,away,maxSec){
+    const bins=Math.max(91,Math.ceil(maxSec/60)+1),h=Array(bins).fill(0),a=Array(bins).fill(0);
+    for(const e of list){
+      const w=eventWeight(e);if(!w)continue;
+      const i=Math.max(0,Math.min(bins-1,Math.floor(sec(e)/60))),tm=teamFor(e,home,away);
+      if(tm===home)h[i]+=w;else if(tm===away)a[i]+=w;
+    }
+    const smooth=x=>x.map((_,i)=>{let n=0,d=0;for(let k=-2;k<=2;k++){const j=i+k;if(j<0||j>=x.length)continue;const wt=k===0?3:Math.abs(k)===1?2:1;n+=x[j]*wt;d+=wt;}return d?n/d:0;});
+    const hs=smooth(h),as=smooth(a),net=hs.map((v,i)=>v-as[i]),peak=Math.max(1,...net.map(Math.abs));
+    return net.map(v=>v/peak);
+  }
+
+  function scoreAfter(all,target,home,away){
+    let h=0,a=0;
+    for(const e of all){
+      if(sec(e)>sec(target))break;
+      if(!isGoal(e))continue;
+      let tm=teamFor(e,home,away);if(isOwnGoal(e))tm=tm===home?away:home;
+      if(tm===home)h++;else if(tm===away)a++;
+    }
+    return `${h}-${a}`;
+  }
+
+  function tipHtml(e,all,home,away){
+    let tm=teamFor(e,home,away);const minute=fmtMinute(e);
+    if(isGoal(e)){
+      const credited=isOwnGoal(e)?(tm===home?away:home):tm,pen=hasAny(e,'Penalty')?' · Penalty':'',og=isOwnGoal(e)?' · Own goal':'';
+      return `<b>⚽ ${esc(playerName(e))} ${esc(minute)}</b><span>${esc(credited)} · Goal${pen}${og}</span><strong>Score: ${esc(scoreAfter(all,e,home,away))}</strong>`;
+    }
+    return `<b>🟥 ${esc(playerName(e))} ${esc(minute)}</b><span>${esc(tm)} · Red card${hasAny(e,'SecondYellow','SecondYellowRed')?' (second yellow)':''}</span>`;
+  }
+
+  function bindTips(panel){
+    const tip=panel.querySelector('#matchMomentumTooltip');if(!tip)return;
+    panel.querySelectorAll('.match-momentum__marker').forEach(m=>{
+      const show=()=>{tip.innerHTML=decodeURIComponent(m.dataset.tip||'');const r=m.getBoundingClientRect(),pr=panel.getBoundingClientRect();tip.style.left=`${Math.max(8,Math.min(pr.width-230,r.left-pr.left-105))}px`;tip.style.top=`${Math.max(8,r.top-pr.top-78)}px`;tip.classList.add('is-visible')};
+      const hide=()=>tip.classList.remove('is-visible');
+      m.addEventListener('mouseenter',show);m.addEventListener('mouseleave',hide);m.addEventListener('focus',show);m.addEventListener('blur',hide);
+    });
+  }
+
+  function render(){
+    const panel=document.getElementById('matchMomentumPanel');
+    if(!panel||typeof raw==='undefined'||!raw||typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
+    const svg=panel.querySelector('#matchMomentumSvg');if(!svg)return;
+    const home=raw.home?.name||'Home',away=raw.away?.name||'Away',ordered=[...events].sort((a,b)=>sec(a)-sec(b));
+    const maxSec=Math.max(90*60,...ordered.map(sec)),series=buildSeries(ordered,home,away,maxSec);
+    const W=1000,H=310,left=24,right=24,top=34,bottom=42,mid=(top+H-bottom)/2,plotW=W-left-right,amp=(H-bottom-top)/2-18;
+    const pts=series.map((v,i)=>[left+i/(series.length-1)*plotW,mid-v*amp]);
+    const pathFor=sign=>{let d=`M ${left} ${mid}`;for(const [x,y] of pts){const yy=sign>0?Math.min(mid,y):Math.max(mid,y);d+=` L ${x.toFixed(2)} ${yy.toFixed(2)}`;}return `${d} L ${left+plotW} ${mid} Z`;};
+    const hc=colour('home'),ac=colour('away'),halfX=left+(45*60/maxSec)*plotW;
+    const markers=ordered.filter(e=>isGoal(e)||isRed(e)).map((e,idx)=>{
+      let tm=teamFor(e,home,away);if(isGoal(e)&&isOwnGoal(e))tm=tm===home?away:home;
+      const homeSide=tm===home,x=left+Math.min(1,sec(e)/maxSec)*plotW,y=homeSide?top+14+(idx%2)*22:H-bottom-16-(idx%2)*22;
+      return `<g class="match-momentum__marker" tabindex="0" data-tip="${encodeURIComponent(tipHtml(e,ordered,home,away))}" transform="translate(${x.toFixed(1)} ${y})"><circle r="12" fill="#11151e" stroke="${homeSide?hc:ac}" stroke-width="2"/><text text-anchor="middle" dominant-baseline="central" font-size="14">${isGoal(e)?'⚽':'🟥'}</text></g>`;
+    }).join('');
+    svg.innerHTML=`<defs><linearGradient id="mmHome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hc}" stop-opacity=".95"/><stop offset="1" stop-color="${hc}" stop-opacity=".55"/></linearGradient><linearGradient id="mmAway" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${ac}" stop-opacity=".55"/><stop offset="1" stop-color="${ac}" stop-opacity=".95"/></linearGradient></defs><line x1="${left}" x2="${W-right}" y1="${mid}" y2="${mid}" class="match-momentum__baseline"/><line x1="${halfX}" x2="${halfX}" y1="${top}" y2="${H-bottom}" class="match-momentum__half"/><path d="${pathFor(1)}" fill="url(#mmHome)"/><path d="${pathFor(-1)}" fill="url(#mmAway)"/>${markers}<text x="${left}" y="${H-12}" class="match-momentum__time">0′</text><text x="${halfX}" y="${H-12}" text-anchor="middle" class="match-momentum__time">HT</text><text x="${W-right}" y="${H-12}" text-anchor="end" class="match-momentum__time">FT</text>`;
+    panel.querySelector('.match-momentum__home').textContent=home;panel.querySelector('.match-momentum__away').textContent=away;
+    bindTips(panel);
+  }
+
+  function install(){
+    const stats=document.getElementById('matchStatsPanel');if(!stats)return null;
+    document.querySelectorAll('#matchMomentumPanel').forEach(el=>el.remove());
+    const section=document.createElement('section');section.id='matchMomentumPanel';section.className='match-momentum';
+    section.innerHTML=`<div class="match-momentum__head"><div><div class="match-momentum__kicker">Match Momentum</div><h3>Match Momentum</h3></div><div class="match-momentum__legend"><span><i class="match-momentum__swatch match-momentum__swatch--home"></i><b class="match-momentum__home">Home</b></span><span><i class="match-momentum__swatch match-momentum__swatch--away"></i><b class="match-momentum__away">Away</b></span></div></div><div class="match-momentum__chart"><svg id="matchMomentumSvg" viewBox="0 0 1000 310" role="img" aria-label="Full match attacking momentum with goals and red cards"></svg><div id="matchMomentumTooltip" class="match-momentum__tooltip" role="tooltip"></div></div><div class="match-momentum__note">Momentum is an event-based attacking-pressure index smoothed across the match. Home is plotted above the baseline and away below. Goal and red-card markers show exact event details on hover or keyboard focus.</div>`;
+    stats.insertBefore(section,stats.firstChild);
+    return section;
+  }
+
+  const boot=()=>{
+    const panel=install();
+    if(!panel){setTimeout(boot,100);return;}
+    render();
+    document.addEventListener('pitchlab:match-loaded',()=>requestAnimationFrame(render));
+    document.addEventListener('pitchlab:team-colours-changed',()=>requestAnimationFrame(render));
+    document.addEventListener('pitchlab:canonical-time-ready',()=>requestAnimationFrame(render));
+    document.getElementById('pitchViewToggle')?.addEventListener('click',()=>requestAnimationFrame(render));
+    const eventCount=document.getElementById('eventCount');
+    if(eventCount)new MutationObserver(()=>requestAnimationFrame(render)).observe(eventCount,{childList:true,characterData:true,subtree:true});
+    setTimeout(render,250);setTimeout(render,1000);
   };
-  const colour=(side)=>getComputedStyle(document.documentElement).getPropertyValue(side==='home'?'--home-team-colour':'--away-team-colour').trim()||(side==='home'?'#4ef0ce':'#5d79d8');
-  function eventWeight(e){const t=eventType(e),ok=outcome(e)!=='unsuccessful',x=Number(e?.x||0),endX=Number(e?.endX||x);if(isGoal(e))return 6;if(['savedshot','shotonpost'].includes(t))return 4.5;if(['missedshots','shot'].includes(t))return 3.2;if(t==='takeon'&&ok)return 1.5;if(t==='pass'&&ok){let w=0;if(endX>=83)w+=1.35;else if(endX>=67)w+=.7;if(hasAny(e,'KeyPass','Assist'))w+=2.2;return w}if(t==='ballrecovery'&&x>=60)return .65;if(['tackle','interception'].includes(t)&&x>=60)return .55;return 0}
-  function buildSeries(list,home,away,maxSec){const bins=Math.max(91,Math.ceil(maxSec/60)+1),h=Array(bins).fill(0),a=Array(bins).fill(0);for(const e of list){const w=eventWeight(e);if(!w)continue;const i=Math.max(0,Math.min(bins-1,Math.floor(sec(e)/60))),tm=teamFor(e,home,away);if(tm===home)h[i]+=w;else if(tm===away)a[i]+=w}const smooth=x=>x.map((_,i)=>{let n=0,d=0;for(let k=-2;k<=2;k++){const j=i+k;if(j<0||j>=x.length)continue;const wt=k===0?3:Math.abs(k)===1?2:1;n+=x[j]*wt;d+=wt}return d?n/d:0}),hs=smooth(h),as=smooth(a),net=hs.map((v,i)=>v-as[i]),peak=Math.max(1,...net.map(Math.abs));return net.map(v=>v/peak)}
-  function scoreAfter(all,target,home,away){let h=0,a=0;for(const e of all){if(sec(e)>sec(target))break;if(!isGoal(e))continue;let tm=teamFor(e,home,away);if(isOwnGoal(e))tm=tm===home?away:home;if(tm===home)h++;else if(tm===away)a++}return `${h}-${a}`}
-  function tipHtml(e,all,home,away){let tm=teamFor(e,home,away),minute=fmtMinute(e);if(isGoal(e)){const credited=isOwnGoal(e)?(tm===home?away:home):tm,pen=hasAny(e,'Penalty')?' · Penalty':'',og=isOwnGoal(e)?' · Own goal':'';return `<b>⚽ ${esc(playerName(e))} ${esc(minute)}</b><span>${esc(credited)} · Goal${pen}${og}</span><strong>Score: ${esc(scoreAfter(all,e,home,away))}</strong>`}return `<b>🟥 ${esc(playerName(e))} ${esc(minute)}</b><span>${esc(tm)} · Red card${hasAny(e,'SecondYellow','SecondYellowRed')?' (second yellow)':''}</span>`}
-  function bindTips(panel){const tip=panel.querySelector('#matchMomentumTooltip');panel.querySelectorAll('.match-momentum__marker').forEach(m=>{const show=()=>{tip.innerHTML=decodeURIComponent(m.dataset.tip||'');const r=m.getBoundingClientRect(),pr=panel.getBoundingClientRect();tip.style.left=`${Math.max(8,Math.min(pr.width-230,r.left-pr.left-105))}px`;tip.style.top=`${Math.max(8,r.top-pr.top-78)}px`;tip.classList.add('is-visible')};const hide=()=>tip.classList.remove('is-visible');m.addEventListener('mouseenter',show);m.addEventListener('mouseleave',hide);m.addEventListener('focus',show);m.addEventListener('blur',hide)})}
-  function render(){const panel=document.getElementById('matchMomentumPanel');if(!panel||typeof raw==='undefined'||!raw||typeof events==='undefined'||!Array.isArray(events)||!events.length)return;const svg=panel.querySelector('#matchMomentumSvg'),home=raw.home?.name||'Home',away=raw.away?.name||'Away',ordered=[...events].sort((a,b)=>sec(a)-sec(b)),maxSec=Math.max(90*60,...ordered.map(sec)),series=buildSeries(ordered,home,away,maxSec),W=1000,H=310,left=24,right=24,top=34,bottom=42,mid=(top+H-bottom)/2,plotW=W-left-right,amp=(H-bottom-top)/2-18,pts=series.map((v,i)=>[left+i/(series.length-1)*plotW,mid-v*amp]),pathFor=sign=>{let d=`M ${left} ${mid}`;for(const [x,y] of pts){const yy=sign>0?Math.min(mid,y):Math.max(mid,y);d+=` L ${x.toFixed(2)} ${yy.toFixed(2)}`}return `${d} L ${left+plotW} ${mid} Z`},hc=colour('home'),ac=colour('away'),halfX=left+(45*60/maxSec)*plotW;const markers=ordered.filter(e=>isGoal(e)||isRed(e)).map((e,idx)=>{let tm=teamFor(e,home,away);if(isGoal(e)&&isOwnGoal(e))tm=tm===home?away:home;const homeSide=tm===home,x=left+Math.min(1,sec(e)/maxSec)*plotW,y=homeSide?top+14+(idx%2)*22:H-bottom-16-(idx%2)*22;return `<g class="match-momentum__marker" tabindex="0" data-tip="${encodeURIComponent(tipHtml(e,ordered,home,away))}" transform="translate(${x.toFixed(1)} ${y})"><circle r="12" fill="#11151e" stroke="${homeSide?hc:ac}" stroke-width="2"/><text text-anchor="middle" dominant-baseline="central" font-size="14">${isGoal(e)?'⚽':'🟥'}</text></g>`}).join('');svg.innerHTML=`<defs><linearGradient id="mmHome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hc}" stop-opacity=".95"/><stop offset="1" stop-color="${hc}" stop-opacity=".55"/></linearGradient><linearGradient id="mmAway" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${ac}" stop-opacity=".55"/><stop offset="1" stop-color="${ac}" stop-opacity=".95"/></linearGradient></defs><line x1="${left}" x2="${W-right}" y1="${mid}" y2="${mid}" class="match-momentum__baseline"/><line x1="${halfX}" x2="${halfX}" y1="${top}" y2="${H-bottom}" class="match-momentum__half"/><path d="${pathFor(1)}" fill="url(#mmHome)"/><path d="${pathFor(-1)}" fill="url(#mmAway)"/>${markers}<text x="${left}" y="${H-12}" class="match-momentum__time">0′</text><text x="${halfX}" y="${H-12}" text-anchor="middle" class="match-momentum__time">HT</text><text x="${W-right}" y="${H-12}" text-anchor="end" class="match-momentum__time">FT</text>`;panel.querySelector('.match-momentum__home').textContent=home;panel.querySelector('.match-momentum__away').textContent=away;bindTips(panel)}
-  function install(){document.querySelectorAll('#matchMomentumPanel').forEach((el,i)=>{if(i)el.remove()});const existing=document.getElementById('matchMomentumPanel');if(existing)return existing;const stats=document.getElementById('matchStatsPanel');if(!stats)return null;const section=document.createElement('section');section.id='matchMomentumPanel';section.className='match-momentum';section.innerHTML=`<div class="match-momentum__head"><div><div class="match-momentum__kicker">Match Momentum</div><h3>Match Momentum</h3></div><div class="match-momentum__legend"><span><i class="match-momentum__swatch match-momentum__swatch--home"></i><b class="match-momentum__home">Home</b></span><span><i class="match-momentum__swatch match-momentum__swatch--away"></i><b class="match-momentum__away">Away</b></span></div></div><div class="match-momentum__chart"><svg id="matchMomentumSvg" viewBox="0 0 1000 310" role="img" aria-label="Full match attacking momentum with goals and red cards"></svg><div id="matchMomentumTooltip" class="match-momentum__tooltip" role="tooltip"></div></div><div class="match-momentum__note">Momentum is an event-based attacking-pressure index smoothed across the match. Home is plotted above the baseline and away below. Goal and red-card markers show exact event details on hover or keyboard focus.</div>`;stats.parentNode.insertBefore(section,stats);return section}
-  let panel=install();if(!panel){const mo=new MutationObserver(()=>{panel=install();if(panel){mo.disconnect();render()}});mo.observe(document.body,{childList:true,subtree:true})}else render();
-  let lastSig='';
-  const signature=()=>{
-    if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!Array.isArray(events)||!events.length)return '';
-    return `${raw.home?.name||''}|${raw.away?.name||''}|${events.length}|${events[0]?.id??''}|${events.at(-1)?.id??''}`;
-  };
-  setInterval(()=>{const s=signature();if(s&&s!==lastSig){lastSig=s;render()}},500);
-  document.addEventListener('pitchlab:team-colours-changed',render);
+  boot();
 })();
