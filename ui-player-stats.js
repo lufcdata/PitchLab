@@ -4,7 +4,6 @@
   const $=id=>document.getElementById(id);
   const dn=v=>v&&typeof v==='object'?(v.displayName??v.name??v.value):v;
   const et=e=>String(typeof type==='function'?type(e):dn(e?.type)||'').replace(/[\s_-]/g,'').toLowerCase();
-  const oc=e=>String(dn(e?.outcomeType)||'').toLowerCase();
   const teamId=e=>String(e?.teamId??'');
   const rawSec=e=>Number(e?.minute||0)*60+Number(e?.second||0);
   const sec=e=>{const t=window.PitchLabCanonicalTime?.timelineSecond?.(e);return Number.isFinite(t)?t:rawSec(e)};
@@ -65,15 +64,27 @@
   function rows(){const metric=chosenMetric();if(typeof metric.fn!=='function')return[];const map=new Map(),clubId=String(S.manifest?.clubTeamId??19);for(const m of S.selected){const pack=S.packs.get(m.matchId);if(!pack)continue;const names=pack.playerIdNameDictionary||{},clubEvents=(pack.events||[]).filter(e=>teamId(e)===clubId);const pids=new Set(clubEvents.map(e=>String(e.playerId??'')).filter(Boolean));for(const pid of pids){const r=map.get(pid)||{id:pid,name:names[pid]||`Player ${pid}`,value:0,minutes:0,matches:0};r.value+=clubEvents.filter(e=>String(e.playerId??'')===pid&&metric.fn(e)).length;const mins=playerMinutes(pack,pid,clubId);r.minutes+=mins;if(mins>0)r.matches++;map.set(pid,r)}}let out=[...map.values()].filter(r=>r.value>0);if(S.per90)out=out.filter(r=>r.minutes>0).map(r=>({...r,display:r.value*90/r.minutes}));else out=out.map(r=>({...r,display:r.value}));return out.sort((a,b)=>b.display-a.display||a.name.localeCompare(b.name)).slice(0,15)}
 
   function roundedRect(ctx,x,y,w,h,r){const rr=Math.min(r,h/2,w/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath()}
-  function draw(){const c=$('playerStatsCanvas');if(!c)return;const ctx=c.getContext('2d'),metric=chosenMetric(),data=rows(),W=1080,H=1350,bg='#0d0e19',text='#F2F1F0',muted='#8A91A2',grid='rgba(242,241,240,.09)';ctx.clearRect(0,0,W,H);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#4ef0ce';ctx.font='800 22px Urbanist, sans-serif';ctx.fillText('PITCHLAB · PLAYER STATS',72,82);
-    ctx.fillStyle=text;ctx.font='700 48px "Space Grotesk", sans-serif';ctx.fillText(`${CLUB} — ${metric.label}${S.per90?' per 90':''}`,72,145);
-    const comp=$('psCompetition')?.selectedOptions[0]?.textContent||'All Competitions',dateText=S.selected.length?`${niceDate(S.selected[0].date)} — ${niceDate(S.selected[S.selected.length-1].date)}`:'No matches';ctx.fillStyle=muted;ctx.font='600 22px Urbanist, sans-serif';ctx.fillText(`2026/27 · ${comp} · ${dateText}`,72,188);
-    const chartTop=260,chartBottom=1220,nameX=72,barX=340,barRight=1000,barW=barRight-barX,max=Math.max(1,...data.map(r=>r.display)),rowsN=Math.max(1,data.length),rowGap=Math.min(60,(chartBottom-chartTop)/rowsN),barH=Math.min(30,rowGap*.55);
-    ctx.font='500 19px Urbanist, sans-serif';ctx.fillStyle='rgba(242,241,240,.35)';for(let i=0;i<=4;i++){const x=barX+barW*i/4;ctx.beginPath();ctx.moveTo(x,chartTop-18);ctx.lineTo(x,chartBottom);ctx.strokeStyle=grid;ctx.lineWidth=1;ctx.stroke();const v=max*i/4;ctx.fillText(fmt(S.per90?Math.round(v*100)/100:Math.round(v)),x-8,chartBottom+34)}
-    data.forEach((r,i)=>{const y=chartTop+i*rowGap;ctx.fillStyle=text;ctx.font='600 22px Urbanist, sans-serif';const name=r.name.length>24?r.name.slice(0,23)+'…':r.name;ctx.fillText(name,nameX,y+barH-5);const w=Math.max(3,barW*r.display/max);ctx.fillStyle=S.colour;roundedRect(ctx,barX,y,w,barH,4);ctx.fill();ctx.fillStyle=text;ctx.font='700 21px "Space Grotesk", sans-serif';ctx.fillText(fmt(S.per90?Math.round(r.display*100)/100:r.display),Math.min(barX+w+14,1005),y+barH-5)});
-    if(!data.length){ctx.fillStyle=muted;ctx.font='600 26px Urbanist, sans-serif';ctx.fillText('No player events match the current filters.',72,340)}
-    ctx.fillStyle=muted;ctx.font='600 17px Urbanist, sans-serif';ctx.fillText(`Matches ${S.selected.length?Number($('psMatchFrom').value):0}–${S.selected.length?Number($('psMatchTo').value):0} · ${S.selected.length} selected${S.per90?' · per 90 uses inferred on-pitch minutes from substitutions':''}`,72,1290);ctx.fillStyle='#4ef0ce';ctx.font='800 18px Urbanist, sans-serif';ctx.textAlign='right';ctx.fillText('PITCHLAB',1008,1290);ctx.textAlign='left'}
+  function fitText(ctx,text,maxWidth){if(ctx.measureText(text).width<=maxWidth)return text;let t=text;while(t.length>1&&ctx.measureText(`${t}…`).width>maxWidth)t=t.slice(0,-1);return `${t}…`}
+  function draw(){
+    const c=$('playerStatsCanvas');if(!c)return;const ctx=c.getContext('2d'),metric=chosenMetric(),data=rows(),W=1080,H=1350;
+    const bg='#171928',heading='#f8f8fb',label='#d7dae4',meta='#a7abbd',muted='#777c91',accent='#48f0ca',rowBorder='rgba(255,255,255,.07)',rowA='rgba(255,255,255,.045)',track='rgba(255,255,255,.06)';
+    ctx.clearRect(0,0,W,H);ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,273);ctx.lineTo(W,273);ctx.stroke();
+    ctx.textAlign='center';ctx.fillStyle=heading;ctx.font='700 32.5px Urbanist, sans-serif';ctx.fillText(`${CLUB} — ${metric.label}${S.per90?' per 90':''}`,W/2,112);
+    const comp=$('psCompetition')?.selectedOptions[0]?.textContent||'All Competitions',dateText=S.selected.length?`${niceDate(S.selected[0].date)} — ${niceDate(S.selected[S.selected.length-1].date)}`:'No matches';
+    ctx.fillStyle=meta;ctx.font='600 22px Urbanist, sans-serif';ctx.fillText(`2026/27`,W/2-185,164);ctx.fillStyle=accent;ctx.fillText('|',W/2-82,164);ctx.fillStyle=meta;ctx.fillText(comp,W/2+18,164);ctx.fillStyle=accent;ctx.fillText('|',W/2+142,164);ctx.fillStyle=meta;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(dateText,W/2,207);
+    const left=70,right=70,rowX=88,rowW=W-176,rowH=54,gap=7,startY=304,max=Math.max(1,...data.map(r=>r.display));
+    data.forEach((r,i)=>{
+      const y=startY+i*(rowH+gap);ctx.fillStyle=rowA;ctx.strokeStyle=rowBorder;ctx.lineWidth=1;roundedRect(ctx,rowX,y,rowW,rowH,10);ctx.fill();ctx.stroke();
+      ctx.textAlign='center';ctx.fillStyle=accent;ctx.font='700 14px Urbanist, sans-serif';ctx.fillText(`#${i+1}`,rowX+28,y+34);
+      ctx.textAlign='left';ctx.fillStyle=label;ctx.font='600 18px Urbanist, sans-serif';ctx.fillText(fitText(ctx,r.name,260),rowX+58,y+34);
+      ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='700 19px Urbanist, sans-serif';ctx.fillText(fmt(S.per90?Math.round(r.display*100)/100:r.display),rowX+475,y+34);
+      const tx=rowX+560,tw=208,ty=y+25;ctx.fillStyle=track;roundedRect(ctx,tx,ty,tw,5,3);ctx.fill();ctx.fillStyle=S.colour;roundedRect(ctx,tx,ty,Math.max(4,tw*(r.display/max)),5,3);ctx.fill();
+      const bx=rowX+805,by=y+10,bw=78,bh=34;ctx.fillStyle='rgba(255,255,255,.10)';roundedRect(ctx,bx,by,bw,bh,6);ctx.fill();ctx.fillStyle='#f7f8fc';ctx.font='800 12px Urbanist, sans-serif';ctx.textAlign='center';ctx.fillText(`${r.matches} app${r.matches===1?'':'s'}`,bx+bw/2,by+22);
+    });
+    if(!data.length){ctx.textAlign='center';ctx.fillStyle=muted;ctx.font='600 24px Urbanist, sans-serif';ctx.fillText('No player events match the current filters.',W/2,520)}
+    ctx.textAlign='left';ctx.fillStyle=muted;ctx.font='800 13px Urbanist, sans-serif';ctx.fillText('PITCHLAB',76,1311);ctx.textAlign='center';ctx.fillStyle='#f7f8fc';ctx.font='600 italic 24px Georgia, serif';ctx.fillText('lufcdata',W/2,1310);ctx.textAlign='right';ctx.fillStyle=muted;ctx.font='800 13px Urbanist, sans-serif';ctx.fillText('LUFCDATA.LAB',W-76,1311);ctx.textAlign='left';
+  }
   function exportPng(){const c=$('playerStatsCanvas');if(!c)return;c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a'),metric=chosenMetric();a.href=URL.createObjectURL(blob);a.download=`${slug(CLUB)}-${slug(metric.label)}${S.per90?'-per-90':''}-1080x1350.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)},'image/png')}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
 })();
