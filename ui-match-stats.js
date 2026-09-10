@@ -49,7 +49,7 @@
 
   const panel=document.createElement('section');
   panel.id='matchStatsPanel';panel.className='match-stats-panel';
-  panel.innerHTML=`<div class="match-stats-panel__head"><div class="match-stats-panel__kicker">Match Stats</div><div id="matchStatsScore" class="match-stats-panel__score"></div><div id="matchStatsScope" class="match-stats-panel__scope"></div></div><div id="matchStatsBody" class="match-stats-panel__body"><div class="match-stats-panel__empty">Loading match stats…</div></div>`;
+  panel.innerHTML=`<section id="matchMomentumPanel" class="match-momentum"><div class="match-momentum__head"><div><div class="match-momentum__kicker">Match Momentum</div><h3>Match Momentum</h3></div><div class="match-momentum__legend"><span><i class="match-momentum__swatch match-momentum__swatch--home"></i><b id="matchMomentumHome">Home</b></span><span><i class="match-momentum__swatch match-momentum__swatch--away"></i><b id="matchMomentumAway">Away</b></span></div></div><div class="match-momentum__chart"><svg id="matchMomentumSvg" viewBox="0 0 1000 310" role="img" aria-label="Full match attacking momentum with goals and red cards"></svg></div><div class="match-momentum__note">Momentum is an event-based attacking-pressure index smoothed across the match. Home is plotted above the baseline and away below.</div></section><div class="match-stats-panel__head"><div class="match-stats-panel__kicker">Match Stats</div><div id="matchStatsScore" class="match-stats-panel__score"></div><div id="matchStatsScope" class="match-stats-panel__scope"></div></div><div id="matchStatsBody" class="match-stats-panel__body"><div class="match-stats-panel__empty">Loading match stats…</div></div>`;
   pitchPanel.appendChild(panel);
   const toggle=$('pitchViewToggle');let statsView=false;
 
@@ -64,6 +64,34 @@
   function creditedGoalTeam(e,home,away){const eventTeam=teamName(e);return isOwnGoal(e)?opposition(eventTeam,home,away):eventTeam}
   function adjustedGoals(list,team,home,away){return list.filter(e=>isScoreGoal(e)&&creditedGoalTeam(e,home,away)===team).length}
   function ownGoalsCommitted(list,team){return list.filter(e=>teamName(e)===team&&isOwnGoal(e)).length}
+
+  function momentumColour(side){return getComputedStyle(document.documentElement).getPropertyValue(side==='home'?'--home-team-colour':'--away-team-colour').trim()||(side==='home'?'#4ef0ce':'#5d79d8')}
+  function momentumWeight(e){
+    const t=eventType(e),ok=outcome(e)!=='unsuccessful',x=Number(e?.x||0),endX=Number(e?.endX??x);
+    if(isScoreGoal(e))return 6;
+    if(['savedshot','shotonpost'].includes(t))return 4.5;
+    if(['missedshots','shot'].includes(t))return 3.2;
+    if(t==='takeon'&&ok)return 1.5;
+    if(t==='pass'&&ok){let w=endX>=83?1.35:(endX>=67?0.7:0);if(hasAny(e,'KeyPass','Assist','IntentionalGoalAssist'))w+=2.2;return w;}
+    if(t==='ballrecovery'&&x>=60)return .65;
+    if(['tackle','interception'].includes(t)&&x>=60)return .55;
+    return 0;
+  }
+  function renderMomentum(home,away){
+    const svg=$('matchMomentumSvg');if(!svg||typeof events==='undefined'||!Array.isArray(events)||!events.length)return;
+    const ordered=[...events].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
+    const maxSec=Math.max(90*60,...ordered.map(evtSec)),bins=Math.max(91,Math.ceil(maxSec/60)+1),h=Array(bins).fill(0),a=Array(bins).fill(0);
+    for(const e of ordered){const w=momentumWeight(e);if(!w)continue;const i=Math.max(0,Math.min(bins-1,Math.floor(evtSec(e)/60))),tm=teamName(e);if(tm===home)h[i]+=w;else if(tm===away)a[i]+=w;}
+    const smooth=x=>x.map((_,i)=>{let n=0,d=0;for(let k=-2;k<=2;k++){const j=i+k;if(j<0||j>=x.length)continue;const wt=k===0?3:Math.abs(k)===1?2:1;n+=x[j]*wt;d+=wt;}return d?n/d:0;});
+    const hs=smooth(h),as=smooth(a),net=hs.map((v,i)=>v-as[i]),peak=Math.max(1,...net.map(Math.abs)),series=net.map(v=>v/peak);
+    const W=1000,H=310,left=24,right=24,top=34,bottom=42,mid=(top+H-bottom)/2,plotW=W-left-right,amp=(H-bottom-top)/2-18;
+    const pts=series.map((v,i)=>[left+i/(series.length-1)*plotW,mid-v*amp]);
+    const pathFor=sign=>{let d=`M ${left} ${mid}`;for(const [x,y] of pts){const yy=sign>0?Math.min(mid,y):Math.max(mid,y);d+=` L ${x.toFixed(2)} ${yy.toFixed(2)}`;}return `${d} L ${left+plotW} ${mid} Z`;};
+    const hc=momentumColour('home'),ac=momentumColour('away'),halfX=left+(45*60/maxSec)*plotW;
+    const markers=ordered.filter(e=>isScoreGoal(e)||isRed(e)).map((e,idx)=>{let tm=teamName(e);if(isOwnGoal(e))tm=opposition(tm,home,away);const homeSide=tm===home,x=left+Math.min(1,evtSec(e)/maxSec)*plotW,y=homeSide?top+14+(idx%2)*22:H-bottom-16-(idx%2)*22;return `<g transform="translate(${x.toFixed(1)} ${y})"><circle r="12" fill="#11151e" stroke="${homeSide?hc:ac}" stroke-width="2"/><text text-anchor="middle" dominant-baseline="central" font-size="14">${isScoreGoal(e)?'⚽':'🟥'}</text></g>`;}).join('');
+    svg.innerHTML=`<defs><linearGradient id="mmHome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hc}" stop-opacity=".95"/><stop offset="1" stop-color="${hc}" stop-opacity=".55"/></linearGradient><linearGradient id="mmAway" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${ac}" stop-opacity=".55"/><stop offset="1" stop-color="${ac}" stop-opacity=".95"/></linearGradient></defs><line x1="${left}" x2="${W-right}" y1="${mid}" y2="${mid}" class="match-momentum__baseline"/><line x1="${halfX}" x2="${halfX}" y1="${top}" y2="${H-bottom}" class="match-momentum__half"/><path d="${pathFor(1)}" fill="url(#mmHome)"/><path d="${pathFor(-1)}" fill="url(#mmAway)"/>${markers}<text x="${left}" y="${H-12}" class="match-momentum__time">0′</text><text x="${halfX}" y="${H-12}" text-anchor="middle" class="match-momentum__time">HT</text><text x="${W-right}" y="${H-12}" text-anchor="end" class="match-momentum__time">FT</text>`;
+    $('matchMomentumHome').textContent=home;$('matchMomentumAway').textContent=away;
+  }
 
   // LOCKED GOLDEN: WS_1983552 => Nottingham Forest 12.9 / Leeds 8.8.
   function ppda(list,team,home,away){
@@ -113,6 +141,7 @@
   function render(){
     if(!statsView)return;if(typeof raw==='undefined'||!raw||typeof events==='undefined'||!events.length){$('matchStatsBody').innerHTML='<div class="match-stats-panel__empty">Loading match stats…</div>';return}
     const [home,away]=teams();const {list,lo,hi,max}=windowEvents();const hg=adjustedGoals(list,home,home,away),ag=adjustedGoals(list,away,home,away);const hc=crestFor(home),ac=crestFor(away);const canonical=window.PitchLabCanonicalTime;const loLabel=lo<.5?'0:00':(canonical?.formatClock?canonical.formatClock(lo):fmtSec(lo));const hiLabel=hi>=max-.5?'FT':(canonical?.formatClock?canonical.formatClock(hi):fmtSec(hi));
+    renderMomentum(home,away);
     renderTeamEventsCache=new Map([[home,[]],[away,[]]]);for(const e of list){const bucket=renderTeamEventsCache.get(teamName(e));if(bucket)bucket.push(e);}
     renderMetricCountCache=new Map();
     renderCarryCache={home:carrySummary(list,home),away:carrySummary(list,away)};
@@ -125,5 +154,5 @@
   let renderFrame=0;
   function scheduleRender(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;render();});}
   function setView(on){statsView=on;pitchPanel.classList.toggle('is-match-stats-view',on);toggle.textContent=on?'Pitch Map':'Match Stats';toggle.setAttribute('aria-pressed',String(on));if(on)scheduleRender()}
-  toggle.addEventListener('click',()=>setView(!statsView));const observer=new MutationObserver(scheduleRender);observer.observe(eventCount,{childList:true,characterData:true,subtree:true});[from,to].forEach(el=>{el.addEventListener('input',scheduleRender);el.addEventListener('change',scheduleRender)});document.addEventListener('pitchlab:canonical-time-ready',scheduleRender);document.addEventListener('pitchlab:match-loaded',scheduleRender);
+  toggle.addEventListener('click',()=>setView(!statsView));const observer=new MutationObserver(scheduleRender);observer.observe(eventCount,{childList:true,characterData:true,subtree:true});[from,to].forEach(el=>{el.addEventListener('input',scheduleRender);el.addEventListener('change',scheduleRender)});document.addEventListener('pitchlab:canonical-time-ready',scheduleRender);document.addEventListener('pitchlab:match-loaded',scheduleRender);document.addEventListener('pitchlab:team-colours-changed',scheduleRender);
 })();
