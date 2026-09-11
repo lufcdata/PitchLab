@@ -51,6 +51,7 @@
       path.setAttribute('stroke-width',String((parseFloat(cs.strokeWidth)||1.45)*EXPORT_SCALE));
       path.setAttribute('stroke-dasharray',cs.strokeDasharray||'none');
       path.setAttribute('stroke-linejoin',cs.strokeLinejoin||'round');
+      path.setAttribute('vector-effect','non-scaling-stroke');
       path.setAttribute('opacity',cs.opacity||'1');
       path.removeAttribute('class');
       path.removeAttribute('style');
@@ -73,5 +74,5 @@
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_ACTIONS_MAP_V6_2026-09-11',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_ACTIONS_MAP_V7_2026-09-11',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
 })();
