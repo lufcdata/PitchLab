@@ -3,6 +3,7 @@
   const go=path=>{try{window.parent.location.href=path}catch(_){location.href=path}};
   const install=()=>{
     const nav=document.querySelector('.nav');if(!nav)return;
+    [...nav.querySelectorAll('button')].filter(b=>['Match','Player','Leaders'].includes(b.textContent.trim())).forEach(b=>b.remove());
     const path=parentPath(),isSeason=/season-performance\.html$/i.test(path),isCompared=/matches-compared\.html$/i.test(path),isPlayerStats=/player-stats\.html$/i.test(path);
     let season=[...nav.querySelectorAll('button')].find(b=>b.dataset.seasonNav==='1');
     if(!season){season=document.createElement('button');season.type='button';season.textContent='Season Performance';season.dataset.seasonNav='1';season.addEventListener('click',()=>go('season-performance.html'));nav.appendChild(season)}
