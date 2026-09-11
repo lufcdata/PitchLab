@@ -105,8 +105,8 @@
     const rowX=88,rowW=W-176,rowH=54,gap=7,startY=266,max=Math.max(1,...data.map(r=>r.display));
     data.forEach((r,i)=>{
       const y=startY+i*(rowH+gap);ctx.fillStyle=rowA;ctx.strokeStyle=rowBorder;ctx.lineWidth=1;roundedRect(ctx,rowX,y,rowW,rowH,10);ctx.fill();ctx.stroke();
-      const portrait=playerAsset(r.name),portraitX=rowX+24,nameX=rowX+92;if(portrait.loaded)drawCircleImage(ctx,portrait.img,portraitX,y+27,36);else{ctx.textAlign='center';ctx.fillStyle=accent;ctx.font=`700 13px ${MONO}`;ctx.fillText(`#${i+1}`,portraitX,y+33)}
-      ctx.textAlign='left';ctx.fillStyle=label;ctx.font=`600 18px ${MONO}`;ctx.fillText(fitText(ctx,r.name,216),nameX,y+34);
+      const portrait=playerAsset(r.name),portraitX=rowX+34,nameX=rowX+102;if(portrait.loaded)drawCircleImage(ctx,portrait.img,portraitX,y+27,36);else{ctx.textAlign='center';ctx.fillStyle=accent;ctx.font=`700 13px ${MONO}`;ctx.fillText(`#${i+1}`,portraitX,y+33)}
+      ctx.textAlign='left';ctx.fillStyle=label;ctx.font=`600 18px ${MONO}`;ctx.fillText(fitText(ctx,r.name,206),nameX,y+34);
       ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`700 19px ${MONO}`;ctx.fillText(fmt(S.per90?Math.round(r.display*100)/100:r.display),rowX+475,y+34);
       const tx=rowX+560,tw=208,ty=y+25;ctx.fillStyle=track;roundedRect(ctx,tx,ty,tw,5,3);ctx.fill();ctx.fillStyle=S.colour;roundedRect(ctx,tx,ty,Math.max(4,tw*(r.display/max)),5,3);ctx.fill();
       const bx=rowX+805,by=y+10,bw=78,bh=34;ctx.fillStyle='rgba(255,255,255,.10)';roundedRect(ctx,bx,by,bw,bh,6);ctx.fill();ctx.fillStyle='#f7f8fc';ctx.font=`800 12px ${MONO}`;ctx.textAlign='center';ctx.fillText(`${r.matches} app${r.matches===1?'':'s'}`,bx+bw/2,by+22);
