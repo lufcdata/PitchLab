@@ -34,6 +34,30 @@
     const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
     try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
   }
+  async function drawActionsOverlay(ctx,x,y,w,h){
+    const stage=document.querySelector('.pitch-stage.is-actions-map');
+    const svgEl=stage?.querySelector('.pitch-actions-map');
+    if(!svgEl)return;
+    const clone=svgEl.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    clone.setAttribute('width',String(w*EXPORT_SCALE));
+    clone.setAttribute('height',String(h*EXPORT_SCALE));
+    const livePaths=[...svgEl.querySelectorAll('path')],exportPaths=[...clone.querySelectorAll('path')];
+    exportPaths.forEach((path,i)=>{
+      const source=livePaths[i];if(!source)return;
+      const cs=getComputedStyle(source);
+      path.setAttribute('fill',cs.fill||'none');
+      path.setAttribute('stroke',cs.stroke||'none');
+      path.setAttribute('stroke-width',String((parseFloat(cs.strokeWidth)||1.45)*EXPORT_SCALE));
+      path.setAttribute('stroke-dasharray',cs.strokeDasharray||'none');
+      path.setAttribute('stroke-linejoin',cs.strokeLinejoin||'round');
+      path.setAttribute('opacity',cs.opacity||'1');
+      path.removeAttribute('class');
+      path.removeAttribute('style');
+    });
+    const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+    try{const img=await loadImage(url);ctx.drawImage(img,x,y,w,h)}finally{URL.revokeObjectURL(url)}
+  }
   async function drawFoundation(ctx){const template=await loadImage(TEMPLATE);if(template.width!==WIDTH||template.height!==HEIGHT)throw new Error(`Export template must be exactly ${WIDTH}×${HEIGHT}`);ctx.drawImage(template,0,0,WIDTH,HEIGHT)}
   function drawHeader(ctx,state,matches){const title=playerName();ctx.textAlign='center';ctx.fillStyle='#f5f6fa';fitText(ctx,title,430,25,18,800);ctx.fillText(title,540,48);ctx.fillStyle='#aab0c1';ctx.font=font(700,15);ctx.fillText(contextLine(state,matches),540,73);ctx.fillStyle='#8990a0';ctx.font=font(700,12);ctx.fillText(rangeLine(matches),540,99);ctx.textAlign='right';ctx.fillStyle='#f5f6fa';ctx.font=font(800,22,'Space Grotesk');ctx.fillText($('eventCount')?.textContent||'0',829,124);ctx.fillStyle='#7e8494';ctx.font=font(800,10);ctx.fillText('EVENTS',882,124);ctx.textAlign='left'}
   function drawAttackingDirection(ctx){ctx.save();ctx.translate(PITCH.x-14,PITCH.y+PITCH.h/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f5f6fa';ctx.font=font(800,14);const label='Attacking Direction';ctx.fillText(label,0,0);const start=ctx.measureText(label).width/2+9,end=start+24;ctx.strokeStyle='#52eecf';ctx.fillStyle='#52eecf';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(start,0);ctx.lineTo(end,0);ctx.stroke();ctx.beginPath();ctx.moveTo(end,0);ctx.lineTo(end-8,-5);ctx.lineTo(end-8,5);ctx.closePath();ctx.fill();ctx.restore()}
@@ -44,10 +68,10 @@
   async function exportPng(){
     const api=window.PitchLabSeasonPerformance,state=api?.state;if(!state)return;const btn=$('seasonExport'),old=btn?.textContent;if(btn){btn.textContent='Rendering…';btn.disabled=true}
     try{const c=document.createElement('canvas');c.width=WIDTH*EXPORT_SCALE;c.height=HEIGHT*EXPORT_SCALE;const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.scale(EXPORT_SCALE,EXPORT_SCALE);await drawFoundation(ctx);const matches=state.selected||[];drawHeader(ctx,state,matches);await drawIdentityIcon(ctx);
-      const pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');ctx.drawImage(pitch,PITCH.x,PITCH.y,PITCH.w,PITCH.h);drawAttackingDirection(ctx);const multi=(window.PitchLabSeasonMultiMetrics?.selected?.().length||1)>1;const heatActive=!multi&&!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,PITCH.x,PITCH.y,PITCH.w,PITCH.h)}else await drawSvgOverlay(ctx,PITCH.x,PITCH.y,PITCH.w,PITCH.h);drawLegends(ctx);
+      const pitch=await loadImage('Pitch%20AI%20App%20Ready%20Official%20Aug%2024%202026%20V2.png');ctx.drawImage(pitch,PITCH.x,PITCH.y,PITCH.w,PITCH.h);drawAttackingDirection(ctx);const multi=(window.PitchLabSeasonMultiMetrics?.selected?.().length||1)>1;const heatActive=!multi&&!!document.querySelector('.pitch-stage.is-heatmap')&&!window.PitchLabCarry?.isCarryMetric?.($('metric')?.value);if(heatActive){const heat=document.querySelector('.pitch-heatmap-canvas');if(heat)ctx.drawImage(heat,PITCH.x,PITCH.y,PITCH.w,PITCH.h)}else await drawSvgOverlay(ctx,PITCH.x,PITCH.y,PITCH.w,PITCH.h);if(document.querySelector('.pitch-stage.is-actions-map'))await drawActionsOverlay(ctx,PITCH.x,PITCH.y,PITCH.w,PITCH.h);drawLegends(ctx);
       const a=$('dateFrom')?.value||'',b=$('dateTo')?.value||'',link=document.createElement('a');link.download=`${safeName(metricName())}-${safeName(playerName())}-${a}-${b}.png`;link.href=c.toDataURL('image/png');link.click()
     }catch(err){console.error(err);alert(`Export failed: ${err.message}`)}finally{if(btn){btn.textContent=old;btn.disabled=false}}
   }
   document.addEventListener('click',e=>{const btn=e.target?.closest?.('#seasonExport');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();exportPng()},true);
-  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_EVENT_SYMBOLS_V5_2026-09-09',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
+  window.PitchLabSeasonExportCanvas=Object.freeze({version:'SEASON_EXPORT_ACTIONS_MAP_V6_2026-09-11',template:TEMPLATE,width:WIDTH,height:HEIGHT,exportScale:EXPORT_SCALE,exportWidth:WIDTH*EXPORT_SCALE,exportHeight:HEIGHT*EXPORT_SCALE,brandingTop:BRANDING_TOP,pitch:PITCH,exportPng});
 })();
