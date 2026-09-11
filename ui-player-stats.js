@@ -83,7 +83,7 @@
   function rows(){const metric=chosenMetric();if(typeof metric.fn!=='function')return[];const map=new Map(),clubId=String(S.manifest?.clubTeamId??19);for(const m of S.selected){const pack=S.packs.get(m.matchId);if(!pack)continue;const names=pack.playerIdNameDictionary||{},clubEvents=(pack.events||[]).filter(e=>teamId(e)===clubId);const pids=new Set(clubEvents.map(e=>String(e.playerId??'')).filter(Boolean));for(const pid of pids){const r=map.get(pid)||{id:pid,name:names[pid]||`Player ${pid}`,value:0,minutes:0,matches:0};r.value+=clubEvents.filter(e=>String(e.playerId??'')===pid&&metric.fn(e)).length;const mins=playerMinutes(pack,pid,clubId);r.minutes+=mins;if(mins>0)r.matches++;map.set(pid,r)}}let out=[...map.values()].filter(r=>r.value>0);if(S.per90)out=out.filter(r=>r.minutes>0).map(r=>({...r,display:r.value*90/r.minutes}));else out=out.map(r=>({...r,display:r.value}));return out.sort((a,b)=>b.display-a.display||a.name.localeCompare(b.name)).slice(0,15)}
 
   function roundedRect(ctx,x,y,w,h,r){const rr=Math.min(r,h/2,w/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath()}
-  function fitText(ctx,text,maxWidth){if(ctx.measureText(text).width<=maxWidth)return text;let t=text;while(t.length>1&&ctx.measureText(`${t}…`).width>maxWidth)t=t.slice(0,-1);return `${t}…`}
+  function drawFullName(ctx,text,x,y,maxWidth){let size=18;while(size>14){ctx.font=`600 ${size}px ${MONO}`;if(ctx.measureText(text).width<=maxWidth)break;size-=.5}ctx.fillText(text,x,y)}
   function drawCircleImage(ctx,img,cx,cy,size){
     const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,side=Math.min(iw,ih),sx=(iw-side)/2,sy=(ih-side)/2;
     ctx.save();ctx.beginPath();ctx.arc(cx,cy,size/2,0,Math.PI*2);ctx.clip();ctx.drawImage(img,sx,sy,side,side,cx-size/2,cy-size/2,size,size);ctx.restore();
@@ -105,8 +105,8 @@
     const rowX=88,rowW=W-176,rowH=54,gap=7,startY=266,max=Math.max(1,...data.map(r=>r.display));
     data.forEach((r,i)=>{
       const y=startY+i*(rowH+gap);ctx.fillStyle=rowA;ctx.strokeStyle=rowBorder;ctx.lineWidth=1;roundedRect(ctx,rowX,y,rowW,rowH,10);ctx.fill();ctx.stroke();
-      const portrait=playerAsset(r.name),portraitX=rowX+34,nameX=rowX+102;if(portrait.loaded)drawCircleImage(ctx,portrait.img,portraitX,y+27,36);else{ctx.textAlign='center';ctx.fillStyle=accent;ctx.font=`700 13px ${MONO}`;ctx.fillText(`#${i+1}`,portraitX,y+33)}
-      ctx.textAlign='left';ctx.fillStyle=label;ctx.font=`600 18px ${MONO}`;ctx.fillText(fitText(ctx,r.name,206),nameX,y+34);
+      const portrait=playerAsset(r.name),portraitX=rowX+44,nameX=rowX+112;if(portrait.loaded)drawCircleImage(ctx,portrait.img,portraitX,y+27,36);else{ctx.textAlign='center';ctx.fillStyle=accent;ctx.font=`700 13px ${MONO}`;ctx.fillText(`#${i+1}`,portraitX,y+33)}
+      ctx.textAlign='left';ctx.fillStyle=label;drawFullName(ctx,r.name,nameX,y+34,300);
       ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=`700 19px ${MONO}`;ctx.fillText(fmt(S.per90?Math.round(r.display*100)/100:r.display),rowX+475,y+34);
       const tx=rowX+560,tw=208,ty=y+25;ctx.fillStyle=track;roundedRect(ctx,tx,ty,tw,5,3);ctx.fill();ctx.fillStyle=S.colour;roundedRect(ctx,tx,ty,Math.max(4,tw*(r.display/max)),5,3);ctx.fill();
       const bx=rowX+805,by=y+10,bw=78,bh=34;ctx.fillStyle='rgba(255,255,255,.10)';roundedRect(ctx,bx,by,bw,bh,6);ctx.fill();ctx.fillStyle='#f7f8fc';ctx.font=`800 12px ${MONO}`;ctx.textAlign='center';ctx.fillText(`${r.matches} app${r.matches===1?'':'s'}`,bx+bw/2,by+22);
