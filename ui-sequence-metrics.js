@@ -19,10 +19,10 @@
   const DEFENSIVE_NOISE=new Set(['clearance','blockedpass','challenge','aerial']);
   const OPP_CONTROL=new Set(['ballrecovery','balltouch','takeon','keeperpickup','smother','interception','tackle']);
 
-  function canContinueAfterUnsuccessful(ordered,i,activeTeam){
+  function canContinueAfterUnsuccessful(ordered,i,activeTeam,keyOf=teamNameOf){
     const start=evtSec(ordered[i]);
     for(let j=i+1;j<ordered.length&&j<i+12;j++){
-      const n=ordered[j],t=eventType(n),tm=teamNameOf(n),dt=evtSec(n)-start;
+      const n=ordered[j],t=eventType(n),tm=keyOf(n),dt=evtSec(n)-start;
       if(dt>5)return false;
       if(t==='offsidegiven'&&(n.second==null||n.second===''))continue;
       if(t==='pass')return tm===activeTeam;
@@ -33,24 +33,38 @@
     return false;
   }
 
-  function tenPassSequences(list,team){
+  // Canonical pass-sequence builder. tenPassSequences below is derived directly from this
+  // builder so Technical Report can inspect the same sequence boundaries without defining
+  // a second possession-chain model. keyOf lets season packs use stable teamId values while
+  // the existing Match Stats surface continues to use displayed team names.
+  function buildSequences(list,keyOf=teamNameOf){
     const ordered=[...(list||[])].sort((a,b)=>evtSec(a)-evtSec(b)||(Number(a.eventId)||0)-(Number(b.eventId)||0));
-    let activeTeam='',passes=0,count=0;
-    const close=()=>{if(activeTeam===team&&passes>=10)count++;activeTeam='';passes=0;};
+    const sequences=[];let activeTeam='',passEvents=[];
+    const close=()=>{
+      if(activeTeam&&passEvents.length){
+        const first=passEvents[0],last=passEvents[passEvents.length-1];
+        sequences.push({team:activeTeam,passes:passEvents.length,passEvents:[...passEvents],startSec:evtSec(first),endSec:evtSec(last)});
+      }
+      activeTeam='';passEvents=[];
+    };
     for(let i=0;i<ordered.length;i++){
-      const e=ordered[i],t=eventType(e),tm=teamNameOf(e);
+      const e=ordered[i],t=eventType(e),tm=keyOf(e);
       if(t==='offsidegiven'){
         if(e.second==null||e.second==='')continue;
         close();continue;
       }
       if(HARD_END.has(t)){close();continue;}
       if(t!=='pass')continue;
-      if(tm!==activeTeam){close();activeTeam=tm;passes=0;}
-      passes++;
-      if(outcome(e)==='unsuccessful'&&!canContinueAfterUnsuccessful(ordered,i,activeTeam))close();
+      if(tm!==activeTeam){close();activeTeam=tm;passEvents=[];}
+      passEvents.push(e);
+      if(outcome(e)==='unsuccessful'&&!canContinueAfterUnsuccessful(ordered,i,activeTeam,keyOf))close();
     }
     close();
-    return count;
+    return sequences;
+  }
+
+  function tenPassSequences(list,team){
+    return buildSequences(list,teamNameOf).filter(s=>s.team===team&&s.passes>=10).length;
   }
 
   function windowEvents(){
@@ -78,7 +92,7 @@
     if(tracks[1])tracks[1].style.width=`${a/denom*100}%`;
   }
 
-  window.PitchLabSequences={version:'10-pass-golden-v1-canonical-time',tenPassSequences};
+  window.PitchLabSequences={version:'10-pass-golden-v1-canonical-time',tenPassSequences,buildSequences};
   const body=$('matchStatsBody');if(body)new MutationObserver(()=>requestAnimationFrame(patchMatchStats)).observe(body,{childList:true,subtree:true});
   [$('fromRange'),$('toRange')].filter(Boolean).forEach(el=>{el.addEventListener('input',()=>requestAnimationFrame(patchMatchStats));el.addEventListener('change',()=>requestAnimationFrame(patchMatchStats));});
   document.addEventListener('pitchlab:canonical-time-ready',()=>requestAnimationFrame(patchMatchStats));
