@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PitchLab — Set-Piece Analysis</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head><body>
+<iframe id="pitchlab-setpieces" src="base.html?v=metrics-142" title="PitchLab Set-Piece Analysis"></iframe>
+<script>
+const frame=document.getElementById('pitchlab-setpieces');frame.addEventListener('load',()=>{const doc=frame.contentDocument;if(!doc)return;const V='metrics-142';
+const css=s=>{const e=doc.createElement('link');e.rel='stylesheet';e.href=`${s}?v=${V}`;doc.head.appendChild(e)};
+const js=s=>new Promise((r,j)=>{const e=doc.createElement('script');e.src=`${s}?v=${V}`;e.async=false;e.onload=r;e.onerror=j;doc.body.appendChild(e)});
+['ui-integration.css','ui-team-colours.css','ui-polish.css','ui-v31-fixes.css','ui-set-piece-analysis.css'].forEach(css);
+const scripts=['ui-team-colours.js','ui-polish.js','ui-v31-fixes.js','ui-season-nav.js','ui-canonical-time-window.js','ui-set-piece-analysis.js'];(async()=>{for(const s of scripts)await js(s)})().catch(console.error);
+});
+</script></body></html>
