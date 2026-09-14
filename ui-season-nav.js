@@ -4,7 +4,7 @@
   const install=()=>{
     const nav=document.querySelector('.nav');if(!nav)return;
     [...nav.querySelectorAll('button')].filter(b=>['Match','Player','Leaders'].includes(b.textContent.trim())).forEach(b=>b.remove());
-    const path=parentPath(),isSeason=/season-performance\.html$/i.test(path),isCompared=/matches-compared\.html$/i.test(path),isPlayerStats=/player-stats\.html$/i.test(path),isTechnical=/technical-report\.html$/i.test(path);
+    const path=parentPath(),isSeason=/season-performance\.html$/i.test(path),isCompared=/matches-compared\.html$/i.test(path),isPlayerStats=/player-stats\.html$/i.test(path),isTechnical=/technical-report\.html$/i.test(path),isSetPieces=/set-piece-analysis\.html$/i.test(path);
     let season=[...nav.querySelectorAll('button')].find(b=>b.dataset.seasonNav==='1');
     if(!season){season=document.createElement('button');season.type='button';season.textContent='Season Performance';season.dataset.seasonNav='1';season.addEventListener('click',()=>go('season-performance.html'));nav.appendChild(season)}
     let compared=[...nav.querySelectorAll('button')].find(b=>b.dataset.matchesComparedNav==='1');
@@ -13,10 +13,12 @@
     if(!playerStats){playerStats=document.createElement('button');playerStats.type='button';playerStats.textContent='Player Stats';playerStats.dataset.playerStatsNav='1';playerStats.addEventListener('click',()=>go('player-stats.html'));nav.appendChild(playerStats)}
     let technical=[...nav.querySelectorAll('button')].find(b=>b.dataset.technicalReportNav==='1');
     if(!technical){technical=document.createElement('button');technical.type='button';technical.textContent='Technical Report';technical.dataset.technicalReportNav='1';technical.addEventListener('click',()=>go('technical-report.html'));nav.appendChild(technical)}
+    let setPieces=[...nav.querySelectorAll('button')].find(b=>b.dataset.setPieceAnalysisNav==='1');
+    if(!setPieces){setPieces=document.createElement('button');setPieces.type='button';setPieces.textContent='Set-Piece Analysis';setPieces.dataset.setPieceAnalysisNav='1';setPieces.addEventListener('click',()=>go('set-piece-analysis.html'));nav.appendChild(setPieces)}
     const pitch=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pitch Events');
-    if(pitch&&!pitch.dataset.pitchEventsNav){pitch.dataset.pitchEventsNav='1';pitch.addEventListener('click',()=>{if(isSeason||isCompared||isPlayerStats||isTechnical)go('index.html')})}
+    if(pitch&&!pitch.dataset.pitchEventsNav){pitch.dataset.pitchEventsNav='1';pitch.addEventListener('click',()=>{if(isSeason||isCompared||isPlayerStats||isTechnical||isSetPieces)go('index.html')})}
     nav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-    (isTechnical?technical:isPlayerStats?playerStats:isCompared?compared:isSeason?season:pitch)?.classList.add('active');
+    (isSetPieces?setPieces:isTechnical?technical:isPlayerStats?playerStats:isCompared?compared:isSeason?season:pitch)?.classList.add('active');
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
