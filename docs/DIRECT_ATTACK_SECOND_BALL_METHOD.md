@@ -38,6 +38,14 @@ The team making that first controlled event is credited with the second-ball win
 
 For Leeds wins, the report records whether Leeds retained control for five seconds and, before the first observed opponent control within ten seconds, made a forward pass, reached the final third, or shot. Contest locations are displayed in the Leeds attacking direction by third and broad lane.
 
+### Player leader attribution
+
+- **Contested:** credited to the Leeds player in the paired aerial-duel event.
+- **Won:** credited to the Leeds player making the first successful controlled event after the aerial duel.
+- **Lost:** credited to the Leeds aerial contestant when the opponent makes the first successful controlled event.
+
+The leaderboard follows the report's match selector, so it can be read for one fixture or collectively. The three player totals reconcile separately to attributed contests, Leeds controls and opponent controls; they should not be interpreted as aerial-duel win totals.
+
 ## Current validation sample
 
 Across the five-match 2026/27 manifest on 16 September 2026, the implementation finds 100 provisional opportunities and 37 Leeds wins. These are implementation-control totals, not a claim that the definition is final. The individual chains should be checked against video or a trusted event viewer before the label is promoted beyond provisional.
