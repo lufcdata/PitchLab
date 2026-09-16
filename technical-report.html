@@ -4,12 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PitchLab — Technical Report</title>
 <style>html,body{margin:0;width:100%;height:100%;background:#0d0e19;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head><body>
-<iframe id="pitchlab-technical" src="base.html?v=metrics-148" title="PitchLab Technical Report"></iframe>
+<iframe id="pitchlab-technical" src="base.html?v=metrics-149" title="PitchLab Technical Report"></iframe>
 <script>
-const frame=document.getElementById('pitchlab-technical');frame.addEventListener('load',()=>{const doc=frame.contentDocument;if(!doc)return;const V='metrics-148';
+const frame=document.getElementById('pitchlab-technical');frame.addEventListener('load',()=>{const doc=frame.contentDocument;if(!doc)return;const V='metrics-149';
 const css=(s,i)=>{const e=doc.createElement('link');e.rel='stylesheet';e.href=`${s}?v=${V}`;e.dataset[`trc${i}`]='1';doc.head.appendChild(e)};
 const js=(s,i)=>new Promise((r,j)=>{const e=doc.createElement('script');e.src=`${s}?v=${V}`;e.async=false;e.onload=r;e.onerror=j;e.dataset[`trj${i}`]='1';doc.body.appendChild(e)});
-['ui-integration.css','ui-team-colours.css','ui-polish.css','ui-v31-fixes.css','ui-technical-report.css','ui-technical-report-transitions.css','ui-technical-report-pitches.css','ui-technical-report-pressing.css','ui-technical-report-phase-shape.css','ui-technical-report-change-points.css','ui-technical-report-style.css','ui-technical-report-confidence.css'].forEach(css);
-const scripts=['ui-team-colours.js','ui-polish.js','ui-v31-fixes.js','ui-season-nav.js','ui-canonical-time-window.js','ui-final-third-entries-gold.js','ui-penalty-area-entries-gold.js','ui-sequence-metrics.js','ui-ppda-gold.js','ui-technical-report.js','ui-technical-report-transitions.js','ui-technical-report-pitches.js','ui-technical-report-pressing.js','ui-technical-report-phase-shape.js','ui-technical-report-change-points.js','ui-technical-report-style.js'];(async()=>{for(let i=0;i<scripts.length;i++)await js(scripts[i],i)})().catch(console.error);
+['ui-integration.css','ui-team-colours.css','ui-polish.css','ui-v31-fixes.css','ui-technical-report.css','ui-technical-report-transitions.css','ui-technical-report-pitches.css','ui-technical-report-pressing.css','ui-technical-report-phase-shape.css','ui-technical-report-change-points.css','ui-technical-report-style.css','ui-technical-report-confidence.css','ui-technical-report-game-state.css'].forEach(css);
+const scripts=['ui-team-colours.js','ui-polish.js','ui-v31-fixes.js','ui-season-nav.js','ui-canonical-time-window.js','ui-final-third-entries-gold.js','ui-penalty-area-entries-gold.js','ui-sequence-metrics.js','ui-ppda-gold.js','ui-technical-report.js','ui-technical-report-transitions.js','ui-technical-report-pitches.js','ui-technical-report-pressing.js','ui-technical-report-phase-shape.js','ui-technical-report-change-points.js','ui-technical-report-style.js','ui-technical-report-game-state.js'];(async()=>{for(let i=0;i<scripts.length;i++)await js(scripts[i],i)})().catch(console.error);
 });
 </script></body></html>
